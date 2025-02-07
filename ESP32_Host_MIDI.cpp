@@ -16,7 +16,6 @@ ESP32_Host_MIDI::ESP32_Host_MIDI()
 }
 
 void ESP32_Host_MIDI::begin() {
-  // Inicializa a biblioteca USB Host (baseado na abordagem do EspUsbHost)
   const usb_host_config_t config = {
     .skip_phy_setup = false,
     .intr_flags = ESP_INTR_FLAG_LEVEL1,
@@ -29,7 +28,6 @@ void ESP32_Host_MIDI::begin() {
     ESP_LOGI(TAG, "usb_host_install() OK");
   }
 
-  // Registra o cliente USB
   const usb_host_client_config_t client_config = {
     .is_synchronous = true,
     .max_num_event_msg = 10,
@@ -48,7 +46,6 @@ void ESP32_Host_MIDI::begin() {
 }
 
 void ESP32_Host_MIDI::task() {
-  // Processa os eventos da biblioteca USB Host
   esp_err_t err = usb_host_lib_handle_events(1, &eventFlags);
   if (err != ESP_OK && err != ESP_ERR_TIMEOUT) {
     ESP_LOGI(TAG, "usb_host_lib_handle_events() erro: 0x%x", err);
@@ -57,7 +54,7 @@ void ESP32_Host_MIDI::task() {
   if (err != ESP_OK && err != ESP_ERR_TIMEOUT) {
     ESP_LOGI(TAG, "usb_host_client_handle_events() erro: 0x%x", err);
   }
-  // Se a transferência estiver ativa, reenvia-a periodicamente
+  
   if (isReady && midiTransfer) {
     unsigned long now = millis();
     if ((now - lastCheck) > interval) {
@@ -81,7 +78,6 @@ void ESP32_Host_MIDI::_clientEventCallback(const usb_host_client_event_msg_t *ev
         ESP_LOGI(TAG, "usb_host_device_open() falhou: 0x%x", err);
         return;
       }
-      // Obtém o descritor de configuração ativo
       const usb_config_desc_t *config_desc;
       err = usb_host_get_active_config_descriptor(usbMidi->deviceHandle, &config_desc);
       if (err != ESP_OK) {
@@ -106,9 +102,6 @@ void ESP32_Host_MIDI::_clientEventCallback(const usb_host_client_event_msg_t *ev
 }
 
 void ESP32_Host_MIDI::_processConfig(const usb_config_desc_t *config_desc) {
-  // Procura por uma interface de MIDI Streaming:
-  //  bInterfaceClass = 0x01 (Áudio)
-  //  bInterfaceSubClass = 0x03 (MIDI Streaming)
   const uint8_t *p = config_desc->val;
   uint16_t totalLength = config_desc->wTotalLength;
   uint16_t index = 0;
@@ -121,7 +114,7 @@ void ESP32_Host_MIDI::_processConfig(const usb_config_desc_t *config_desc) {
       uint8_t bInterfaceClass = p[index + 5];
       uint8_t bInterfaceSubClass = p[index + 6];
       if (bInterfaceClass == 0x01 && bInterfaceSubClass == 0x03) {
-        interfaceNumber = p[index + 2]; // bInterfaceNumber
+        interfaceNumber = p[index + 2];
         ESP_LOGI(TAG, "Interface MIDI Streaming encontrada: %d", interfaceNumber);
         esp_err_t err = usb_host_interface_claim(clientHandle, deviceHandle, interfaceNumber, p[index + 3]);
         if (err != ESP_OK) {
@@ -134,8 +127,7 @@ void ESP32_Host_MIDI::_processConfig(const usb_config_desc_t *config_desc) {
       uint8_t bEndpointAddress = p[index + 2];
       uint8_t bmAttributes = p[index + 3];
       uint16_t wMaxPacketSize = p[index + 4] | (p[index + 5] << 8);
-      // Seleciona endpoint IN (para dados enviados do dispositivo MIDI)
-      if (bEndpointAddress & 0x80) {
+      if (bEndpointAddress & 0x80) { // Endpoint IN
         uint8_t transferType = bmAttributes & 0x03;
         if (transferType == USB_BM_ATTRIBUTES_XFER_INT || transferType == USB_BM_ATTRIBUTES_XFER_BULK) {
           esp_err_t err = usb_host_transfer_alloc(wMaxPacketSize, 0, &midiTransfer);
@@ -148,11 +140,9 @@ void ESP32_Host_MIDI::_processConfig(const usb_config_desc_t *config_desc) {
           midiTransfer->callback = _onReceive;
           midiTransfer->context = this;
           midiTransfer->num_bytes = wMaxPacketSize;
-          // O bInterval (na posição p[index + 6]) é utilizado para temporização
           interval = p[index + 6];
           isReady = true;
           ESP_LOGI(TAG, "Transferência MIDI alocada no endpoint 0x%x com tamanho %d", bEndpointAddress, wMaxPacketSize);
-          // Encerra a busca, já que encontramos o endpoint desejado
           break;
         }
       }
@@ -164,13 +154,11 @@ void ESP32_Host_MIDI::_processConfig(const usb_config_desc_t *config_desc) {
 void ESP32_Host_MIDI::_onReceive(usb_transfer_t *transfer) {
   ESP32_Host_MIDI *usbMidi = static_cast<ESP32_Host_MIDI*>(transfer->context);
   if (transfer->status == 0 && transfer->actual_num_bytes > 0) {
-    // Chama o callback para tratar a mensagem MIDI recebida
     usbMidi->onMidiMessage(transfer->data_buffer, transfer->actual_num_bytes);
   } else {
     ESP_LOGI(TAG, "Erro na transferência USB ou dados vazios: status=%d, bytes=%d",
              transfer->status, transfer->actual_num_bytes);
   }
-  // Reenvia a transferência para continuar a recepção
   if (usbMidi->isReady) {
     esp_err_t err = usb_host_transfer_submit(transfer);
     if (err != ESP_OK && err != ESP_ERR_NOT_FINISHED && err != ESP_ERR_INVALID_STATE) {
@@ -180,8 +168,8 @@ void ESP32_Host_MIDI::_onReceive(usb_transfer_t *transfer) {
 }
 
 void ESP32_Host_MIDI::onMidiMessage(const uint8_t *data, size_t length) {
-  // Implementação padrão: exibe a mensagem MIDI via Serial.
-  Serial.print("Mensagem MIDI: ");
+  // Implementação padrão: imprime a mensagem no Serial Monitor.
+  Serial.print("Mensagem MIDI (base): ");
   for (size_t i = 0; i < length; i++) {
     if (data[i] < 16) Serial.print("0");
     Serial.print(data[i], HEX);
