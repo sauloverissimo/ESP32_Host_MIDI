@@ -1,5 +1,7 @@
 # ESP32_Host_MIDI 🎹📡
 
+Projeto desenvolvido para ARDUINO IDE:
+
 Este projeto oferece uma solução completa para receber, interpretar e exibir mensagens MIDI via USB no ESP32 (especialmente ESP32-S3) com o T‑Display S3.
 
 ---
@@ -23,7 +25,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 - **MIDI_Handler.h / MIDI_Handler.cpp**  
   Fornece funções estáticas que interpretam os dados MIDI brutos (após remover o cabeçalho USB) em diversos formatos:  
-  - **Raw Format:** Ex.: `[0x90, 0x3C, 0x64]`  
+  - **Raw Format:** Ex.: `[0x09, 0x90, 0x3C, 0x64]`  
   - **Short Format:** Ex.: `"90 3C 64"`  
   - **Note Number:** Ex.: `"60"`  
   - **Tipo de Mensagem:** Ex.: `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
@@ -78,7 +80,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 - **MIDI_Handler.h / MIDI_Handler.cpp**  
   Provides static functions to interpret raw MIDI messages (after removing the USB header) into various readable formats:  
-  - **Raw Format:** e.g., `[0x90, 0x3C, 0x64]`  
+  - **Raw Format:** e.g., `[0x09, 0x90, 0x3C, 0x64]`  
   - **Short Format:** e.g., `"90 3C 64"`  
   - **Note Number:** e.g., `"60"`  
   - **Message Type:** e.g., `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
@@ -133,7 +135,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 - **MIDI_Handler.h / MIDI_Handler.cpp**  
   Proporciona funciones estáticas para interpretar los mensajes MIDI crudos (después de eliminar el encabezado USB) en varios formatos legibles:  
-  - **Formato Raw:** ej.: `[0x90, 0x3C, 0x64]`  
+  - **Formato Raw:** ej.: `[0x09, 0x90, 0x3C, 0x64]`  
   - **Formato Short:** ej.: `"90 3C 64"`  
   - **Número de Nota:** ej.: `"60"`  
   - **Tipo de Mensaje:** ej.: `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
