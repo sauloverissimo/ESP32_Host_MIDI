@@ -11,13 +11,18 @@
 #define TFT_RST_PIN   5
 #define TFT_BL_PIN    38
 
-// // Configurações para I2S e DAC PCM5102A (ajuste conforme sua shield)
-// #define I2S_BCK_PIN        26   // Bit Clock
-// #define I2S_WS_PIN         25   // Word Select (LRCK)
-// #define I2S_DATA_OUT_PIN   22   // Data Out
-#define PCM5102A_MUTE_PIN PCA95x5::Port::P17
-#define I2S_BCK_PIN        13   // Conectado ao BCK do PCM5102A
-#define I2S_WS_PIN         15   // Conectado ao LRCK do PCM5102A
-#define I2S_DATA_OUT_PIN   14   // Conectado ao DIN do PCM5102A
+#define I2S_BCK_PIN        11   // Conectado ao BCK do PCM5102A
+#define I2S_WS_PIN         13   // Conectado ao LRCK do PCM5102A
+#define I2S_DATA_OUT_PIN   12   // Conectado ao DIN do PCM5102A
+
+#define PIN_POWER_ON 15
+
+#define PIN_BUTTON_1 0
+#define PIN_BUTTON_2 14
+#define PIN_BAT_VOLT 4
+
+#define PIN_IIC_SCL 17
+#define PIN_IIC_SDA 18
+
 
 #endif // ESP32_HOST_MIDI_CONFIG_H
