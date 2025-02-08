@@ -1,5 +1,4 @@
 # Ignorar ambientes virtuais
-/datahandler.h
 /displayhandler.h
 /displayhandler.cpp
 /T-DisplayS3_Host_MIDI.ino
