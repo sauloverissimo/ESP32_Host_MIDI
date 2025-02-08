@@ -61,7 +61,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 ---
 
-## English 🇺🇸
+## English 🇺🇸 🗺️
 
 ### Overview
 **ESP32_Host_MIDI** is a library that enables the ESP32 (especially the ESP32-S3) to function as a USB host for MIDI devices, interpret incoming MIDI data (using functions from the **MIDI_Handler** module), and display the formatted information on a T‑Display S3 via the **DisplayHandler**. The library is modular and easily configurable for other hardware platforms.
@@ -116,7 +116,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 ---
 
-## Español 🇪🇸
+## Español 🇪🇸 🩻
 
 ### Descripción General
 **ESP32_Host_MIDI** es una biblioteca diseñada para que el ESP32 (especialmente el ESP32-S3) funcione como host USB para dispositivos MIDI, interprete los datos MIDI recibidos (utilizando funciones del módulo **MIDI_Handler**) y muestre la información formateada en un T‑Display S3 a través del **DisplayHandler**. La biblioteca es modular y se puede configurar fácilmente para otros dispositivos.
