@@ -68,7 +68,7 @@ std::string MIDIHandler::getMessageFormat(const uint8_t* data, size_t length) {
       message = "Control Change";
       break;
     case 0xC0:
-      message = "Program Change";
+      message = "Prog. Change";
       break;
     case 0xD0:
       message = "Channel Aftertouch";
