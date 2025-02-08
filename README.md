@@ -171,7 +171,7 @@ A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dis
 
 ---
 
-## 🌟 Notas y Estilo Visual
+### 🌟 Notas y Estilo Visual
 
 - **Emojis:** 🎹, 📡 y otros para representar visualmente la funcionalidad MIDI.  
 - **Colores Destacados:**  
