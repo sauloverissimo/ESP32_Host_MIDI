@@ -14,7 +14,7 @@ bool msgDisplayed = false;
 MIDI_PCM5102A_Handler audio;
 
 // Definição única do expander PCA95x5, usando o template correto:
-//PCA95x5::PCA95x5<> ioex;
+PCA95x5::PCA95x5<> ioex;
 
 // Classe derivada que processa as mensagens MIDI, exibe no display e reproduz áudio
 class MyESP32_Host_MIDI : public ESP32_Host_MIDI {
