@@ -1,192 +1,185 @@
 # ESP32_Host_MIDI 🎹📡
 
-![ESP32 Host MIDI](https://via.placeholder.com/320x170.png?text=T-Display+S3)  
-*Receba, interprete e exiba mensagens MIDI em tempo real no T-Display S3!*
+Este projeto oferece uma solução completa para receber, interpretar e exibir mensagens MIDI via USB no ESP32 (especialmente ESP32-S3) com o T‑Display S3.
 
 ---
 
-## 📚 Visão Geral
+## Português 🇧🇷
 
-A **ESP32_Host_MIDI** é uma biblioteca desenvolvida para:
-- **Receber mensagens MIDI** via USB usando um ESP32 (especialmente o ESP32-S3).
-- **Interpretar e formatar** os dados MIDI em diversos formatos (raw, short, note number, message type, etc.) utilizando o módulo **MIDI_handler**.
-- **Exibir as mensagens** formatadas no T-Display S3, por meio do **DisplayHandler** (baseado na [LovyanGFX](https://github.com/lovyan03/LovyanGFX)).
+### Visão Geral
+A biblioteca **ESP32_Host_MIDI** permite que o ESP32 atue como host USB para dispositivos MIDI, interprete os dados recebidos (utilizando funções do módulo **MIDI_Handler**) e exiba essas informações no T‑Display S3 através do **DisplayHandler**. A biblioteca é modular, facilitando adaptações para outros hardwares, bastando ajustar os arquivos de configuração.
 
-A biblioteca é **modular** e permite uma fácil adaptação para outros hardwares, bastando ajustar os arquivos de configuração.
+### Estrutura dos Arquivos
+- **ESP32_Host_MIDI_Config.h**  
+  Define os pinos usados para comunicação USB e para o display.  
+  - *Exemplo:* `USB_DP_PIN`, `USB_DN_PIN`, `TFT_CS_PIN`, `TFT_DC_PIN`, `TFT_RST_PIN`, `TFT_BL_PIN`.
 
----
+- **ESP32_Host_MIDI.h / ESP32_Host_MIDI.cpp**  
+  Gerencia a comunicação USB MIDI.  
+  - **Funções Principais:**  
+    - `begin()`: Inicializa o USB Host e registra o cliente.  
+    - `task()`: Processa os eventos USB e submete as transferências.  
+    - `onMidiMessage(const uint8_t *data, size_t length)`: Função virtual chamada quando uma mensagem MIDI é recebida. Deve ser sobrescrita para tratar a mensagem (por exemplo, utilizando o **MIDI_Handler**).
 
-## 🚀 Estrutura dos Arquivos
+- **MIDI_Handler.h / MIDI_Handler.cpp**  
+  Fornece funções estáticas que interpretam os dados MIDI brutos (após remover o cabeçalho USB) em diversos formatos:  
+  - **Raw Format:** Ex.: `[0x90, 0x3C, 0x64]`  
+  - **Short Format:** Ex.: `"90 3C 64"`  
+  - **Note Number:** Ex.: `"60"`  
+  - **Tipo de Mensagem:** Ex.: `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
+  - **Status:** Ex.: `"9n"`  
+  - **Note Sound com Octave:** Ex.: `"C5"`  
+  - **Message Vector:** Estrutura que reúne os campos interpretados.
 
-### 1. ESP32_Host_MIDI_Config.h
-- **Propósito:** Define a configuração de hardware (pinos) para a comunicação USB MIDI e para o display.
-- **Principais definições:**
-  - `USB_DP_PIN`, `USB_DN_PIN`: Pinos de dados USB.
-  - `TFT_CS_PIN`, `TFT_DC_PIN`, `TFT_RST_PIN`, `TFT_BL_PIN`: Pinos para o display ST7789 (T-Display S3).
+- **datahandler.h**  
+  Define tipos de dados para manipulação estruturada dos dados (ex.: `TypeElement`, `TypeVector`, `TypeTable`, `TypeCube`).  
+  Esses tipos auxiliam na organização e manipulação dos dados MIDI interpretados.
 
----
+- **displayhandler.h / displayhandler.cpp**  
+  Gerencia a exibição das informações no T‑Display S3 utilizando a biblioteca LovyanGFX.  
+  - **Funções Principais:**  
+    - `init()`: Inicializa o display, configura a rotação (180°), dimensões (320x170) e tamanho da fonte.  
+    - `printMidiMessage(const char* message)`: Exibe a mensagem formatada em 5 linhas, com a última ("Octave") destacada (linha separadora, fonte maior e cor diferenciada).  
+    - `clear()`: Limpa o display.
+  
+- **ESP32_Host_MIDI.ino**  
+  Exemplo de implementação no T‑Display S3. Integra a recepção USB MIDI, a interpretação dos dados (via **MIDI_Handler**) e a exibição das informações no display.  
+  - Utiliza uma classe derivada que sobrescreve `onMidiMessage()` para:
+    - Remover o cabeçalho USB dos dados.
+    - Formatar os dados em 5 linhas (Raw, Short, Note#, Msg e Octave).
+    - Exibir a mensagem e limpar o display após 1 segundo.
 
-### 2. ESP32_Host_MIDI.h & ESP32_Host_MIDI.cpp
-- **Propósito:** Gerencia a comunicação USB MIDI no ESP32.
-- **Principais funções:**
-  - **`begin()`**: Inicializa o USB Host e registra o cliente.
-  - **`task()`**: Processa os eventos USB e submete as transferências.
-  - **`onMidiMessage(const uint8_t *data, size_t length)`**: Função virtual acionada quando uma mensagem MIDI é recebida. Deve ser sobrescrita para processar a mensagem (ex.: converter com o **MIDI_handler** e exibir no display).
-- **Detalhes:**
-  - As funções auxiliares `_clientEventCallback`, `_onReceive` e `_processConfig` gerenciam eventos e configurações do USB.
-
----
-
-### 3. MIDI_handler.h & MIDI_handler.cpp
-- **Propósito:** Fornece funções estáticas para interpretar a mensagem MIDI "bruta" (após remover o cabeçalho USB) em vários formatos.
-- **Formatos Suportados:**
-  - **Raw Format:** Ex.: `[0x90, 0x3C, 0x64]`
-  - **Short Format:** Ex.: `"90 3C 64"`
-  - **Note Number:** Ex.: `"60"`
-  - **Message Type:** Ex.: `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.
-  - **Message Status:** Ex.: `"9n"`
-  - **Note Sound com Octave:** Ex.: `"C5"` (ou outro, conforme convenção)
-  - **Message Vector:** Estrutura de vetor com os detalhes da mensagem.
-- **Uso:** Essas funções são chamadas pela implementação sobrescrita de `onMidiMessage` na classe derivada para formatar os dados antes de exibi-los.
-
----
-
-### 4. datahandler.h
-- **Propósito:** Define tipos de dados para manipulação estruturada dos dados (como tabelas e vetores).
-- **Principais Tipos:**
-  - `TypeElement`: Pode ser int, double, float, string ou vector de strings.
-  - `TypeVector`, `TypeTable`, `TypeCube`: Estruturas para manipulação de coleções de dados.
-- **Uso:** Utilizado internamente pelo **MIDI_handler** para criar representações estruturadas (como o vetor de mensagem).
-
----
-
-### 5. displayhandler.h & displayhandler.cpp
-- **Propósito:** Gerencia o display T-Display S3 usando a LovyanGFX.
-- **Funcionalidades:**
-  - **Rotação:** Gira o display 180° para a orientação horizontal.
-  - **Dimensionamento:** Configura o display para 320x170 pixels.
-  - **Formatação:** Exibe a mensagem em 5 linhas:
-    - **Linha 1:** Raw
-    - **Linha 2:** Short
-    - **Linha 3:** Note#
-    - **Linha 4:** Msg
-    - **Linha 5:** Octave (destacada com uma linha separadora, fonte maior e em vermelho)
-- **Funções-Chave:**
-  - **`init()`**: Inicializa o display com os parâmetros corretos.
-  - **`printMidiMessage(const char* message)`**: Exibe a mensagem formatada.
-  - **`clear()`**: Limpa o display.
-
----
-
-### 6. ESP32_Host_MIDI.ino
-- **Propósito:** Exemplo de implementação no T-Display S3.
-- **Funcionalidade:**
-  - Instancia um **DisplayHandler** e uma classe derivada **MyESP32_Host_MIDI** que sobrescreve `onMidiMessage` para:
-    - Remover o cabeçalho USB (primeiro byte).
-    - Utilizar as funções do **MIDI_handler** para formatar a mensagem.
-    - Exibir a mensagem formatada no display.
-  - Implementa um timeout de 1 segundo para limpar o display após a exibição.
-
----
-
-## 🔧 Como Funciona
-
+### Funcionamento
 1. **Recepção MIDI:**  
-   Ao conectar um dispositivo MIDI, o ESP32 recebe os dados USB.  
-   O **ESP32_Host_MIDI** processa os eventos e, quando uma mensagem é recebida, chama `onMidiMessage`.
-
-2. **Interpretação dos Dados:**  
-   A classe derivada (ex.: **MyESP32_Host_MIDI**) remove o cabeçalho USB (0x09) e usa as funções do **MIDI_handler** para converter os bytes em formatos legíveis (raw, short, note number, etc).
-
-3. **Exibição no Display:**  
-   O **DisplayHandler** recebe a string formatada e a exibe no T-Display S3:
-   - Texto distribuído em 5 linhas.
-   - A última linha (Octave) é destacada com uma linha separadora, fonte maior e cor vermelha.
-   - O display é rotacionado 180° para a orientação correta.
-   - Após 1 segundo, o display é limpo automaticamente.
+   Ao conectar um dispositivo MIDI, o ESP32 captura os dados USB.  
+2. **Interpretação:**  
+   A função virtual `onMidiMessage()` é chamada. Uma classe derivada remove o cabeçalho (primeiro byte) e utiliza o **MIDI_Handler** para converter os bytes em formatos legíveis.
+3. **Exibição:**  
+   O **DisplayHandler** exibe os dados formatados em 5 linhas (com destaque na última linha) no T‑Display S3, que está rotacionado 180° para a orientação correta.
 
 ---
 
-## 🎨 Layout Visual
+## English 🇺🇸
 
-- **Orientação:** Horizontal (320 x 170 pixels), com 180° de rotação.
-- **Fonte Geral:** Tamanho pequeno (ajustável para melhor legibilidade).
-- **Linha Destacada:** A última linha ("Octave") é exibida com:
-  - **Fonte maior** (tamanho 2).
-  - **Cor Vermelha** (ex.: `TFT_RED`).
-  - **Separador:** Uma linha horizontal separa a última linha das demais.
+### Overview
+**ESP32_Host_MIDI** is a library that enables the ESP32 (especially the ESP32-S3) to function as a USB host for MIDI devices, interpret incoming MIDI data (using functions from the **MIDI_Handler** module), and display the formatted information on a T‑Display S3 via the **DisplayHandler**. The library is modular and easily configurable for other hardware platforms.
+
+### File Structure
+- **ESP32_Host_MIDI_Config.h**  
+  Defines the pin configuration for USB communication and the display.  
+  - *Examples:* `USB_DP_PIN`, `USB_DN_PIN`, `TFT_CS_PIN`, `TFT_DC_PIN`, `TFT_RST_PIN`, `TFT_BL_PIN`.
+
+- **ESP32_Host_MIDI.h / ESP32_Host_MIDI.cpp**  
+  Manages USB MIDI communication.  
+  - **Key Functions:**  
+    - `begin()`: Initializes the USB host and registers the client.  
+    - `task()`: Processes USB events and submits transfers.  
+    - `onMidiMessage(const uint8_t *data, size_t length)`: A virtual function triggered when a MIDI message is received; it should be overridden to handle the message (e.g., using **MIDI_Handler**).
+
+- **MIDI_Handler.h / MIDI_Handler.cpp**  
+  Provides static functions to interpret raw MIDI messages (after removing the USB header) into various readable formats:  
+  - **Raw Format:** e.g., `[0x90, 0x3C, 0x64]`  
+  - **Short Format:** e.g., `"90 3C 64"`  
+  - **Note Number:** e.g., `"60"`  
+  - **Message Type:** e.g., `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
+  - **Status:** e.g., `"9n"`  
+  - **Note Sound with Octave:** e.g., `"C5"`  
+  - **Message Vector:** A structured vector containing all interpreted fields.
+
+- **datahandler.h**  
+  Defines data types for structured data manipulation (e.g., `TypeElement`, `TypeVector`, `TypeTable`, `TypeCube`).  
+  These types are used internally by **MIDI_Handler** to organize the interpreted MIDI data.
+
+- **displayhandler.h / displayhandler.cpp**  
+  Manages the display on the T‑Display S3 using LovyanGFX.  
+  - **Key Functions:**  
+    - `init()`: Initializes the display, setting the rotation (180°), dimensions (320x170), and font size.  
+    - `printMidiMessage(const char* message)`: Displays the formatted message across 5 lines, with the last line ("Octave") highlighted (separator line, larger font, and distinct color).  
+    - `clear()`: Clears the display.
+
+- **ESP32_Host_MIDI.ino**  
+  Example implementation for the T‑Display S3. Integrates USB MIDI reception, data interpretation via **MIDI_Handler**, and display output.  
+  - A derived class overrides `onMidiMessage()` to:
+    - Remove the USB header from the data.
+    - Format the data into 5 lines (Raw, Short, Note#, Msg, and Octave).
+    - Display the message and clear the screen after 1 second.
+
+### How It Works
+1. **MIDI Reception:**  
+   When a MIDI device is connected, the ESP32 receives USB MIDI data.
+2. **Data Interpretation:**  
+   The virtual function `onMidiMessage()` is triggered. A derived class removes the header (first byte) and uses **MIDI_Handler** functions to convert the bytes into readable formats.
+3. **Display Output:**  
+   The **DisplayHandler** displays the formatted message across 5 lines (with the last line highlighted) on the T‑Display S3, which is rotated 180° for proper orientation.
 
 ---
 
-## 💡 Exemplo de Implementação
+## Español 🇪🇸
 
-```cpp
-#include <Arduino.h>
-#include "ESP32_Host_MIDI.h"   // Biblioteca USB MIDI
-#include "displayhandler.h"    // Handler para exibição no display LovyanGFX
-#include "MIDI_handler.h"      // Módulo para interpretar as mensagens MIDI
+### Descripción General
+**ESP32_Host_MIDI** es una biblioteca diseñada para que el ESP32 (especialmente el ESP32-S3) funcione como host USB para dispositivos MIDI, interprete los datos MIDI recibidos (utilizando funciones del módulo **MIDI_Handler**) y muestre la información formateada en un T‑Display S3 a través del **DisplayHandler**. La biblioteca es modular y se puede configurar fácilmente para otros dispositivos.
 
-#define DISPLAY_TIMEOUT 1000  // Tempo de exibição: 1 segundo
+### Estructura de Archivos
+- **ESP32_Host_MIDI_Config.h**  
+  Define la configuración de pines para la comunicación USB y la pantalla.  
+  - *Ejemplos:* `USB_DP_PIN`, `USB_DN_PIN`, `TFT_CS_PIN`, `TFT_DC_PIN`, `TFT_RST_PIN`, `TFT_BL_PIN`.
 
-unsigned long lastMsgTime = 0;
-bool msgDisplayed = false;
+- **ESP32_Host_MIDI.h / ESP32_Host_MIDI.cpp**  
+  Gestiona la comunicación USB MIDI.  
+  - **Funciones Clave:**  
+    - `begin()`: Inicializa el host USB y registra el cliente.  
+    - `task()`: Procesa los eventos USB y envía las transferencias.  
+    - `onMidiMessage(const uint8_t *data, size_t length)`: Función virtual que se llama cuando se recibe un mensaje MIDI; debe sobrescribirse para procesar el mensaje (por ejemplo, usando **MIDI_Handler**).
 
-// Classe derivada que processa a mensagem MIDI usando o MIDI_handler
-class MyESP32_Host_MIDI : public ESP32_Host_MIDI {
-public:
-  MyESP32_Host_MIDI(DisplayHandler* disp) : display(disp) {}
+- **MIDI_Handler.h / MIDI_Handler.cpp**  
+  Proporciona funciones estáticas para interpretar los mensajes MIDI crudos (después de eliminar el encabezado USB) en varios formatos legibles:  
+  - **Formato Raw:** ej.: `[0x90, 0x3C, 0x64]`  
+  - **Formato Short:** ej.: `"90 3C 64"`  
+  - **Número de Nota:** ej.: `"60"`  
+  - **Tipo de Mensaje:** ej.: `"NoteOn"`, `"NoteOff"`, `"Control Change"`, `"Program Change"`, etc.  
+  - **Status:** ej.: `"9n"`  
+  - **Nota con Octava:** ej.: `"C5"`  
+  - **Vector de Mensaje:** Una estructura que agrupa todos los campos interpretados.
 
-  // Sobrescreve onMidiMessage para interpretar e exibir a mensagem
-  void onMidiMessage(const uint8_t *data, size_t length) override {
-    // IMPORTANTE: Remove o cabeçalho USB (primeiro byte)
-    const uint8_t* midiData = data + 1;
-    size_t midiLength = (length > 1) ? (length - 1) : 0;
+- **datahandler.h**  
+  Define tipos de datos para la manipulación estructurada (por ejemplo, `TypeElement`, `TypeVector`, `TypeTable`, `TypeCube`).  
+  Estos tipos se usan internamente en **MIDI_Handler** para organizar los datos MIDI interpretados.
 
-    std::string rawStr            = MIDIHandler::getRawFormat(midiData, midiLength);
-    std::string shortStr          = MIDIHandler::getShortFormat(midiData, midiLength);
-    std::string noteNumStr        = MIDIHandler::getNoteNumberFormat(midiData, midiLength);
-    std::string messageStr        = MIDIHandler::getMessageFormat(midiData, midiLength);
-    std::string statusStr         = MIDIHandler::getMessageStatusFormat(midiData, midiLength);
-    std::string noteSoundOctaveStr= MIDIHandler::getNoteSoundOctave(midiData, midiLength);
-    
-    // Cria a mensagem dividida em 5 linhas:
-    String displayMsg = "";
-    displayMsg += "Raw: "      + String(rawStr.c_str())       + "\n";
-    displayMsg += "Short: "    + String(shortStr.c_str())     + "\n";
-    displayMsg += "Note#: "    + String(noteNumStr.c_str())   + "\n";
-    displayMsg += "Msg: "      + String(messageStr.c_str())   + "\n";
-    displayMsg += "Octave: "   + String(noteSoundOctaveStr.c_str());
-    
-    if (display) {
-      display->printMidiMessage(displayMsg.c_str());
-    }
-    
-    lastMsgTime = millis();
-    msgDisplayed = true;
-  }
+- **displayhandler.h / displayhandler.cpp**  
+  Gestiona la visualización en el T‑Display S3 utilizando LovyanGFX.  
+  - **Funciones Clave:**  
+    - `init()`: Inicializa la pantalla, estableciendo la rotación (180°), dimensiones (320x170) y el tamaño de la fuente.  
+    - `printMidiMessage(const char* message)`: Muestra el mensaje formateado en 5 líneas, destacando la última línea ("Octave") con una línea separadora, fuente más grande y color diferente.  
+    - `clear()`: Limpia la pantalla.
 
-private:
-  DisplayHandler* display;
-};
+- **ESP32_Host_MIDI.ino**  
+  Ejemplo de implementación para el T‑Display S3. Integra la recepción USB MIDI, la interpretación de datos mediante **MIDI_Handler** y la salida en pantalla.  
+  - Una clase derivada sobrescribe `onMidiMessage()` para:
+    - Eliminar el encabezado USB de los datos.
+    - Formatear los datos en 5 líneas (Raw, Short, Note#, Msg y Octave).
+    - Mostrar el mensaje y limpiar la pantalla después de 1 segundo.
 
-DisplayHandler display;
-MyESP32_Host_MIDI usbMidi(&display);
+### Cómo Funciona
+1. **Recepción MIDI:**  
+   Al conectar un dispositivo MIDI, el ESP32 recibe los datos MIDI vía USB.
+2. **Interpretación de Datos:**  
+   Se invoca la función virtual `onMidiMessage()`. Una clase derivada elimina el encabezado (primer byte) y utiliza las funciones de **MIDI_Handler** para convertir los bytes en formatos legibles.
+3. **Salida en Pantalla:**  
+   El **DisplayHandler** muestra el mensaje formateado en 5 líneas (con la última línea destacada) en el T‑Display S3, que se rota 180° para la orientación correcta.
 
-void setup() {
-  Serial.begin(115200);
-  Serial.println("Iniciando ESP32_Host_MIDI com interpretação MIDI e display");
-  
-  display.init();
-  usbMidi.begin();
-}
+---
 
-void loop() {
-  usbMidi.task();
-  
-  if (msgDisplayed && (millis() - lastMsgTime > DISPLAY_TIMEOUT)) {
-    display.clear();
-    msgDisplayed = false;
-  }
-  
-  delay(10);
-}
+## 🌟 Notas y Estilo Visual
+
+- **Emojis:** 🎹, 📡 y otros para representar visualmente la funcionalidad MIDI.  
+- **Colores Destacados:**  
+  - La última línea ("Octave") se muestra en **rojo** para destacarse.  
+- **Formato del Display:**  
+  - Pantalla en modo horizontal (320x170) con 180° de rotación.  
+  - Texto distribuido en 5 líneas, separando la última línea con una línea horizontal.
+
+---
+
+*Divirta-se explorando e desenvolvendo seus projetos com ESP32_Host_MIDI!* 🚀  
+*Enjoy exploring and developing your projects with ESP32_Host_MIDI!* 🚀  
+*¡Disfruta explorando y desarrollando tus proyectos con ESP32_Host_MIDI!* 🚀
