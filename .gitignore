@@ -1,0 +1,8 @@
+# Ignorar ambientes virtuais
+datahandler.h
+displayhandler.h
+displayhandler.cpp
+T-DisplayS3_Host_MIDI.ino
+ESP32_Host_MIDI.ino
+MIDI_PCM5102A_Handler.h
+MIDI_PCM5102A_Handler.cpp
