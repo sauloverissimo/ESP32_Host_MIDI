@@ -1,5 +1,7 @@
 # ESP32_Host_MIDI 🎹📡
 
+Projeto desenvolvido para ARDUINO IDE:
+
 Este projeto oferece uma solução completa para receber, interpretar e exibir mensagens MIDI via USB no ESP32 (especialmente ESP32-S3) com o T‑Display S3.
 
 ---
