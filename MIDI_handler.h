@@ -56,6 +56,9 @@ public:
   // { idMessage, channel, message, noteNumber, noteSound, noteSoundOctave, velocity }
   // Para Program Change, noteNumber conterá o número do programa e os demais campos poderão ser vazios ou zero.
   static TypeVector getMessageVector(const uint8_t* data, size_t length);
+
+  // NOVO: Retorna a mensagem no formato USB MIDI (com cabeçalho de 4 bytes)
+  static std::string getUsbMidiFormat(const uint8_t* data, size_t length);
 };
 
 #endif // MIDI_HANDLER_H

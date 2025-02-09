@@ -133,7 +133,7 @@ std::string MIDIHandler::getNoteSoundOctave(const uint8_t* data, size_t length) 
   int noteNumber = data[1];
   const char* noteNames[12] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
   int index = noteNumber % 12;
-  int octave = noteNumber / 12;  // Por exemplo, 60/12 = 5 para C5
+  int octave = (noteNumber / 12) - 1;
   char buf[10];
   sprintf(buf, "%s%d", noteNames[index], octave);
   return std::string(buf);
@@ -173,3 +173,46 @@ TypeVector MIDIHandler::getMessageVector(const uint8_t* data, size_t length) {
   
   return vec;
 }
+
+std::string MIDIHandler::getUsbMidiFormat(const uint8_t* data, size_t length) {
+  if (length < 1) return "[]";
+
+  std::string result = "[";
+  char buf[10];
+
+  uint8_t status = data[0];
+  uint8_t cin = 0x00; // Code Index Number
+
+  // Definição do Code Index Number (CIN) conforme o status MIDI
+  if ((status & 0xF0) == 0x80) cin = 0x08;  // Note Off
+  else if ((status & 0xF0) == 0x90) cin = 0x09;  // Note On
+  else if ((status & 0xF0) == 0xA0) cin = 0x0A;  // Polyphonic Key Pressure
+  else if ((status & 0xF0) == 0xB0) cin = 0x0B;  // Control Change
+  else if ((status & 0xF0) == 0xC0) cin = 0x0C;  // Program Change
+  else if ((status & 0xF0) == 0xD0) cin = 0x0D;  // Channel Pressure
+  else if ((status & 0xF0) == 0xE0) cin = 0x0E;  // Pitch Bend
+  else if (status == 0xF0) cin = 0x04;  // System Exclusive (SysEx Start)
+  else if (status == 0xF7) cin = 0x05;  // SysEx End
+  else if (status == 0xF2) cin = 0x02;  // Song Position Pointer
+  else if (status == 0xF3) cin = 0x03;  // Song Select
+  else if (status == 0xF6) cin = 0x05;  // Tune Request
+  else if (status >= 0xF8) cin = 0x0F;  // System Real-Time Messages
+
+  uint8_t usbHeader = (0x00 << 4) | cin; // Cable Number 0x00 + CIN calculado
+
+  sprintf(buf, "0x%02X", usbHeader);
+  result += buf;
+  result += ", ";
+
+  for (size_t i = 0; i < length; i++) {
+    sprintf(buf, "0x%02X", data[i]);
+    result += buf;
+    if (i < length - 1) {
+      result += ", ";
+    }
+  }
+
+  result += "]";
+  return result;
+}
+
