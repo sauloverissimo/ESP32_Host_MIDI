@@ -2,9 +2,9 @@
 #define MIDI_HANDLER_H
 
 #include <Arduino.h>
-#include "datahandler.h"  // Inclui os tipos: TypeElement, TypeVector, etc.
 #include <string>
 #include <vector>
+#include <variant>
 
 /*
   MIDIHandler:
@@ -52,10 +52,10 @@ public:
   // NOVO: Retorna o número do programa (para mensagens de Program Change)
   static std::string getProgramFormat(const uint8_t* data, size_t length);
 
-  // Retorna um vetor formatado (TypeVector) com os campos:
+  // Retorna um vetor formatado (std::vector<std::variant<int, std::string>>) com os campos:
   // { idMessage, channel, message, noteNumber, noteSound, noteSoundOctave, velocity }
   // Para Program Change, noteNumber conterá o número do programa e os demais campos poderão ser vazios ou zero.
-  static TypeVector getMessageVector(const uint8_t* data, size_t length);
+  std::vector<std::variant<int, std::string>> MIDIHandler::getMessageVector(const uint8_t* data, size_t length);
 
   // NOVO: Retorna a mensagem no formato USB MIDI (com cabeçalho de 4 bytes)
   static std::string getUsbMidiFormat(const uint8_t* data, size_t length);

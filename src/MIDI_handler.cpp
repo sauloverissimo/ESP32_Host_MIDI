@@ -139,25 +139,22 @@ std::string MIDIHandler::getNoteSoundOctave(const uint8_t* data, size_t length) 
   return std::string(buf);
 }
 
-// Retorna um vetor formatado com os campos:
-// { idMessage, channel, message, noteNumber, noteSound, noteSoundOctave, velocity }
-// Para Program Change, noteNumber conterá o número do programa e os demais campos poderão ser vazios ou zero.
-TypeVector MIDIHandler::getMessageVector(const uint8_t* data, size_t length) {
-  TypeVector vec;
+// Retorna um vetor formatado com os campos relevantes
+std::vector<std::variant<int, std::string>> MIDIHandler::getMessageVector(const uint8_t* data, size_t length) {
+  std::vector<std::variant<int, std::string>> vec;
   if (length < 1) return vec;
+  
   uint8_t status = data[0];
-  int idMessage = status >> 4;         // Nibble alto
-  int channel = status & 0x0F;           // Nibble baixo
+  int idMessage = status >> 4;
+  int channel = status & 0x0F;
   std::string message = getMessageFormat(data, length);
   int noteNumber = (length >= 2) ? data[1] : 0;
   std::string noteSound = (length >= 2) ? getNoteSound(data, length) : "";
   std::string noteSoundOctave = (length >= 2) ? getNoteSoundOctave(data, length) : "";
   int velocity = (length >= 3) ? data[2] : 0;
 
-  // Se for Program Change, utilize getProgramFormat para obter o número do programa
-  if ((status & 0xF0) == 0xC0) {
+  if ((status & 0xF0) == 0xC0) { // Se for Program Change
     noteNumber = (length >= 2) ? data[1] : 0;
-    // Para mensagens de Program Change, os campos de noteSound, noteSoundOctave e velocity não se aplicam.
     noteSound = "";
     noteSoundOctave = "";
     velocity = 0;
