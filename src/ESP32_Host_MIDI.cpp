@@ -1,6 +1,8 @@
 #include "ESP32_Host_MIDI.h"
 #include <stdio.h>
 #include <esp_log.h>
+#include "ESP32_BLE.h"
+#include "MIDI_handler.h"
 
 static const char* TAG = "ESP32_Host_MIDI";
 

@@ -1,9 +1,12 @@
+// ESP32_Host_MIDI Library
 #include <Arduino.h>
-#include "ESP32_Host_MIDI.h"         // Biblioteca USB MIDI
+#include "ESP32_Host_MIDI.h"         
+#include "ESP32_BLE.h"
+#include "MIDI_handler.h"
+
+// T-Display S3 Modules - Examples Files 
 #include "displayhandler.h"          // Handler para exibição no display LovyanGFX
-#include "MIDI_handler.h"            // Módulo para interpretar as mensagens MIDI
 #include "ESP32_PCM5102A_MIDI.h"     // Biblioteca para tocar notas via PCM5102A DAC
-#include "ESP32_BLE.h"               // Biblioteca para BLE MIDI
 #include <math.h>
 
 #define DISPLAY_TIMEOUT 1000  // 1 segundo de exibição
