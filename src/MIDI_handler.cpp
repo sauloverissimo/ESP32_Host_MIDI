@@ -41,7 +41,6 @@ std::string MIDIHandler::getNoteNumberFormat(const uint8_t* data, size_t length)
 
 // NOVO: Para Program Change, retorna o número do programa
 std::string MIDIHandler::getProgramFormat(const uint8_t* data, size_t length) {
-  // Program Change tem apenas 2 bytes: status e número do programa
   if (length < 2) return "";
   char buf[10];
   sprintf(buf, "%d", data[1]);
@@ -139,7 +138,8 @@ std::string MIDIHandler::getNoteSoundOctave(const uint8_t* data, size_t length) 
   return std::string(buf);
 }
 
-// Retorna um vetor formatado com os campos relevantes
+// Retorna um vetor formatado com os campos:
+// { idMessage, channel, message, noteNumber, noteSound, noteSoundOctave, velocity }
 std::vector<std::variant<int, std::string>> MIDIHandler::getMessageVector(const uint8_t* data, size_t length) {
   std::vector<std::variant<int, std::string>> vec;
   if (length < 1) return vec;
@@ -180,7 +180,6 @@ std::string MIDIHandler::getUsbMidiFormat(const uint8_t* data, size_t length) {
   uint8_t status = data[0];
   uint8_t cin = 0x00; // Code Index Number
 
-  // Definição do Code Index Number (CIN) conforme o status MIDI
   if ((status & 0xF0) == 0x80) cin = 0x08;  // Note Off
   else if ((status & 0xF0) == 0x90) cin = 0x09;  // Note On
   else if ((status & 0xF0) == 0xA0) cin = 0x0A;  // Polyphonic Key Pressure
@@ -188,12 +187,12 @@ std::string MIDIHandler::getUsbMidiFormat(const uint8_t* data, size_t length) {
   else if ((status & 0xF0) == 0xC0) cin = 0x0C;  // Program Change
   else if ((status & 0xF0) == 0xD0) cin = 0x0D;  // Channel Pressure
   else if ((status & 0xF0) == 0xE0) cin = 0x0E;  // Pitch Bend
-  else if (status == 0xF0) cin = 0x04;  // System Exclusive (SysEx Start)
+  else if (status == 0xF0) cin = 0x04;  // SysEx Start
   else if (status == 0xF7) cin = 0x05;  // SysEx End
   else if (status == 0xF2) cin = 0x02;  // Song Position Pointer
   else if (status == 0xF3) cin = 0x03;  // Song Select
   else if (status == 0xF6) cin = 0x05;  // Tune Request
-  else if (status >= 0xF8) cin = 0x0F;  // System Real-Time Messages
+  else if (status >= 0xF8) cin = 0x0F;  // System Real-Time
 
   uint8_t usbHeader = (0x00 << 4) | cin; // Cable Number 0x00 + CIN calculado
 
@@ -212,4 +211,3 @@ std::string MIDIHandler::getUsbMidiFormat(const uint8_t* data, size_t length) {
   result += "]";
   return result;
 }
-

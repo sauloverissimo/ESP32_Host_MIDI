@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <usb/usb_host.h>
-#include "ESP32_Host_MIDI_Config.h"
 
 /*
   Biblioteca para comunicação USB MIDI via ESP32.

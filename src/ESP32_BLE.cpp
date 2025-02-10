@@ -27,10 +27,9 @@ void ESP32_BLE::begin() {
   pService->start();
   
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  // Para garantir que o UUID apareça no pacote primário, desabilitamos o scan response
+  // Inclui o UUID do serviço no pacote primário
   pAdvertising->setScanResponse(false);
   pAdvertising->addServiceUUID(BLE_MIDI_SERVICE_UUID);
-  pAdvertising->setName("ESP32 MIDI BLE");
   pAdvertising->setMinPreferred(0x06);
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
@@ -54,7 +53,6 @@ void ESP32_BLE::setMidiMessageCallback(MIDIMessageCallback cb) {
 
 void ESP32_BLE::sendMidiMessage(const uint8_t* data, size_t length) {
   if (pCharacteristic != nullptr) {
-    // Converte o ponteiro const para não-const usando const_cast
     pCharacteristic->setValue(const_cast<uint8_t*>(data), length);
     pCharacteristic->notify();
   }
