@@ -170,7 +170,7 @@ Este proyecto proporciona una solución completa para recibir, interpretar y mos
 
 ---
 
-## Español 🇪🇸 🎶
+## Español 🇪🇸 🐂
 
 ### Descripción General
 La biblioteca **ESP32_Host_MIDI** permite que el ESP32 actúe como un host USB para dispositivos MIDI, interprete los datos entrantes (utilizando funciones del módulo **MIDI_Handler**) y muestre esta información en el T-Display S3 mediante **DisplayHandler**. Además, la biblioteca es compatible con la comunicación **BLE MIDI**, permitiendo que el ESP32 funcione como un **servidor MIDI BLE**.
@@ -253,7 +253,7 @@ Questo progetto fornisce una soluzione completa per ricevere, interpretare e vis
 
 ---
 
-## Italiano 🇮🇹 🎵
+## Italiano 🇮🇹 🍕
 
 ### Panoramica
 La libreria **ESP32_Host_MIDI** consente all'ESP32 di funzionare come host USB per dispositivi MIDI, interpretare i dati in ingresso (utilizzando funzioni del modulo **MIDI_Handler**) e visualizzare queste informazioni sul T-Display S3 tramite **DisplayHandler**. Inoltre, la libreria supporta la comunicazione **BLE MIDI**, permettendo all'ESP32 di funzionare come **server MIDI BLE**.
