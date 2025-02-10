@@ -1,0 +1,79 @@
+######################################
+# ESP32_Host_MIDI Library Keywords  #
+######################################
+
+######################################
+# Classes
+######################################
+ESP32_Host_MIDI          KEYWORD1
+ESP32_PCM5102A_MIDI      KEYWORD1
+ESP32_BLE                KEYWORD1
+MIDIHandler              KEYWORD1
+DisplayHandler           KEYWORD1
+
+######################################
+# Functions
+######################################
+begin                     KEYWORD2
+task                      KEYWORD2
+onMidiMessage             KEYWORD2
+playNote                  KEYWORD2
+stopNote                  KEYWORD2
+update                    KEYWORD2
+isConnected               KEYWORD2
+setMidiMessageCallback    KEYWORD2
+sendMidiMessage           KEYWORD2
+getRawFormat              KEYWORD2
+getShortFormat            KEYWORD2
+getNoteNumberFormat       KEYWORD2
+getMessageFormat          KEYWORD2
+getMessageStatusFormat    KEYWORD2
+getNoteSound              KEYWORD2
+getNoteSoundOctave        KEYWORD2
+getProgramFormat          KEYWORD2
+getMessageVector          KEYWORD2
+getUsbMidiFormat          KEYWORD2
+printMidiMessage          KEYWORD2
+clear                     KEYWORD2
+
+######################################
+# Constants
+######################################
+USB_DP_PIN                LITERAL1
+USB_DN_PIN                LITERAL1
+TFT_CS_PIN                LITERAL1
+TFT_DC_PIN                LITERAL1
+TFT_RST_PIN               LITERAL1
+TFT_BL_PIN                LITERAL1
+I2S_BCK_PIN               LITERAL1
+I2S_WS_PIN                LITERAL1
+I2S_DATA_OUT_PIN          LITERAL1
+PIN_POWER_ON              LITERAL1
+PIN_BUTTON_1              LITERAL1
+PIN_BUTTON_2              LITERAL1
+PIN_BAT_VOLT              LITERAL1
+PIN_IIC_SCL               LITERAL1
+PIN_IIC_SDA               LITERAL1
+BLE_MIDI_SERVICE_UUID     LITERAL1
+BLE_MIDI_CHARACTERISTIC_UUID LITERAL1
+I2S_NUM                   LITERAL1
+I2S_SAMPLE_RATE           LITERAL1
+TFT_GRAY                  LITERAL1
+
+######################################
+# Types
+######################################
+TypeElement               KEYWORD2
+TypeVector                KEYWORD2
+TypeTable                 KEYWORD2
+TypeCube                  KEYWORD2
+Vector                    KEYWORD2
+Table                     KEYWORD2
+Element                   KEYWORD2
+
+######################################
+# Miscellaneous
+######################################
+Arduino                   KEYWORD2
+#include                  KEYWORD2
+#define                   KEYWORD2
