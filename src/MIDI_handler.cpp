@@ -1,213 +1,213 @@
-#include "MIDI_handler.h"
-#include <cstdio>    // Para sprintf
-#include <cstdlib>
+#include <Arduino.h>
+#include "MIDI_Handler.h"
+#include <cstdio>
+#include <sstream>
+#include "esp_heap_caps.h"  // Para alocação em PSRAM
 
-// Formato raw: [0x90, 0x3C, 0x64]
-std::string MIDIHandler::getRawFormat(const uint8_t* data, size_t length) {
-  std::string result = "[";
-  char buf[10];
-  for (size_t i = 0; i < length; i++) {
-    sprintf(buf, "0x%02X", data[i]);
-    result += buf;
-    if (i < length - 1) {
-      result += ", ";
+// Constante para timeout em milissegundos.
+const unsigned long MIDIHandler::NOTE_TIMEOUT; // definido como 1200 ms no header
+
+// Construtor: inicializa contadores, limites e aloca a memória para o histórico na PSRAM.
+MIDIHandler::MIDIHandler()
+: maxEvents(1000),
+  globalIndex(0),
+  nextMsgIndex(1),
+  lastTempo(0),
+  nextBlockIndex(1),
+  currentBlockIndex(0),
+  lastNoteOffTime(0),
+  historyQueue(nullptr),
+  historyQueueCapacity(15000),
+  historyQueueSize(0),
+  historyQueueHead(0)
+{
+    // Aloca o buffer para o histórico na PSRAM
+    historyQueue = (MIDIEventData*) heap_caps_malloc(historyQueueCapacity * sizeof(MIDIEventData), MALLOC_CAP_SPIRAM);
+    if (!historyQueue) {
+        Serial.println("Erro ao alocar memória para historyQueue na PSRAM!");
+        historyQueueCapacity = 0;
+    } else {
+        // Constrói cada objeto no buffer usando placement new para garantir que os std::string sejam inicializados
+        for (int i = 0; i < historyQueueCapacity; i++) {
+            new (&historyQueue[i]) MIDIEventData();
+        }
     }
-  }
-  result += "]";
-  return result;
 }
 
-// Formato short: "90 3C 64"
-std::string MIDIHandler::getShortFormat(const uint8_t* data, size_t length) {
-  std::string result;
-  char buf[4];
-  for (size_t i = 0; i < length; i++) {
-    sprintf(buf, "%02X", data[i]);
-    result += buf;
-    if (i < length - 1) {
-      result += " ";
+void MIDIHandler::setQueueLimit(int maxEvents) {
+    this->maxEvents = maxEvents;
+}
+
+const std::deque<MIDIEventData>& MIDIHandler::getQueue() const {
+    return eventQueue;
+}
+
+const MIDIEventData* MIDIHandler::getHistoryQueue() const {
+    return historyQueue;
+}
+
+int MIDIHandler::getHistoryQueueSize() const {
+    return historyQueueSize;
+}
+
+void MIDIHandler::addEvent(const MIDIEventData& event) {
+    // Adiciona na fila primária (SRAM)
+    eventQueue.push_back(event);
+    processQueue();
+
+    // Adiciona no histórico (PSRAM) se a memória foi alocada
+    if (historyQueueCapacity > 0 && historyQueue != nullptr) {
+        historyQueue[historyQueueHead] = event;
+        historyQueueHead = (historyQueueHead + 1) % historyQueueCapacity;
+        if (historyQueueSize < historyQueueCapacity) {
+            historyQueueSize++;
+        }
     }
-  }
-  return result;
 }
 
-// Formato noteNumber: "60" (para Note On/Off) ou número do programa (para Program Change)
-std::string MIDIHandler::getNoteNumberFormat(const uint8_t* data, size_t length) {
-  if (length < 2) return "";
-  char buf[10];
-  sprintf(buf, "%d", data[1]);
-  return std::string(buf);
-}
-
-// NOVO: Para Program Change, retorna o número do programa
-std::string MIDIHandler::getProgramFormat(const uint8_t* data, size_t length) {
-  if (length < 2) return "";
-  char buf[10];
-  sprintf(buf, "%d", data[1]);
-  return std::string(buf);
-}
-
-// Interpreta o status para identificar a mensagem
-std::string MIDIHandler::getMessageFormat(const uint8_t* data, size_t length) {
-  if (length < 1) return "";
-  uint8_t status = data[0];
-  uint8_t command = status & 0xF0;
-  std::string message;
-  switch (command) {
-    case 0x80:
-      message = "NoteOff";
-      break;
-    case 0x90:
-      message = ((length >= 3 && data[2] == 0) ? "NoteOff" : "NoteOn");
-      break;
-    case 0xA0:
-      message = "Polyphonic Aftertouch";
-      break;
-    case 0xB0:
-      message = "Control Change";
-      break;
-    case 0xC0:
-      message = "Prog. Change";
-      break;
-    case 0xD0:
-      message = "Channel Aftertouch";
-      break;
-    case 0xE0:
-      message = "Pitch Bend";
-      break;
-    default:
-      message = "Unknown";
-      break;
-  }
-  return message;
-}
-
-// Formato messageStatus: "9n" para Note On, "8n" para Note Off, etc.
-std::string MIDIHandler::getMessageStatusFormat(const uint8_t* data, size_t length) {
-  if (length < 1) return "";
-  uint8_t status = data[0];
-  uint8_t command = status & 0xF0;
-  char buf[10];
-  switch (command) {
-    case 0x80:
-      sprintf(buf, "8n");
-      break;
-    case 0x90:
-      sprintf(buf, "9n");
-      break;
-    case 0xA0:
-      sprintf(buf, "An");
-      break;
-    case 0xB0:
-      sprintf(buf, "Bn");
-      break;
-    case 0xC0:
-      sprintf(buf, "Cn");
-      break;
-    case 0xD0:
-      sprintf(buf, "Dn");
-      break;
-    case 0xE0:
-      sprintf(buf, "En");
-      break;
-    default:
-      sprintf(buf, "Un");
-      break;
-  }
-  return std::string(buf);
-}
-
-// Formato noteSound: retorna o nome da nota, ex: "C", "C#", "D", etc.
-std::string MIDIHandler::getNoteSound(const uint8_t* data, size_t length) {
-  if (length < 2) return "";
-  int noteNumber = data[1];
-  const char* noteNames[12] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-  int index = noteNumber % 12;
-  return std::string(noteNames[index]);
-}
-
-// Formato noteSoundOctave: ex: "C5"
-std::string MIDIHandler::getNoteSoundOctave(const uint8_t* data, size_t length) {
-  if (length < 2) return "";
-  int noteNumber = data[1];
-  const char* noteNames[12] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-  int index = noteNumber % 12;
-  int octave = (noteNumber / 12) - 1;
-  char buf[10];
-  sprintf(buf, "%s%d", noteNames[index], octave);
-  return std::string(buf);
-}
-
-// Retorna um vetor formatado com os campos:
-// { idMessage, channel, message, noteNumber, noteSound, noteSoundOctave, velocity }
-std::vector<std::variant<int, std::string>> MIDIHandler::getMessageVector(const uint8_t* data, size_t length) {
-  std::vector<std::variant<int, std::string>> vec;
-  if (length < 1) return vec;
-  
-  uint8_t status = data[0];
-  int idMessage = status >> 4;
-  int channel = status & 0x0F;
-  std::string message = getMessageFormat(data, length);
-  int noteNumber = (length >= 2) ? data[1] : 0;
-  std::string noteSound = (length >= 2) ? getNoteSound(data, length) : "";
-  std::string noteSoundOctave = (length >= 2) ? getNoteSoundOctave(data, length) : "";
-  int velocity = (length >= 3) ? data[2] : 0;
-
-  if ((status & 0xF0) == 0xC0) { // Se for Program Change
-    noteNumber = (length >= 2) ? data[1] : 0;
-    noteSound = "";
-    noteSoundOctave = "";
-    velocity = 0;
-  }
-
-  vec.push_back(idMessage);
-  vec.push_back(channel);
-  vec.push_back(message);
-  vec.push_back(noteNumber);
-  vec.push_back(noteSound);
-  vec.push_back(noteSoundOctave);
-  vec.push_back(velocity);
-  
-  return vec;
-}
-
-std::string MIDIHandler::getUsbMidiFormat(const uint8_t* data, size_t length) {
-  if (length < 1) return "[]";
-
-  std::string result = "[";
-  char buf[10];
-
-  uint8_t status = data[0];
-  uint8_t cin = 0x00; // Code Index Number
-
-  if ((status & 0xF0) == 0x80) cin = 0x08;  // Note Off
-  else if ((status & 0xF0) == 0x90) cin = 0x09;  // Note On
-  else if ((status & 0xF0) == 0xA0) cin = 0x0A;  // Polyphonic Key Pressure
-  else if ((status & 0xF0) == 0xB0) cin = 0x0B;  // Control Change
-  else if ((status & 0xF0) == 0xC0) cin = 0x0C;  // Program Change
-  else if ((status & 0xF0) == 0xD0) cin = 0x0D;  // Channel Pressure
-  else if ((status & 0xF0) == 0xE0) cin = 0x0E;  // Pitch Bend
-  else if (status == 0xF0) cin = 0x04;  // SysEx Start
-  else if (status == 0xF7) cin = 0x05;  // SysEx End
-  else if (status == 0xF2) cin = 0x02;  // Song Position Pointer
-  else if (status == 0xF3) cin = 0x03;  // Song Select
-  else if (status == 0xF6) cin = 0x05;  // Tune Request
-  else if (status >= 0xF8) cin = 0x0F;  // System Real-Time
-
-  uint8_t usbHeader = (0x00 << 4) | cin; // Cable Number 0x00 + CIN calculado
-
-  sprintf(buf, "0x%02X", usbHeader);
-  result += buf;
-  result += ", ";
-
-  for (size_t i = 0; i < length; i++) {
-    sprintf(buf, "0x%02X", data[i]);
-    result += buf;
-    if (i < length - 1) {
-      result += ", ";
+void MIDIHandler::processQueue() {
+    while (eventQueue.size() > static_cast<size_t>(maxEvents)) {
+         eventQueue.pop_front();
     }
-  }
+}
 
-  result += "]";
-  return result;
+std::string MIDIHandler::getNoteName(int note) const {
+    static const char* names[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    return names[note % 12];
+}
+
+std::string MIDIHandler::getNoteWithOctave(int note) const {
+    int octave = (note / 12) - 1;
+    return getNoteName(note) + std::to_string(octave);
+}
+
+std::string MIDIHandler::getActiveNotesString() const {
+    std::ostringstream oss;
+    oss << "[";
+    bool first = true;
+    for (auto const &kv : activeNotes) {
+        if (!first) oss << ", ";
+        oss << getNoteName(kv.first) << "(" << kv.second << ")";
+        first = false;
+    }
+    oss << "]";
+    return oss.str();
+}
+
+size_t MIDIHandler::getActiveNotesCount() const {
+    return activeNotes.size();
+}
+
+// Gera eventos NoteOff artificiais para liberar as notas que ficaram ativas.
+// Após o flush, activeNotes é esvaziado e lastNoteOffTime é reiniciado (zero).
+void MIDIHandler::flushActiveNotes(unsigned long currentTime) {
+    for (auto const &entry : activeNotes) {
+        int note = entry.first;
+        int block = entry.second;
+        MIDIEventData event;
+        event.index = ++globalIndex;
+        event.msgIndex = activeMsgIndex[note];
+        event.tempo = currentTime;
+        event.delay = (globalIndex == 1) ? 0 : (currentTime - lastTempo);
+        lastTempo = currentTime;
+        event.canal = 1; // Canal fixo para flush; ajuste se necessário.
+        event.mensagem = "NoteOff";
+        event.nota = note;
+        event.som = getNoteName(note);
+        event.oitava = getNoteWithOctave(note);
+        event.velocidade = 0;
+        event.blockIndex = block;
+        addEvent(event);
+    }
+    activeNotes.clear();
+    activeMsgIndex.clear();
+    currentBlockIndex = 0;
+    // Reinicia o lastNoteOffTime, sinalizando que o bloco foi completamente liberado.
+    lastNoteOffTime = 0;
+}
+
+// Processa uma mensagem MIDI recebida.
+void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
+    // Se a mensagem tem 3 bytes, já é MIDI; se 4 ou mais, ignora o primeiro byte (cabeçalho USB).
+    const uint8_t* midiData = (length == 3) ? data : (length >= 4 ? data + 1 : nullptr);
+    if (midiData == nullptr) return;
+
+    unsigned long tempo = millis();
+
+    // Se houver notas ativas e se lastNoteOffTime for diferente de zero
+    // e se (tempo - lastNoteOffTime) for maior ou igual ao timeout, executa flush.
+    if (!activeNotes.empty() && (lastNoteOffTime != 0) && (tempo - lastNoteOffTime >= NOTE_TIMEOUT)) {
+        flushActiveNotes(tempo);
+    }
+
+    uint8_t midiStatus = midiData[0] & 0xF0;
+    int note = midiData[1];
+    int velocity = midiData[2];
+    int canal = (midiData[0] & 0x0F) + 1;
+    unsigned long diff = (globalIndex == 0) ? 0 : (tempo - lastTempo);
+    lastTempo = tempo;
+    std::string mensagem;
+    int msgIndex = 0;
+    int blockIdx = 0;
+    
+    if (midiStatus == 0x90) { // NoteOn
+        if (velocity > 0) {
+            mensagem = "NoteOn";
+            msgIndex = nextMsgIndex++;
+            // Se não há nenhuma nota ativa, inicia novo bloco.
+            if (activeNotes.empty()) {
+                currentBlockIndex = nextBlockIndex++;
+            }
+            blockIdx = currentBlockIndex;
+            // Registra a nota no mesmo bloco.
+            activeNotes[note] = currentBlockIndex;
+            activeMsgIndex[note] = msgIndex;
+            // NoteOn não atualiza lastNoteOffTime.
+        } else { // NoteOn com velocity 0 equivale a NoteOff
+            mensagem = "NoteOff";
+            if (activeNotes.find(note) != activeNotes.end()) {
+                blockIdx = activeNotes[note];
+                msgIndex = activeMsgIndex[note];
+                activeNotes.erase(note);
+                activeMsgIndex.erase(note);
+            } else {
+                return;
+            }
+            lastNoteOffTime = tempo; // Atualiza o tempo do último NoteOff real.
+        }
+    } else if (midiStatus == 0x80) { // NoteOff
+        mensagem = "NoteOff";
+        if (activeNotes.find(note) != activeNotes.end()) {
+            blockIdx = activeNotes[note];
+            msgIndex = activeMsgIndex[note];
+            activeNotes.erase(note);
+            activeMsgIndex.erase(note);
+        } else {
+            return;
+        }
+        lastNoteOffTime = tempo; // Atualiza o tempo do último NoteOff real.
+    } else {
+        return;
+    }
+    
+    if (activeNotes.empty()) {
+        currentBlockIndex = 0;
+        // Se não houver mais notas ativas, reseta lastNoteOffTime.
+        lastNoteOffTime = 0;
+    }
+    
+    MIDIEventData event;
+    event.index = ++globalIndex;
+    event.msgIndex = msgIndex;
+    event.tempo = tempo;
+    event.delay = diff;
+    event.canal = canal;
+    event.mensagem = mensagem;
+    event.nota = note;
+    event.som = getNoteName(note);
+    event.oitava = getNoteWithOctave(note);
+    event.velocidade = velocity;
+    event.blockIndex = blockIdx;
+    
+    addEvent(event);
 }
