@@ -1,31 +1,25 @@
-#ifndef DISPLAYHANDLER_H
-#define DISPLAYHANDLER_H
+#ifndef ST7789_HANDLER_H
+#define ST7789_HANDLER_H
 
 #include <LovyanGFX.h>
 
-/*
-  Classe DisplayHandler:
-  - Inicializa o display usando LovyanGFX.
-  - Exibe mensagens MIDI formatadas em 5 linhas com fonte pequena, com destaque para a última linha ("Octave").
-*/
-
-class DisplayHandler {
+// Classe ST7789_Handler:
+// Gerencia o display ST7789 do T‑Display-S3 (baseado no código previamente implementado em DisplayHandler).
+class ST7789_Handler {
 public:
-  DisplayHandler();
-  
-  // Inicializa o display (orientação horizontal 180°, fonte pequena)
+  ST7789_Handler();
+
+  // Inicializa o display (configuração de rotação, fonte, cor, etc.)
   void init();
 
-  // Exibe a mensagem MIDI na tela dividida em 5 linhas.
-  // A última linha ("Octave") será destacada com uma linha separadora, fonte maior e cor diferenciada.
-  void printMidiMessage(const char* message, float frequency, int amplitude);
+  // Exibe uma mensagem formatada (dividida em linhas) e informações adicionais (frequência e amplitude)
+  void printMessage(const char* message, float frequency, int amplitude);
 
-
-  // Limpa o display.
+  // Limpa o display
   void clear();
 
 private:
-  // Classe customizada do display baseada na LovyanGFX
+  // Classe customizada baseada em LovyanGFX para configurar o painel ST7789 via bus paralelo de 8 bits
   class LGFX : public lgfx::LGFX_Device {
   public:
     LGFX(void) {
@@ -57,7 +51,7 @@ private:
         cfg.rgb_order = false;
         cfg.dlen_16bit = false;
         cfg.bus_shared = false;
-        // Para orientação horizontal, o display é 320 x 170
+        // Para orientação horizontal: display de 170 x 320
         cfg.panel_width  = 170;  
         cfg.panel_height = 320;
         _panel_instance.config(cfg);
@@ -82,4 +76,4 @@ private:
   LGFX tft;
 };
 
-#endif // DISPLAYHANDLER_H
+#endif // ST7789_HANDLER_H
