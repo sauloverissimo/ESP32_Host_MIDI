@@ -1,5 +1,5 @@
-#ifndef ESP32_HOST_MIDI_CONFIG_H
-#define ESP32_HOST_MIDI_CONFIG_H
+#ifndef ESP32_PIN_CONFIG_H
+#define ESP32_PIN_CONFIG_H
 
 // Configurações para comunicação USB
 #define USB_DP_PIN   19
@@ -11,6 +11,7 @@
 #define TFT_RST_PIN   5
 #define TFT_BL_PIN    38
 
+// Configurações para o áudio via I2S (utilizado pelo PCM5102A no exemplo)
 #define I2S_BCK_PIN        11   // Conectado ao BCK do PCM5102A
 #define I2S_WS_PIN         13   // Conectado ao LRCK do PCM5102A
 #define I2S_DATA_OUT_PIN   12   // Conectado ao DIN do PCM5102A
@@ -24,5 +25,4 @@
 #define PIN_IIC_SCL 17
 #define PIN_IIC_SDA 18
 
-
-#endif // ESP32_HOST_MIDI_CONFIG_H
+#endif // ESP32_PIN_CONFIG_H
