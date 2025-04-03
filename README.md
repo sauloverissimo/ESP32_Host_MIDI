@@ -1,5 +1,7 @@
 # ESP32_Host_MIDI 🎹📡
 
+![image](https://github.com/user-attachments/assets/bba1c679-6c76-45b7-aa29-a3201a69b36a)
+
 Project developed for the Arduino IDE.
 
 This project provides a complete solution for receiving, interpreting, and displaying MIDI messages via USB and BLE on the ESP32 (especially ESP32-S3) using the T‑Display S3. The library is modular and can be easily adapted to other hardware by modifying the configuration file(s).
