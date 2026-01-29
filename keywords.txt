@@ -3,41 +3,50 @@
 ######################################
 
 ######################################
-# Classes
+# Classes (KEYWORD1)
 ######################################
-ESP32_Host_MIDI          KEYWORD1
-ESP32_PCM5102A_MIDI      KEYWORD1
-ESP32_BLE                KEYWORD1
 MIDIHandler              KEYWORD1
-DisplayHandler           KEYWORD1
+USB_Conexion             KEYWORD1
+BLE_Conexion             KEYWORD1
+MIDIEventData            KEYWORD1
+RawUsbMessage            KEYWORD1
+ST7789_Handler           KEYWORD1
 
 ######################################
-# Functions
+# Methods / Functions (KEYWORD2)
 ######################################
 begin                     KEYWORD2
 task                      KEYWORD2
-onMidiMessage             KEYWORD2
-playNote                  KEYWORD2
-stopNote                  KEYWORD2
-update                    KEYWORD2
+handleMidiMessage         KEYWORD2
+addEvent                  KEYWORD2
+processQueue              KEYWORD2
+enableHistory             KEYWORD2
+setQueueLimit             KEYWORD2
+getQueue                  KEYWORD2
+getActiveNotes            KEYWORD2
+getActiveNotesString      KEYWORD2
+getActiveNotesVector      KEYWORD2
+getActiveNotesCount       KEYWORD2
+clearActiveNotesNow       KEYWORD2
+lastBlock                 KEYWORD2
+getBlock                  KEYWORD2
+getAnswer                 KEYWORD2
+onMidiDataReceived        KEYWORD2
 isConnected               KEYWORD2
 setMidiMessageCallback    KEYWORD2
-sendMidiMessage           KEYWORD2
-getRawFormat              KEYWORD2
-getShortFormat            KEYWORD2
-getNoteNumberFormat       KEYWORD2
-getMessageFormat          KEYWORD2
-getMessageStatusFormat    KEYWORD2
-getNoteSound              KEYWORD2
-getNoteSoundOctave        KEYWORD2
-getProgramFormat          KEYWORD2
-getMessageVector          KEYWORD2
-getUsbMidiFormat          KEYWORD2
-printMidiMessage          KEYWORD2
+enqueueMidiMessage        KEYWORD2
+dequeueMidiMessage        KEYWORD2
+getQueueSize              KEYWORD2
+getQueueMessage           KEYWORD2
+onDeviceConnected         KEYWORD2
+onDeviceDisconnected      KEYWORD2
+init                      KEYWORD2
+print                     KEYWORD2
+println                   KEYWORD2
 clear                     KEYWORD2
 
 ######################################
-# Constants
+# Constants (LITERAL1)
 ######################################
 USB_DP_PIN                LITERAL1
 USB_DN_PIN                LITERAL1
@@ -56,24 +65,3 @@ PIN_IIC_SCL               LITERAL1
 PIN_IIC_SDA               LITERAL1
 BLE_MIDI_SERVICE_UUID     LITERAL1
 BLE_MIDI_CHARACTERISTIC_UUID LITERAL1
-I2S_NUM                   LITERAL1
-I2S_SAMPLE_RATE           LITERAL1
-TFT_GRAY                  LITERAL1
-
-######################################
-# Types
-######################################
-TypeElement               KEYWORD2
-TypeVector                KEYWORD2
-TypeTable                 KEYWORD2
-TypeCube                  KEYWORD2
-Vector                    KEYWORD2
-Table                     KEYWORD2
-Element                   KEYWORD2
-
-######################################
-# Miscellaneous
-######################################
-Arduino                   KEYWORD2
-#include                  KEYWORD2
-#define                   KEYWORD2

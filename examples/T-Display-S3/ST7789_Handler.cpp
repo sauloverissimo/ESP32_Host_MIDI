@@ -1,4 +1,5 @@
 #include "ST7789_Handler.h"
+#include <ESP32_Host_MIDI.h>  // Para TFT_BL_PIN de ESP32_Pin_Config.h
 #include <vector>
 
 ST7789_Handler display;
@@ -18,10 +19,13 @@ void ST7789_Handler::init() {
   tft.setTextSize(1);   // Fonte pequena para as linhas regulares
   tft.setTextColor(TFT_WHITE);
   tft.fillScreen(TFT_BLACK);
-  
-  // Acende a luz de fundo manualmente (se necessário)
-  pinMode(38, OUTPUT);
-  digitalWrite(38, HIGH);  // Garante que a luz de fundo esteja ligada
+
+  // Garantia extra para o backlight (pin 38 no T-Display S3).
+  // O LovyanGFX configura via PWM, mas ao alimentar por bateria
+  // o pino pode não ser inicializado corretamente.
+  // Ref: Discussion #8 - AtmosphEng (GPIO 15 HIGH para backlight com bateria)
+  pinMode(TFT_BL_PIN, OUTPUT);
+  digitalWrite(TFT_BL_PIN, HIGH);
 }
 
 // Sobrecarga para exibir uma string simples
