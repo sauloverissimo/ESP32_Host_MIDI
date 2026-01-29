@@ -25,16 +25,21 @@ USB_Conexion::USB_Conexion()
     queueMux(portMUX_INITIALIZER_UNLOCKED),
     firstMidiReceived(false),
     isMidiDeviceConfirmed(false),
-    deviceName("")
+    deviceName(""),
+    lastError("")
 {
 }
 
-void USB_Conexion::begin() {
+bool USB_Conexion::begin() {
     usb_host_config_t config = {
         .skip_phy_setup = false,
         .intr_flags = ESP_INTR_FLAG_LEVEL1,
     };
-    usb_host_install(&config);
+    esp_err_t err = usb_host_install(&config);
+    if (err != ESP_OK) {
+        lastError = "USB host install failed (err=" + String(err) + ")";
+        return false;
+    }
 
     usb_host_client_config_t client_config = {
         .is_synchronous = true,
@@ -44,7 +49,13 @@ void USB_Conexion::begin() {
             .callback_arg = this,
         }
     };
-    usb_host_client_register(&client_config, &clientHandle);
+    err = usb_host_client_register(&client_config, &clientHandle);
+    if (err != ESP_OK) {
+        lastError = "USB client register failed (err=" + String(err) + ")";
+        return false;
+    }
+    lastError = "";
+    return true;
 }
 
 void USB_Conexion::task() {
@@ -132,16 +143,19 @@ void USB_Conexion::_clientEventCallback(const usb_host_client_event_msg_t *event
         case USB_HOST_CLIENT_EVENT_NEW_DEV:
             err = usb_host_device_open(usbCon->clientHandle, eventMsg->new_dev.address, &usbCon->deviceHandle);
             if (err != ESP_OK) {
+                usbCon->lastError = "Device open failed (err=" + String(err) + ")";
                 return;
             }
             {
                 const usb_config_desc_t *config_desc;
                 err = usb_host_get_active_config_descriptor(usbCon->deviceHandle, &config_desc);
                 if (err != ESP_OK) {
+                    usbCon->lastError = "Config descriptor failed (err=" + String(err) + ")";
                     return;
                 }
                 usbCon->_processConfig(config_desc);
             }
+            usbCon->lastError = "";
             usbCon->onDeviceConnected();
             break;
         case USB_HOST_CLIENT_EVENT_DEV_GONE:

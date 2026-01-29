@@ -2,6 +2,7 @@
 #include "MIDI_Handler.h"
 MIDIHandler midiHandler;
 
+#include <algorithm>
 #include <cstdio>
 #include <sstream>
 #include "esp_heap_caps.h"  // Para alocação em PSRAM

@@ -45,14 +45,14 @@ The core header **ESP32_Host_MIDI.h** integrates the pin configuration, USB/BLE 
 - **MIDI_Handler.h / MIDI_Handler.cpp**  
   Processes and interprets raw MIDI data (removing USB headers when necessary) and manages MIDI events:
   - **Features:**  
-    - Handles MIDI events (NoteOn and NoteOff).
+    - Handles MIDI events: NoteOn, NoteOff, Control Change (CC), Program Change, Pitch Bend, and Channel Pressure (Aftertouch).
     - Converts MIDI note numbers into musical notes (e.g., "C4").
     - Maintains the state of active notes and an optional history buffer (using PSRAM).
     - Provides utility functions to retrieve formatted MIDI event data.
   - **Key Functions:**  
     - `begin()`: Initializes the MIDI handler and associated USB/BLE connections.
     - `task()`: Processes incoming USB and BLE MIDI events.
-    - `handleMidiMessage(const uint8_t* data, size_t length)`: Interprets MIDI messages and categorizes them into NoteOn, NoteOff, etc.
+    - `handleMidiMessage(const uint8_t* data, size_t length)`: Interprets MIDI messages and categorizes them into NoteOn, NoteOff, CC, ProgramChange, PitchBend, and ChannelPressure.
     - `addEvent(const MIDIEventData& event)`: Stores MIDI events in an event queue.
     - `processQueue()`: Manages the event queue, ensuring it stays within the configured limits.
     - `enableHistory(int capacity)`: Enables a history buffer in PSRAM for MIDI event storage.
@@ -73,12 +73,9 @@ The core header **ESP32_Host_MIDI.h** integrates the pin configuration, USB/BLE 
 - **ESP32_Host_MIDI.h**  
   The core header that includes the pin configuration, USB/BLE connectivity, and MIDI handling modules.
 
-### Example Sketches (in the `examples/T-Display-S3/` folder)
-- Contains a sketch demonstrating:
-  - USB and BLE MIDI reception,
-  - Processing of MIDI messages using **MIDI_Handler**, and
-  - Display of formatted MIDI data on the T‑Display S3 using **ST7789_Handler**.
-- The `examples/T-Display-S3/images/` folder includes images showing the project in action.
+### Example Sketches (in the `examples/` folder)
+- **T-Display-S3/** — Displays the notes from the last MIDI block on the ST7789 display using `getAnswer("som")`.
+- **T-Display-S3-Queue/** — Displays the full MIDI event queue and active notes on the display. Useful for debugging and detailed event visualization.
 
 ---
 
@@ -90,8 +87,8 @@ The core header **ESP32_Host_MIDI.h** integrates the pin configuration, USB/BLE 
 2. **MIDI BLE Reception:**  
    The **BLE_Conexion** module enables the ESP32 to operate as a BLE MIDI server, receiving MIDI messages from paired Bluetooth devices.
 
-3. **MIDI Message Processing:**  
-   **MIDI_Handler** interprets incoming MIDI messages (handling NoteOn and NoteOff events), converts MIDI note numbers into musical notes, and optionally stores events in a history buffer.
+3. **MIDI Message Processing:**
+   **MIDI_Handler** interprets incoming MIDI messages (NoteOn, NoteOff, CC, Program Change, Pitch Bend, Channel Pressure), converts MIDI note numbers into musical notes, and optionally stores events in a history buffer.
 
 4. **Display Output:**  
    The **ST7789_Handler** module handles the display of formatted MIDI information on the T‑Display S3, ensuring smooth text rendering without flickering.
@@ -108,13 +105,16 @@ The library is designed to be modular:
 
 ## Getting Started
 
-1. **Install Dependencies:**  
-   - Arduino IDE.
-   - LovyanGFX library for display management.
-   - Required BLE libraries (included in the ESP32 core).
+1. **Install Dependencies:**
+   - Arduino IDE (1.8.19+ or 2.x).
+   - ESP32 Arduino Core 2.0.0+ (includes USB Host and BLE support).
+   - [LovyanGFX](https://github.com/lovyan03/LovyanGFX) library (0.4.x+) for display management.
+   - BLE libraries are included in the ESP32 Arduino Core.
 
-2. **Load the Example:**  
-   Open the example sketch from `examples/T-Display-S3/` in the Arduino IDE, adjust the pin configuration if necessary, and upload it to your ESP32-S3 board.
+2. **Load the Example:**
+   Open one of the example sketches from `examples/` in the Arduino IDE, adjust the pin configuration in `ESP32_Pin_Config.h` if necessary, and upload it to your ESP32-S3 board.
+   - Select board: **ESP32S3 Dev Module** (or your specific board).
+   - Set **USB Mode** to **USB-OTG (TinyUSB)** in the board settings.
 
 3. **Connect a MIDI Device:**  
    Use a USB MIDI device or pair a BLE MIDI device to test MIDI message reception and display.
@@ -130,4 +130,4 @@ Feel free to open an issue or submit a pull request on GitHub.
 
 ## License
 
-This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is released under the MIT License. See the [LICENSE](LICENSE.txt) file for details.

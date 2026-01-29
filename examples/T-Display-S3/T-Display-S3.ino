@@ -1,4 +1,3 @@
-
 // Exemplo: MIDI Controller Answer
 // Exibe as notas do último bloco MIDI no display ST7789 do T-Display S3.
 
@@ -6,12 +5,15 @@
 #include <ESP32_Host_MIDI.h>
 #include "ST7789_Handler.h"
 
+// Tempo de espera para exibir mensagens de inicialização (ms)
+static const unsigned long INIT_DISPLAY_DELAY = 500;
+
 void setup() {
   Serial.begin(115200);
 
   display.init();
   display.print("Display OK...");
-  delay(500);
+  delay(INIT_DISPLAY_DELAY);
 
   midiHandler.begin();
   display.print("Interpretador MIDI inicializado...");
@@ -19,7 +21,7 @@ void setup() {
   // Desativa o histórico para este exemplo (ajuste conforme necessidade)
   midiHandler.enableHistory(0);
   display.print("Host USB & BLE MIDI Inicializado...");
-  delay(500);
+  delay(INIT_DISPLAY_DELAY);
 }
 
 void loop() {
