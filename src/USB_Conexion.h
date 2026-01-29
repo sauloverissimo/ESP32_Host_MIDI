@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <usb/usb_host.h>
+#include <freertos/portmacro.h>
 
 /*
    Estrutura para armazenar um pacote USB bruto.
@@ -50,10 +51,12 @@ protected:
     usb_transfer_t* midiTransfer; // Ponteiro para a transferência USB
 
     // Fila para armazenar os pacotes USB brutos.
+    // Protegida por spinlock para acesso thread-safe no dual-core ESP32.
     static const int QUEUE_SIZE = 64;
     RawUsbMessage usbQueue[QUEUE_SIZE];
     volatile int queueHead;
     volatile int queueTail;
+    portMUX_TYPE queueMux;
 
     // Dados de controle de conexão
     bool firstMidiReceived;

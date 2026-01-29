@@ -1,14 +1,18 @@
 #include "BLE_Conexion.h"
 
 BLE_Conexion::BLE_Conexion()
-    : pServer(nullptr), pCharacteristic(nullptr), midiCallback(nullptr)
+    : pServer(nullptr), pCharacteristic(nullptr), pBleCallback(nullptr), midiCallback(nullptr)
 {
 }
 
-void BLE_Conexion::begin() {
-    BLEDevice::init("ESP32 MIDI BLE");
+BLE_Conexion::~BLE_Conexion() {
+    delete pBleCallback;
+    pBleCallback = nullptr;
+}
+
+void BLE_Conexion::begin(const std::string& deviceName) {
+    BLEDevice::init(deviceName);
     pServer = BLEDevice::createServer();
-    // (Opcional: configure callbacks de conexão se necessário.)
 
     BLEService* pService = pServer->createService(BLE_MIDI_SERVICE_UUID);
     pCharacteristic = pService->createCharacteristic(
@@ -22,7 +26,7 @@ void BLE_Conexion::begin() {
         BLE_Conexion* bleCon;
         BLECallback(BLE_Conexion* con) : bleCon(con) {}
         void onWrite(BLECharacteristic* characteristic) override {
-            std::string rxValue = characteristic->getValue().c_str();
+            std::string rxValue = std::string(characteristic->getValue().c_str());
             // Se houver ao menos 4 bytes, extrai os 4 primeiros.
             if(rxValue.size() >= 4) {
                 const uint8_t* data = reinterpret_cast<const uint8_t*>(rxValue.data());
@@ -36,7 +40,10 @@ void BLE_Conexion::begin() {
         }
     };
 
-    pCharacteristic->setCallbacks(new BLECallback(this));
+    // Armazena o ponteiro para liberar no destrutor
+    delete pBleCallback;
+    pBleCallback = new BLECallback(this);
+    pCharacteristic->setCallbacks(pBleCallback);
     pService->start();
 
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();

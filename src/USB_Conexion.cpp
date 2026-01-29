@@ -22,6 +22,7 @@ USB_Conexion::USB_Conexion()
     midiTransfer(nullptr),
     queueHead(0),
     queueTail(0),
+    queueMux(portMUX_INITIALIZER_UNLOCKED),
     firstMidiReceived(false),
     isMidiDeviceConfirmed(false),
     deviceName("")
@@ -76,9 +77,11 @@ void USB_Conexion::onMidiDataReceived(const uint8_t* data, size_t length) {
 }
 
 bool USB_Conexion::enqueueMidiMessage(const uint8_t* data, size_t /*length*/) {
+    portENTER_CRITICAL(&queueMux);
     int next = (queueHead + 1) % QUEUE_SIZE;
     if (next == queueTail) {
         // Fila cheia; descarta a mensagem.
+        portEXIT_CRITICAL(&queueMux);
         return false;
     }
     // Copia sempre os 4 primeiros bytes.
@@ -86,14 +89,19 @@ bool USB_Conexion::enqueueMidiMessage(const uint8_t* data, size_t /*length*/) {
     memcpy(usbQueue[queueHead].data, data, copyLength);
     usbQueue[queueHead].length = copyLength;
     queueHead = next;
+    portEXIT_CRITICAL(&queueMux);
     return true;
 }
 
 bool USB_Conexion::dequeueMidiMessage(RawUsbMessage &msg) {
-    if (queueTail == queueHead)
+    portENTER_CRITICAL(&queueMux);
+    if (queueTail == queueHead) {
+        portEXIT_CRITICAL(&queueMux);
         return false;
+    }
     msg = usbQueue[queueTail];
     queueTail = (queueTail + 1) % QUEUE_SIZE;
+    portEXIT_CRITICAL(&queueMux);
     return true;
 }
 
@@ -167,44 +175,60 @@ void USB_Conexion::_processConfig(const usb_config_desc_t *config_desc) {
     uint16_t totalLength = config_desc->wTotalLength;
     uint16_t index = 0;
     bool claimedOk = false;
+
     while (index < totalLength) {
+        // Validação de bounds: precisa de pelo menos 2 bytes para ler len e type
+        if (index + 1 >= totalLength) break;
         uint8_t len = p[index];
-        if (len == 0) break;
-        uint8_t descriptorType = p[index+1];
+        if (len < 2 || (index + len) > totalLength) break;  // Descriptor inválido ou além do limite
+
+        uint8_t descriptorType = p[index + 1];
         if (descriptorType == 0x04) { // Interface Descriptor
-            uint8_t bInterfaceNumber   = p[index+2];
-            uint8_t bAlternateSetting  = p[index+3];
-            uint8_t bNumEndpoints      = p[index+4];
-            uint8_t bInterfaceClass    = p[index+5];
-            uint8_t bInterfaceSubClass = p[index+6];
+            // Interface descriptor tem tamanho mínimo de 9 bytes
+            if (len < 9) {
+                index += len;
+                continue;
+            }
+            uint8_t bInterfaceNumber   = p[index + 2];
+            uint8_t bAlternateSetting  = p[index + 3];
+            uint8_t bNumEndpoints      = p[index + 4];
+            uint8_t bInterfaceClass    = p[index + 5];
+            uint8_t bInterfaceSubClass = p[index + 6];
             if (bInterfaceClass == 0x01 && bInterfaceSubClass == 0x03) {
                 esp_err_t err = usb_host_interface_claim(clientHandle, deviceHandle, bInterfaceNumber, bAlternateSetting);
                 if (err == ESP_OK) {
                     uint16_t idx2 = index + len;
                     while (idx2 < totalLength) {
+                        if (idx2 + 1 >= totalLength) break;
                         uint8_t len2 = p[idx2];
-                        if (len2 == 0) break;
-                        uint8_t type2 = p[idx2+1];
-                        if (type2 == 0x04) break;
+                        if (len2 < 2 || (idx2 + len2) > totalLength) break;
+                        uint8_t type2 = p[idx2 + 1];
+                        if (type2 == 0x04) break;  // Próxima interface
                         if (type2 == 0x05 && bNumEndpoints > 0) {
-                            uint8_t bEndpointAddress = p[idx2+2];
-                            uint8_t bmAttributes = p[idx2+3];
-                            uint16_t wMaxPacketSize = (p[idx2+4] | (p[idx2+5] << 8));
-                            uint8_t bInterval = p[idx2+6];
-                            if (bEndpointAddress & 0x80) {
-                                uint8_t transferType = bmAttributes & 0x03;
-                                uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
-                                esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &midiTransfer);
-                                if (e2 == ESP_OK && midiTransfer != nullptr) {
-                                    midiTransfer->device_handle = deviceHandle;
-                                    midiTransfer->bEndpointAddress = bEndpointAddress;
-                                    midiTransfer->callback = _onReceive;
-                                    midiTransfer->context = this;
-                                    midiTransfer->num_bytes = wMaxPacketSize;
-                                    interval = (bInterval == 0) ? 1 : bInterval;
-                                    isReady = true;
-                                    claimedOk = true;
-                                    return;
+                            // Endpoint descriptor tem tamanho mínimo de 7 bytes
+                            if (len2 >= 7) {
+                                uint8_t bEndpointAddress = p[idx2 + 2];
+                                uint8_t bmAttributes = p[idx2 + 3];
+                                uint16_t wMaxPacketSize = (p[idx2 + 4] | (p[idx2 + 5] << 8));
+                                uint8_t bInterval = p[idx2 + 6];
+                                // Limita wMaxPacketSize para evitar alocações excessivas
+                                if (wMaxPacketSize > 512) wMaxPacketSize = 512;
+                                if (wMaxPacketSize == 0) wMaxPacketSize = 64;
+                                if (bEndpointAddress & 0x80) {
+                                    uint8_t transferType = bmAttributes & 0x03;
+                                    uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
+                                    esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &midiTransfer);
+                                    if (e2 == ESP_OK && midiTransfer != nullptr) {
+                                        midiTransfer->device_handle = deviceHandle;
+                                        midiTransfer->bEndpointAddress = bEndpointAddress;
+                                        midiTransfer->callback = _onReceive;
+                                        midiTransfer->context = this;
+                                        midiTransfer->num_bytes = wMaxPacketSize;
+                                        interval = (bInterval == 0) ? 1 : bInterval;
+                                        isReady = true;
+                                        claimedOk = true;
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -217,6 +241,7 @@ void USB_Conexion::_processConfig(const usb_config_desc_t *config_desc) {
         index += len;
     }
     if (!claimedOk) {
+        // Fallback: tenta um endpoint padrão com tamanho seguro
         esp_err_t err = usb_host_transfer_alloc(64, 3000, &midiTransfer);
         if (err == ESP_OK && midiTransfer != nullptr) {
             midiTransfer->device_handle = deviceHandle;

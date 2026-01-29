@@ -21,9 +21,11 @@ public:
     typedef void (*MIDIMessageCallback)(const uint8_t* data, size_t length);
 
     BLE_Conexion();
+    virtual ~BLE_Conexion();
 
     // Inicializa o servidor BLE MIDI e inicia a publicidade.
-    void begin();
+    // O parâmetro deviceName permite customizar o nome do dispositivo BLE.
+    void begin(const std::string& deviceName = "ESP32 MIDI BLE");
 
     // Processa eventos BLE (geralmente não é necessário um task periódico).
     void task();
@@ -41,6 +43,7 @@ public:
 protected:
     BLEServer* pServer;
     BLECharacteristic* pCharacteristic;
+    BLECharacteristicCallbacks* pBleCallback;  // Gerenciado para evitar memory leak
     MIDIMessageCallback midiCallback;
 };
 

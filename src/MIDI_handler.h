@@ -15,18 +15,20 @@ struct MIDIEventData {
   unsigned long tempo;   // Tempo (em milissegundos – usamos millis())
   unsigned long delay;   // Diferença em ms em relação ao evento anterior
   int canal;             // Canal MIDI
-  std::string mensagem;  // "NoteOn" ou "NoteOff"
-  int nota;              // Número da nota MIDI
-  std::string som;       // Nota musical (ex.: "C")
-  std::string oitava;    // Nota com oitava (ex.: "C4")
-  int velocidade;        // Velocidade
+  std::string mensagem;  // Tipo: "NoteOn", "NoteOff", "CC", "ProgramChange", "PitchBend", "ChannelPressure"
+  int nota;              // Número da nota MIDI (ou número do controlador para CC)
+  std::string som;       // Nota musical (ex.: "C") - vazio para mensagens não-nota
+  std::string oitava;    // Nota com oitava (ex.: "C4") - vazio para mensagens não-nota
+  int velocidade;        // Velocidade (ou valor do CC, ou programa, ou pressão)
   int blockIndex;        // Índice do bloco (agrupamento de notas simultâneas)
   int flushOff;          // Indica se a nota sofreu flush (0 = normal, 1 = flush)
+  int pitchBend;         // Valor de Pitch Bend (14 bits, 0-16383, centro = 8192). 0 para outros tipos.
 };
 
 class MIDIHandler {
 public:
   MIDIHandler();
+  ~MIDIHandler();
 
   void begin();
   void task();
@@ -72,6 +74,7 @@ private:
   int nextBlockIndex;
   int currentBlockIndex;
   unsigned long lastNoteOffTime;
+  unsigned long lastNoteOnTime;   // Para timeout independente de NoteOff
   static const unsigned long NOTE_TIMEOUT = 1200;
 
   // Histórico armazenado na PSRAM (buffer dinâmico circular)
