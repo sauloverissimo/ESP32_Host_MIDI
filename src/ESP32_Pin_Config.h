@@ -22,7 +22,9 @@
 #define PIN_BUTTON_2 14
 #define PIN_BAT_VOLT 4
 
-#define PIN_IIC_SCL 17
-#define PIN_IIC_SDA 18
+// ATENÇÃO: Se utilizar USB Host (pinos 18/19), o I2C deve usar pinos alternativos.
+// Os pinos abaixo são seguros para I2C no T-Display S3 quando USB Host está ativo.
+#define PIN_IIC_SCL 43
+#define PIN_IIC_SDA 44
 
 #endif // ESP32_PIN_CONFIG_H

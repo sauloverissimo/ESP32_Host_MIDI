@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <usb/usb_host.h>
+#include <freertos/portmacro.h>
 
 /*
    Estrutura para armazenar um pacote USB bruto.
@@ -18,7 +19,8 @@ public:
     USB_Conexion();
 
     // Inicializa o USB Host e registra o cliente.
-    void begin();
+    // Retorna true se a inicialização foi bem-sucedida.
+    bool begin();
 
     // Deve ser chamado periodicamente para tratar os eventos USB.
     // Nesta versão, processQueue() é chamado para encaminhar os pacotes.
@@ -26,6 +28,9 @@ public:
 
     // Retorna se a conexão USB está pronta.
     bool isConnected() const { return isReady; }
+
+    // Retorna a última mensagem de erro (vazia se nenhum erro).
+    const String& getLastError() const { return lastError; }
 
     // Callback virtual para encaminhar os dados MIDI brutos (os 4 primeiros bytes).
     // A camada superior deve sobrescrever esse método para processar os dados.
@@ -50,15 +55,18 @@ protected:
     usb_transfer_t* midiTransfer; // Ponteiro para a transferência USB
 
     // Fila para armazenar os pacotes USB brutos.
+    // Protegida por spinlock para acesso thread-safe no dual-core ESP32.
     static const int QUEUE_SIZE = 64;
     RawUsbMessage usbQueue[QUEUE_SIZE];
     volatile int queueHead;
     volatile int queueTail;
+    portMUX_TYPE queueMux;
 
     // Dados de controle de conexão
     bool firstMidiReceived;
     bool isMidiDeviceConfirmed;
     String deviceName;
+    String lastError;
 
     // Funções auxiliares para gerenciar a fila.
     bool enqueueMidiMessage(const uint8_t* data, size_t length);

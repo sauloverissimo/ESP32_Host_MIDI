@@ -2,6 +2,7 @@
 #include "MIDI_Handler.h"
 MIDIHandler midiHandler;
 
+#include <algorithm>
 #include <cstdio>
 #include <sstream>
 #include "esp_heap_caps.h"  // Para alocação em PSRAM
@@ -17,6 +18,7 @@ MIDIHandler::MIDIHandler()
     nextBlockIndex(1),
     currentBlockIndex(0),
     lastNoteOffTime(0),
+    lastNoteOnTime(0),
     historyQueue(nullptr),
     historyQueueCapacity(0),
     historyQueueSize(0),
@@ -24,6 +26,17 @@ MIDIHandler::MIDIHandler()
     usbCon(this),
     bleCon(this) {
   // Por padrão, o histórico está desativado.
+}
+
+MIDIHandler::~MIDIHandler() {
+  if (historyQueue) {
+    // Chama destrutor de cada elemento para liberar std::string corretamente
+    for (int i = 0; i < historyQueueCapacity; i++) {
+      historyQueue[i].~MIDIEventData();
+    }
+    free(historyQueue);
+    historyQueue = nullptr;
+  }
 }
 
 void MIDIHandler::begin() {
@@ -134,21 +147,6 @@ void MIDIHandler::addEvent(const MIDIEventData& event) {
 }
 
 
-// void MIDIHandler::addEvent(const MIDIEventData& event) {
-//   // Adiciona o evento na fila principal (SRAM)
-//   eventQueue.push_back(event);
-//   processQueue();
-
-//   // Se o histórico estiver ativo, adiciona o evento no buffer circular da PSRAM
-//   if (historyQueue != nullptr && historyQueueCapacity > 0) {
-//     historyQueue[historyQueueHead] = event;
-//     historyQueueHead = (historyQueueHead + 1) % historyQueueCapacity;
-//     if (historyQueueSize < historyQueueCapacity) {
-//       historyQueueSize++;
-//     }
-//   }
-// }
-
 void MIDIHandler::processQueue() {
   while (eventQueue.size() > static_cast<size_t>(maxEvents)) {
     eventQueue.pop_front();
@@ -246,12 +244,14 @@ void MIDIHandler::flushActiveNotes(unsigned long currentTime) {
     event.velocidade = 0;
     event.blockIndex = block;
     event.flushOff = 1;  // Indica que essa nota foi desligada por um flush
+    event.pitchBend = 0;
     addEvent(event);
   }
   activeNotes.clear();
   activeMsgIndex.clear();
   currentBlockIndex = 0;
   lastNoteOffTime = 0;
+  lastNoteOnTime = 0;
 }
 
 // Limpa as notas ativas
@@ -305,7 +305,8 @@ std::vector<std::string> MIDIHandler::getBlock(int block, const std::deque<MIDIE
             << ", oitava:" << event.oitava
             << ", velocidade:" << event.velocidade
             << ", blockIndex:" << event.blockIndex
-            << ", flushOff:" << event.flushOff << "}";
+            << ", flushOff:" << event.flushOff
+            << ", pitchBend:" << event.pitchBend << "}";
       } else {  // Sem rótulos
         oss << "{ " << event.index
             << ", " << event.msgIndex
@@ -318,7 +319,8 @@ std::vector<std::string> MIDIHandler::getBlock(int block, const std::deque<MIDIE
             << ", " << event.oitava
             << ", " << event.velocidade
             << ", " << event.blockIndex
-            << ", " << event.flushOff << " }";
+            << ", " << event.flushOff
+            << ", " << event.pitchBend << " }";
       }
       result.push_back(oss.str());
     }
@@ -339,6 +341,10 @@ std::vector<std::string> MIDIHandler::getBlock(int block, const std::deque<MIDIE
         result.push_back(std::to_string(event.tempo));
       } else if (field == "velocidade") {
         result.push_back(std::to_string(event.velocidade));
+      } else if (field == "canal") {
+        result.push_back(std::to_string(event.canal));
+      } else if (field == "pitchBend") {
+        result.push_back(std::to_string(event.pitchBend));
       }
     }
   }
@@ -361,6 +367,10 @@ std::vector<std::string> MIDIHandler::getBlock(int block, const std::deque<MIDIE
           oss << event.tempo;
         } else if (field == "velocidade") {
           oss << event.velocidade;
+        } else if (field == "canal") {
+          oss << event.canal;
+        } else if (field == "pitchBend") {
+          oss << event.pitchBend;
         }
         first = false;
       }
@@ -396,40 +406,125 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
 
   unsigned long tempo = millis();
 
-  if (!activeNotes.empty() && (lastNoteOffTime != 0) && (tempo - lastNoteOffTime >= NOTE_TIMEOUT)) {
-    flushActiveNotes(tempo);
+  // Timeout de notas: verifica tanto após NoteOff quanto após NoteOn sem atividade
+  if (!activeNotes.empty()) {
+    unsigned long lastActivity = (lastNoteOffTime > lastNoteOnTime) ? lastNoteOffTime : lastNoteOnTime;
+    if (lastActivity != 0 && (tempo - lastActivity >= NOTE_TIMEOUT)) {
+      flushActiveNotes(tempo);
+    }
   }
 
   uint8_t midiStatus = midiData[0] & 0xF0;
-  int note = midiData[1];
-  int velocity = midiData[2];
   int canal = (midiData[0] & 0x0F) + 1;
   unsigned long diff = (globalIndex == 0) ? 0 : (tempo - lastTempo);
   lastTempo = tempo;
+
+  // Mensagens de canal que não são NoteOn/NoteOff
+  if (midiStatus == 0xB0) {  // Control Change
+    MIDIEventData event;
+    event.index = ++globalIndex;
+    event.msgIndex = 0;
+    event.tempo = tempo;
+    event.delay = diff;
+    event.canal = canal;
+    event.mensagem = "CC";
+    event.nota = midiData[1];        // Número do controlador
+    event.som = "";
+    event.oitava = "";
+    event.velocidade = midiData[2];  // Valor do CC
+    event.blockIndex = currentBlockIndex;
+    event.flushOff = 0;
+    event.pitchBend = 0;
+    addEvent(event);
+    return;
+  }
+
+  if (midiStatus == 0xC0) {  // Program Change
+    MIDIEventData event;
+    event.index = ++globalIndex;
+    event.msgIndex = 0;
+    event.tempo = tempo;
+    event.delay = diff;
+    event.canal = canal;
+    event.mensagem = "ProgramChange";
+    event.nota = midiData[1];  // Número do programa
+    event.som = "";
+    event.oitava = "";
+    event.velocidade = 0;
+    event.blockIndex = currentBlockIndex;
+    event.flushOff = 0;
+    event.pitchBend = 0;
+    addEvent(event);
+    return;
+  }
+
+  if (midiStatus == 0xD0) {  // Channel Pressure (Aftertouch)
+    MIDIEventData event;
+    event.index = ++globalIndex;
+    event.msgIndex = 0;
+    event.tempo = tempo;
+    event.delay = diff;
+    event.canal = canal;
+    event.mensagem = "ChannelPressure";
+    event.nota = 0;
+    event.som = "";
+    event.oitava = "";
+    event.velocidade = midiData[1];  // Valor de pressão
+    event.blockIndex = currentBlockIndex;
+    event.flushOff = 0;
+    event.pitchBend = 0;
+    addEvent(event);
+    return;
+  }
+
+  if (midiStatus == 0xE0) {  // Pitch Bend
+    int pitchValue = (midiData[1] & 0x7F) | ((midiData[2] & 0x7F) << 7);
+    MIDIEventData event;
+    event.index = ++globalIndex;
+    event.msgIndex = 0;
+    event.tempo = tempo;
+    event.delay = diff;
+    event.canal = canal;
+    event.mensagem = "PitchBend";
+    event.nota = 0;
+    event.som = "";
+    event.oitava = "";
+    event.velocidade = 0;
+    event.blockIndex = currentBlockIndex;
+    event.flushOff = 0;
+    event.pitchBend = pitchValue;
+    addEvent(event);
+    return;
+  }
+
+  // NoteOn / NoteOff
+  int note = midiData[1];
+  int velocity = midiData[2];
   std::string mensagem;
   int msgIndex = 0;
-  int blockIdx = currentBlockIndex;  // Ajuste: inicializa com o bloco atual
+  int blockIdx = currentBlockIndex;
 
   if (midiStatus == 0x90) {  // NoteOn
     if (velocity > 0) {
       mensagem = "NoteOn";
       msgIndex = nextMsgIndex++;
       if (activeNotes.empty()) {
-        currentBlockIndex = nextBlockIndex++;  // Garante que o índice seja atualizado corretamente
+        currentBlockIndex = nextBlockIndex++;
       }
       blockIdx = currentBlockIndex;
       activeNotes[note] = currentBlockIndex;
       activeMsgIndex[note] = msgIndex;
+      lastNoteOnTime = tempo;
     } else {  // NoteOn com velocity 0 equivale a NoteOff
       mensagem = "NoteOff";
       auto it = activeNotes.find(note);
       if (it != activeNotes.end()) {
-        blockIdx = it->second;  // Recupera o bloco correto antes de apagar
+        blockIdx = it->second;
         msgIndex = activeMsgIndex[note];
         activeNotes.erase(it);
         activeMsgIndex.erase(note);
       } else {
-        blockIdx = currentBlockIndex;  // Mantém o último bloco conhecido
+        blockIdx = currentBlockIndex;
       }
       lastNoteOffTime = tempo;
     }
@@ -442,16 +537,17 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
       activeNotes.erase(it);
       activeMsgIndex.erase(note);
     } else {
-      blockIdx = currentBlockIndex;  // Mantém o último bloco conhecido
+      blockIdx = currentBlockIndex;
     }
     lastNoteOffTime = tempo;
   } else {
-    return;
+    return;  // Mensagem MIDI não reconhecida
   }
 
   if (activeNotes.empty()) {
     currentBlockIndex = 0;
     lastNoteOffTime = 0;
+    lastNoteOnTime = 0;
   }
 
   MIDIEventData event;
@@ -467,6 +563,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   event.velocidade = velocity;
   event.blockIndex = blockIdx;
   event.flushOff = 0;
+  event.pitchBend = 0;
 
   addEvent(event);
 }
