@@ -60,18 +60,28 @@ void PianoDisplay::setViewStart(int midi) {
 void PianoDisplay::_drawPiano(const bool activeNotes[128]) {
     _screen.fillRect(0, PIANO_Y, SCREEN_W, PIANO_H, COL_KEY_BORDER);
 
-    // White keys first (bottom layer)
+    // White keys first (bottom layer) — inline logic matching debug mini-piano
     for (int n = _viewStart; n < _viewStart + KEYS_SPAN; n++) {
-        if (!isBlackKey(n)) {
-            int idx = whiteIdxOf(n);
-            if (idx >= 0)
-                _paintWhiteKey(idx, activeNotes[n] ? COL_WHITE_ACTIVE : COL_WHITE_NORMAL);
-        }
+        int st = n % 12;
+        if (SEMITONE_TO_WHITE[st] < 0) continue;  // skip black keys
+        int wi = ((n - _viewStart) / 12) * 7 + SEMITONE_TO_WHITE[st];
+        if (wi < 0 || wi >= WHITE_KEYS) continue;
+        int x = PIANO_X + wi * WHITE_KEY_W;
+        uint32_t col = activeNotes[n] ? COL_WHITE_ACTIVE : COL_WHITE_NORMAL;
+        _screen.fillRect(x, PIANO_Y + 1, WHITE_KEY_W - 1, WHITE_KEY_H - 2, col);
+        _screen.drawFastHLine(x, PIANO_Y + WHITE_KEY_H - 2, WHITE_KEY_W - 1, COL_KEY_BORDER);
     }
-    // Black keys on top
+    // Black keys on top — inline logic matching debug mini-piano
     for (int n = _viewStart; n < _viewStart + KEYS_SPAN; n++) {
-        if (isBlackKey(n))
-            _paintBlackKey(n, activeNotes[n] ? COL_BLACK_ACTIVE : COL_BLACK_NORMAL);
+        int st = n % 12;
+        if (SEMITONE_TO_WHITE[st] >= 0) continue;  // skip white keys
+        int nbSt = BLACK_LEFT_NEIGHBOR[st];
+        int nbNote = (n / 12) * 12 + nbSt;
+        int nbWi = ((nbNote - _viewStart) / 12) * 7 + SEMITONE_TO_WHITE[nbSt];
+        int x = PIANO_X + nbWi * WHITE_KEY_W + WHITE_KEY_W - BLACK_KEY_W / 2;
+        uint32_t col = activeNotes[n] ? COL_BLACK_ACTIVE : COL_BLACK_NORMAL;
+        _screen.fillRect(x, PIANO_Y + 1, BLACK_KEY_W, BLACK_KEY_H, col);
+        _screen.drawRect(x, PIANO_Y + 1, BLACK_KEY_W, BLACK_KEY_H, COL_KEY_BORDER);
     }
 }
 
@@ -240,46 +250,3 @@ void PianoDisplay::_drawInfoBar(const bool activeNotes[128],
     }
 }
 
-// ── Private: geometry helpers ────────────────────────────────────────────────
-
-bool PianoDisplay::noteInView(int note) const {
-    return note >= _viewStart && note < _viewStart + KEYS_SPAN;
-}
-
-bool PianoDisplay::isBlackKey(int note) const {
-    return SEMITONE_TO_WHITE[note % 12] < 0;
-}
-
-int PianoDisplay::whiteIdxOf(int note) const {
-    if (!noteInView(note)) return -1;
-    int st = note % 12;
-    if (SEMITONE_TO_WHITE[st] < 0) return -1;
-    int octOff = (note - _viewStart) / 12;
-    return octOff * 7 + SEMITONE_TO_WHITE[st];
-}
-
-int PianoDisplay::whiteKeyX(int whiteIdx) const {
-    return PIANO_X + whiteIdx * WHITE_KEY_W;
-}
-
-int PianoDisplay::blackKeyX(int note) const {
-    int st      = note % 12;
-    int nbSt    = BLACK_LEFT_NEIGHBOR[st];
-    int nbNote  = (note / 12) * 12 + nbSt;
-    int nbOctOff = (nbNote - _viewStart) / 12;
-    int nbWIdx  = nbOctOff * 7 + SEMITONE_TO_WHITE[nbSt];
-    return PIANO_X + nbWIdx * WHITE_KEY_W + WHITE_KEY_W - BLACK_KEY_W / 2;
-}
-
-void PianoDisplay::_paintWhiteKey(int whiteIdx, uint32_t colour) {
-    if (whiteIdx < 0 || whiteIdx >= WHITE_KEYS) return;
-    int x = whiteKeyX(whiteIdx);
-    _screen.fillRect(x, PIANO_Y + 1, WHITE_KEY_W - 1, WHITE_KEY_H - 2, colour);
-    _screen.drawFastHLine(x, PIANO_Y + WHITE_KEY_H - 2, WHITE_KEY_W - 1, COL_KEY_BORDER);
-}
-
-void PianoDisplay::_paintBlackKey(int note, uint32_t colour) {
-    int x = blackKeyX(note);
-    _screen.fillRect(x,  PIANO_Y + 1, BLACK_KEY_W, BLACK_KEY_H, colour);
-    _screen.drawRect(x,  PIANO_Y + 1, BLACK_KEY_W, BLACK_KEY_H, COL_KEY_BORDER);
-}

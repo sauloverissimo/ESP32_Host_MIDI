@@ -257,6 +257,14 @@ size_t MIDIHandler::getActiveNotesCount() const {
   return activeNotes.size();
 }
 
+void MIDIHandler::fillActiveNotes(bool out[128]) const {
+  memset(out, 0, 128);
+  for (const auto& kv : activeNotes) {
+    if (kv.first >= 0 && kv.first < 128)
+      out[kv.first] = true;
+  }
+}
+
 // Clears active notes
 void MIDIHandler::clearActiveNotesNow() {
   activeNotes.clear();
@@ -412,6 +420,9 @@ std::vector<std::string> MIDIHandler::getAnswer(const std::vector<std::string>& 
 void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   const uint8_t* midiData = (length == 3) ? data : (length >= 4 ? data + 1 : nullptr);
   if (midiData == nullptr) return;
+
+  // Debug callback — fire before parsing
+  if (rawMidiCb) rawMidiCb(data, length, midiData);
 
   unsigned long now = millis();
 

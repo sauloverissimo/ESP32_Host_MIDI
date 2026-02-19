@@ -119,16 +119,9 @@ private:
         lgfx::Light_PWM     _bl;
     };
 
-    bool noteInView(int note) const;
-    bool isBlackKey(int note) const;
     void _drawPiano(const bool activeNotes[128]);
     void _drawInfoBar(const bool activeNotes[128], const PianoInfo& info);
     void _drawBadge(int x, int y, int w, int h, uint16_t bg, const char* text);
-    void _paintWhiteKey(int whiteIdx, uint32_t colour);
-    void _paintBlackKey(int note, uint32_t colour);
-    int  whiteKeyX(int whiteIdx) const;
-    int  whiteIdxOf(int note) const;
-    int  blackKeyX(int note) const;
 
     LGFX         _tft;
     LGFX_Sprite  _screen;

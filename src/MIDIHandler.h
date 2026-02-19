@@ -75,10 +75,17 @@ public:
 
   void handleMidiMessage(const uint8_t* data, size_t length);
 
+  // Debug callback — called with raw MIDI bytes before parsing.
+  // Set to nullptr to disable. Signature: (rawData, rawLength, midiBytes3)
+  typedef void (*RawMidiCallback)(const uint8_t* raw, size_t rawLen,
+                                   const uint8_t* midi3);
+  void setRawMidiCallback(RawMidiCallback cb) { rawMidiCb = cb; }
+
   std::string getActiveNotesString() const;
   std::string getActiveNotes() const;
   std::vector<std::string> getActiveNotesVector() const;
   size_t getActiveNotesCount() const;
+  void fillActiveNotes(bool out[128]) const;
   void clearActiveNotesNow();
   void clearQueue();
 
@@ -90,6 +97,7 @@ public:
 
 private:
   MIDIHandlerConfig config;
+  RawMidiCallback rawMidiCb = nullptr;
 
   std::deque<MIDIEventData> eventQueue;
   int maxEvents;
