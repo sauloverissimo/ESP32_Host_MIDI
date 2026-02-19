@@ -1,11 +1,11 @@
-// Exemplo: MIDI Controller Answer
-// Exibe as notas do último bloco MIDI no display ST7789 do T-Display S3.
+// Example: MIDI Controller Answer
+// Displays the note names from the last MIDI chord on the ST7789 display of the T-Display S3.
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
 #include "ST7789_Handler.h"
 
-// Tempo de espera para exibir mensagens de inicialização (ms)
+// Delay for displaying initialization messages (ms)
 static const unsigned long INIT_DISPLAY_DELAY = 500;
 
 void setup() {
@@ -16,17 +16,17 @@ void setup() {
   delay(INIT_DISPLAY_DELAY);
 
   midiHandler.begin();
-  display.print("Interpretador MIDI inicializado...");
+  display.print("MIDI Handler initialized...");
 
-  // Desativa o histórico para este exemplo (ajuste conforme necessidade)
+  // Disable history for this example (adjust as needed)
   midiHandler.enableHistory(0);
-  display.print("Host USB & BLE MIDI Inicializado...");
+  display.print("USB & BLE MIDI Host initialized...");
   delay(INIT_DISPLAY_DELAY);
 }
 
 void loop() {
   midiHandler.task();
-  std::vector<std::string> resposta = midiHandler.getAnswer("som");
-  display.print(resposta);
+  std::vector<std::string> answer = midiHandler.getAnswer("noteName");
+  display.print(answer);
   delayMicroseconds(10);
 }

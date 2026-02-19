@@ -5,37 +5,36 @@
 #include <vector>
 #include <string>
 
-// Classe ST7789_Handler:
-// Gerencia o display ST7789 do T‑Display-S3 (baseado no código previamente implementado em DisplayHandler).
+// ST7789_Handler class:
+// Manages the ST7789 display on the T-Display-S3.
 class ST7789_Handler {
 public:
   ST7789_Handler();
 
-  // Inicializa o display (configuração de rotação, fonte, cor, etc.)
+  // Initializes the display (rotation, font, color, etc.)
   void init();
 
-  // Exibe uma string formatada na tela, evitando flickering.
+  // Displays a formatted string on screen, avoiding flickering.
   void print(const std::string& message);
 
-  // Exibe um vetor de strings concatenado na tela, evitando flickering.
+  // Displays a vector of strings concatenated on screen, avoiding flickering.
   void print(const std::vector<std::string>& messages);
 
-  // Exibe uma string formatada na tela que pula linha, evitando flickering.
+  // Displays a formatted string on screen with line breaks, avoiding flickering.
   void println(const std::string& message);
 
-  // Exibe um vetor de strings concatenado na tela que pula linha, evitando flickering.
+  // Displays a vector of strings with line breaks, avoiding flickering.
   void println(const std::vector<std::string>& messages);
 
-
-  // Limpa o display
+  // Clears the display
   void clear();
 
 private:
-  // Classe customizada baseada em LovyanGFX para configurar o painel ST7789 via bus paralelo de 8 bits
+  // Custom class based on LovyanGFX to configure the ST7789 panel via 8-bit parallel bus
   class LGFX : public lgfx::LGFX_Device {
   public:
     LGFX(void) {
-      {  // Configuração do bus paralelo de 8 bits
+      {  // 8-bit parallel bus configuration
         auto cfg = _bus_instance.config();
         cfg.pin_wr = 8;
         cfg.pin_rd = 9;
@@ -51,7 +50,7 @@ private:
         _bus_instance.config(cfg);
         _panel_instance.setBus(&_bus_instance);
       }
-      {  // Configuração do painel ST7789
+      {  // ST7789 panel configuration
         auto cfg = _panel_instance.config();
         cfg.pin_cs = 6;
         cfg.pin_rst = 5;
@@ -63,13 +62,13 @@ private:
         cfg.rgb_order = false;
         cfg.dlen_16bit = false;
         cfg.bus_shared = false;
-        // Para orientação horizontal: display de 170 x 320
+        // Landscape orientation: 170 x 320 display
         cfg.panel_width = 170;
         cfg.panel_height = 320;
         _panel_instance.config(cfg);
       }
       setPanel(&_panel_instance);
-      {  // Configuração da luz de fundo
+      {  // Backlight configuration
         auto cfg = _light_instance.config();
         cfg.pin_bl = 38;
         cfg.invert = false;

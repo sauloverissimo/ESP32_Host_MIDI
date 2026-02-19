@@ -1,44 +1,42 @@
 #include "ST7789_Handler.h"
-#include <ESP32_Host_MIDI.h>  // Para TFT_BL_PIN de ESP32_Pin_Config.h
+#include "mapping.h"
 #include <vector>
 
 ST7789_Handler display;
 
-// Define TFT_GRAY caso não esteja definido
 #ifndef TFT_GRAY
 #define TFT_GRAY 0x8410
 #endif
 
 ST7789_Handler::ST7789_Handler() {
-  // Construtor simples (pode ser expandido se necessário)
+  // Simple constructor (can be expanded if needed)
 }
 
 void ST7789_Handler::init() {
   tft.init();
-  tft.setRotation(2);   // Rotaciona 180° para correção da orientação
-  tft.setTextSize(1);   // Fonte pequena para as linhas regulares
+  tft.setRotation(2);   // Rotate 180 degrees for orientation correction
+  tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE);
   tft.fillScreen(TFT_BLACK);
 
-  // Garantia extra para o backlight (pin 38 no T-Display S3).
-  // O LovyanGFX configura via PWM, mas ao alimentar por bateria
-  // o pino pode não ser inicializado corretamente.
-  // Ref: Discussion #8 - AtmosphEng (GPIO 15 HIGH para backlight com bateria)
+  // Extra backlight guarantee (pin 38 on T-Display S3).
+  // LovyanGFX configures via PWM, but when running on battery
+  // the pin may not initialize correctly.
+  // Ref: Discussion #8 - AtmosphEng (GPIO 15 HIGH for battery backlight)
   pinMode(TFT_BL_PIN, OUTPUT);
   digitalWrite(TFT_BL_PIN, HIGH);
 }
 
-// Sobrecarga para exibir uma string simples
+// Overload to display a single string
 void ST7789_Handler::print(const std::string& message) {
-    static std::string lastMessage = ""; // Armazena a última mensagem exibida
+    static std::string lastMessage = "";
 
-    // Se a mensagem não mudou, não redesenha para evitar flickering
+    // Skip redraw if message hasn't changed (avoids flickering)
     if (lastMessage == message) {
         return;
     }
-    lastMessage = message; // Atualiza a mensagem armazenada
+    lastMessage = message;
 
-    // Limpa a tela apenas quando necessário
     tft.fillScreen(TFT_BLACK);
 
     const int margin = 2;
@@ -49,7 +47,7 @@ void ST7789_Handler::print(const std::string& message) {
     int x = 2;
     int y = margin / 2;
 
-    // Divide a string em múltiplas linhas
+    // Split string into multiple lines
     String text(message.c_str());
     String lines[totalLines];
     int lineCount = 0;
@@ -64,20 +62,20 @@ void ST7789_Handler::print(const std::string& message) {
         lines[lineCount++] = text.substring(start);
     }
 
-    // Exibe cada linha com espaçamento adequado
+    // Display each line with proper spacing
     for (int i = 0; i < lineCount; i++) {
-        tft.setTextSize(1);  
+        tft.setTextSize(1);
         tft.setTextColor(TFT_WHITE);
         tft.drawString(lines[i], x, y);
         y += lineHeight - 2;
     }
 }
 
-// Sobrecarga para exibir um vetor de strings
+// Overload to display a vector of strings
 void ST7789_Handler::print(const std::vector<std::string>& messages) {
-    static std::string lastMessage = ""; // Armazena a última mensagem exibida
+    static std::string lastMessage = "";
 
-    // Concatena os elementos do vetor em uma única string separada por ", "
+    // Concatenate vector elements into a single string separated by ", "
     std::string concatenatedMessage;
     for (size_t i = 0; i < messages.size(); ++i) {
         concatenatedMessage += messages[i];
@@ -86,27 +84,25 @@ void ST7789_Handler::print(const std::vector<std::string>& messages) {
         }
     }
 
-    // Se a mensagem não mudou, não redesenha para evitar flickering
+    // Skip redraw if message hasn't changed (avoids flickering)
     if (lastMessage == concatenatedMessage) {
         return;
     }
-    lastMessage = concatenatedMessage; // Atualiza a mensagem armazenada
+    lastMessage = concatenatedMessage;
 
-    // Chamamos a versão da função `print(const std::string&)`
     print(concatenatedMessage);
 }
 
-// Sobrecarga para exibir uma string quebrando por vírgula
+// Overload to display a string splitting by comma
 void ST7789_Handler::println(const std::string& message) {
-    static std::string lastMessage = ""; // Armazena a última mensagem exibida
+    static std::string lastMessage = "";
 
-    // Se a mensagem não mudou, não redesenha para evitar flickering
+    // Skip redraw if message hasn't changed (avoids flickering)
     if (lastMessage == message) {
         return;
     }
-    lastMessage = message; // Atualiza a mensagem armazenada
+    lastMessage = message;
 
-    // Limpa a tela apenas quando necessário
     tft.fillScreen(TFT_BLACK);
 
     const int margin = 2;
@@ -117,7 +113,7 @@ void ST7789_Handler::println(const std::string& message) {
     int x = 2;
     int y = margin / 2;
 
-    // Divide a string em linhas quebrando por ","
+    // Split string into lines by ","
     String text(message.c_str());
     String lines[totalLines];
     int lineCount = 0;
@@ -132,36 +128,34 @@ void ST7789_Handler::println(const std::string& message) {
         lines[lineCount++] = text.substring(start);
     }
 
-    // Exibe cada linha com espaçamento adequado
+    // Display each line with proper spacing
     for (int i = 0; i < lineCount; i++) {
         tft.setTextSize(1);
         tft.setTextColor(TFT_WHITE);
-        tft.drawString(lines[i], x, y);  // Removemos .trim(), pois não retorna um valor
+        tft.drawString(lines[i], x, y);
         y += lineHeight - 2;
     }
 }
 
-// Sobrecarga para exibir um vetor de strings, quebrando cada elemento em uma nova linha
+// Overload to display a vector of strings, each element on a new line
 void ST7789_Handler::println(const std::vector<std::string>& messages) {
-    static std::string lastMessage = ""; // Armazena a última mensagem exibida
+    static std::string lastMessage = "";
 
-    // Concatena os elementos do vetor para verificar mudança
+    // Concatenate vector elements to check for changes
     std::string concatenatedMessage;
     for (const auto& msg : messages) {
         concatenatedMessage += msg + ",";
     }
 
-    // Se a mensagem não mudou, não redesenha para evitar flickering
+    // Skip redraw if message hasn't changed (avoids flickering)
     if (lastMessage == concatenatedMessage) {
         return;
     }
-    lastMessage = concatenatedMessage; // Atualiza a mensagem armazenada
+    lastMessage = concatenatedMessage;
 
-    // Chamamos a versão da função `println(const std::string&)`
     println(concatenatedMessage);
 }
 
-// Apenas uma definição para evitar erro de duplicação
 void ST7789_Handler::clear() {
   tft.fillScreen(TFT_BLACK);
 }

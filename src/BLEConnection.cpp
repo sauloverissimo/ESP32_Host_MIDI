@@ -1,17 +1,17 @@
-#include "BLE_Conexion.h"
+#include "BLEConnection.h"
 
-BLE_Conexion::BLE_Conexion()
+BLEConnection::BLEConnection()
     : pServer(nullptr), pCharacteristic(nullptr), pBleCallback(nullptr), midiCallback(nullptr)
 {
 }
 
-BLE_Conexion::~BLE_Conexion() {
+BLEConnection::~BLEConnection() {
     delete pBleCallback;
     pBleCallback = nullptr;
 }
 
-void BLE_Conexion::begin(const std::string& deviceName) {
-    BLEDevice::init(deviceName);
+void BLEConnection::begin(const std::string& deviceName) {
+    BLEDevice::init(String(deviceName.c_str()));
     pServer = BLEDevice::createServer();
 
     BLEService* pService = pServer->createService(BLE_MIDI_SERVICE_UUID);
@@ -20,27 +20,27 @@ void BLE_Conexion::begin(const std::string& deviceName) {
         BLECharacteristic::PROPERTY_WRITE_NR
     );
 
-    // Cria um callback para onWrite que extrai os 4 primeiros bytes da mensagem e os encaminha.
+    // Create a write callback that extracts the first 4 bytes and forwards them.
     class BLECallback : public BLECharacteristicCallbacks {
     public:
-        BLE_Conexion* bleCon;
-        BLECallback(BLE_Conexion* con) : bleCon(con) {}
+        BLEConnection* bleCon;
+        BLECallback(BLEConnection* con) : bleCon(con) {}
         void onWrite(BLECharacteristic* characteristic) override {
             std::string rxValue = std::string(characteristic->getValue().c_str());
-            // Se houver ao menos 4 bytes, extrai os 4 primeiros.
+            // If at least 4 bytes are available, extract the first 4.
             if(rxValue.size() >= 4) {
                 const uint8_t* data = reinterpret_cast<const uint8_t*>(rxValue.data());
-                // Chama o callback definido pelo usuário (se houver).
+                // Invoke the user-defined callback (if set).
                 if(bleCon->midiCallback) {
                     bleCon->midiCallback(data, 4);
                 }
-                // Chama também o callback virtual para que uma subclasse possa sobrescrever.
+                // Also invoke the virtual callback so subclasses can override.
                 bleCon->onMidiDataReceived(data, 4);
             }
         }
     };
 
-    // Armazena o ponteiro para liberar no destrutor
+    // Store the pointer for cleanup in the destructor
     delete pBleCallback;
     pBleCallback = new BLECallback(this);
     pCharacteristic->setCallbacks(pBleCallback);
@@ -52,22 +52,22 @@ void BLE_Conexion::begin(const std::string& deviceName) {
     BLEDevice::startAdvertising();
 }
 
-void BLE_Conexion::task() {
-    // No BLE geralmente não é necessário processamento periódico.
+void BLEConnection::task() {
+    // BLE generally does not require periodic processing.
 }
 
-bool BLE_Conexion::isConnected() const {
+bool BLEConnection::isConnected() const {
     if(pServer)
         return (pServer->getConnectedCount() > 0);
     return false;
 }
 
-void BLE_Conexion::setMidiMessageCallback(MIDIMessageCallback cb) {
+void BLEConnection::setMidiMessageCallback(MIDIMessageCallback cb) {
     midiCallback = cb;
 }
 
-void BLE_Conexion::onMidiDataReceived(const uint8_t* data, size_t length) {
-    // Implementação padrão: não faz nada.
+void BLEConnection::onMidiDataReceived(const uint8_t* data, size_t length) {
+    // Default implementation: no-op.
     (void)data;
     (void)length;
 }

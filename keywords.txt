@@ -6,10 +6,13 @@
 # Classes (KEYWORD1)
 ######################################
 MIDIHandler              KEYWORD1
-USB_Conexion             KEYWORD1
-BLE_Conexion             KEYWORD1
+USBConnection            KEYWORD1
+BLEConnection            KEYWORD1
 MIDIEventData            KEYWORD1
+MIDIHandlerConfig        KEYWORD1
 RawUsbMessage            KEYWORD1
+RawBleMessage            KEYWORD1
+GingoAdapter             KEYWORD1
 ST7789_Handler           KEYWORD1
 
 ######################################
@@ -28,8 +31,9 @@ getActiveNotesString      KEYWORD2
 getActiveNotesVector      KEYWORD2
 getActiveNotesCount       KEYWORD2
 clearActiveNotesNow       KEYWORD2
-lastBlock                 KEYWORD2
-getBlock                  KEYWORD2
+clearQueue                KEYWORD2
+lastChord                 KEYWORD2
+getChord                  KEYWORD2
 getAnswer                 KEYWORD2
 onMidiDataReceived        KEYWORD2
 isConnected               KEYWORD2
@@ -44,6 +48,14 @@ init                      KEYWORD2
 print                     KEYWORD2
 println                   KEYWORD2
 clear                     KEYWORD2
+identifyLastChord         KEYWORD2
+identifyChord             KEYWORD2
+midiToGingoNotes          KEYWORD2
+activeNotesToGingo        KEYWORD2
+deduceField               KEYWORD2
+deduceFieldFromQueue      KEYWORD2
+identifyProgression       KEYWORD2
+predictNext               KEYWORD2
 
 ######################################
 # Constants (LITERAL1)

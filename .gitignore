@@ -1,4 +1,14 @@
-# Ignorar ambientes virtuais
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code
+CLAUDE.md
+
+# Legacy files (removed in v3.0.0)
 /displayhandler.h
 /displayhandler.cpp
 /T-DisplayS3_Host_MIDI.ino
@@ -8,3 +18,6 @@
 /ESP32_PCM5102A_MIDI.h
 /ESP32_PCM5102A_MIDI.cpp
 /src/src.ino
+
+# Internal research docs
+docs/
