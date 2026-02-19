@@ -30,6 +30,8 @@ getActiveNotes            KEYWORD2
 getActiveNotesString      KEYWORD2
 getActiveNotesVector      KEYWORD2
 getActiveNotesCount       KEYWORD2
+fillActiveNotes           KEYWORD2
+setRawMidiCallback        KEYWORD2
 clearActiveNotesNow       KEYWORD2
 clearQueue                KEYWORD2
 lastChord                 KEYWORD2

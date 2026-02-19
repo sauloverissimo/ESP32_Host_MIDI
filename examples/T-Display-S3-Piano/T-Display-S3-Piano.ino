@@ -1,8 +1,9 @@
-// Example: Piano Visualizer + Music Theory
+// Example: Piano Visualizer + Music Theory + Synthesizer
 //
 // Designed for MIDI-25 keyboards (e.g. Arturia Minilab 25).
 // Shows all 25 keys (C to C, 2 octaves) on the ST7789 display of the T-Display S3.
 // Highlights pressed keys in real time with music theory analysis (Gingoduino).
+// Plays notes via the onboard PCM5102A DAC.
 //
 // Anti-tearing: full-screen sprite (double-buffered in PSRAM).
 //
@@ -15,9 +16,13 @@
 #include <ESP32_Host_MIDI.h>
 #include <GingoAdapter.h>
 #include "PianoDisplay.h"
+#include "SynthEngine.h"
 #include "mapping.h"
 
 using namespace gingoduino;
+
+// ── Global instances ──────────────────────────────────────────────────────────
+SynthEngine synth;
 
 // ── Active notes state ────────────────────────────────────────────────────────
 static bool activeNotes[128]     = {};
@@ -116,6 +121,8 @@ void setup() {
     cfg.chordTimeWindow = 0;
     cfg.bleName         = "ESP32 Piano";
     midiHandler.begin(cfg);
+
+    synth.begin();
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
@@ -128,6 +135,11 @@ void loop() {
     midiHandler.fillActiveNotes(activeNotes);
 
     if (memcmp(activeNotes, prevActiveNotes, sizeof(activeNotes)) != 0) {
+        // Feed synth from state diff (not from queue)
+        for (int n = 0; n < 128; n++) {
+            if (activeNotes[n] && !prevActiveNotes[n]) synth.noteOn(n, 100);
+            if (!activeNotes[n] && prevActiveNotes[n]) synth.noteOff(n);
+        }
         memcpy(prevActiveNotes, activeNotes, sizeof(activeNotes));
         analyzeNotes();
     }
@@ -137,4 +149,5 @@ void loop() {
         lastFrameUs = now;
         piano.render(activeNotes, info);
     }
+
 }

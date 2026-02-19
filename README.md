@@ -158,6 +158,8 @@ One of the key design decisions in this library is the separation of USB MIDI re
     - `getChord(chord, queue, fields)`: Retrieves events from a specific chord.
     - `lastChord(queue)`: Returns the highest chord index.
     - `getAnswer(field)`: Returns data from the last chord (e.g., `getAnswer("noteName")`).
+    - `fillActiveNotes(bool out[128])`: Copies the current active notes state to a flat boolean array. Preferred over `getActiveNotes()` for real-time display rendering.
+    - `setRawMidiCallback(callback)`: Registers a callback that fires with raw MIDI bytes before parsing. Useful for debugging and logging.
     - `clearQueue()`: Clears the event queue and resets all internal state.
     - `enableHistory(capacity)`: Enables a PSRAM history buffer.
 
@@ -176,6 +178,8 @@ One of the key design decisions in this library is the separation of USB MIDI re
 - **T-Display-S3/** — Displays the note names from the last MIDI chord on the ST7789 display using `getAnswer("noteName")`.
 - **T-Display-S3-Queue/** — Displays the full MIDI event queue and active notes on the display. Includes a hardware button (GPIO 14) to clear the queue at any time. Useful for debugging and detailed event visualization.
 - **T-Display-S3-Gingoduino/** — Integrates with the [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) on the T-Display S3. Identifies notes (name + frequency), intervals, chords, and deduces harmonic fields — all shown on the ST7789 display and Serial.
+- **T-Display-S3-Piano/** — Full piano visualizer with 25-key display, real-time key highlighting, music theory analysis (Gingoduino), and sine wave synthesizer (PCM5102A DAC via I2S). Anti-tearing via full-screen sprite in PSRAM.
+- **T-Display-S3-Piano-Debug/** — On-display MIDI event monitor for diagnosing USB MIDI issues without Serial access (USB Host mode prevents Serial Monitor). Shows raw bytes, parsed events, and a mini-piano bar with colour-coded log.
 
 ---
 
