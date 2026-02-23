@@ -189,8 +189,11 @@ static bool sendBLEMidi(uint8_t status, uint8_t data1, uint8_t data2) {
 static int  currentSeq    = 0;
 static int  currentStep   = 0;
 static bool playing       = false;
-static bool noteHeld      = false;   // true while notes are sounding
-static unsigned long stepStartMs = 0;
+
+// Player states: IDLE → NOTE_ON → NOTE_OFF (pause) → advance → NOTE_ON ...
+enum PlayerPhase { PH_IDLE, PH_NOTE_ON, PH_PAUSE };
+static PlayerPhase playerPhase = PH_IDLE;
+static unsigned long phaseStartMs = 0;
 
 // Track which notes are currently active (for display)
 static bool senderNotes[128] = {};
@@ -233,9 +236,9 @@ static void stopAll() {
             senderNotes[n] = false;
         }
     }
-    playing  = false;
-    noteHeld = false;
-    lastStatus = 0;
+    playing     = false;
+    playerPhase = PH_IDLE;
+    lastStatus  = 0;
     currentStep = 0;
 }
 
@@ -245,33 +248,42 @@ static void playerTick(unsigned long now) {
     const Sequence& seq = ALL_SEQUENCES[currentSeq];
     const NoteStep& step = seq.steps[currentStep];
 
-    if (!noteHeld) {
-        // Send NoteOn
+    switch (playerPhase) {
+    case PH_IDLE:
+        // Start playing: send first NoteOn
         sendCurrentStepOn();
-        noteHeld = true;
-        stepStartMs = now;
+        playerPhase  = PH_NOTE_ON;
+        phaseStartMs = now;
+        break;
 
-    } else if (now - stepStartMs >= step.durationMs) {
-        // Duration elapsed — send NoteOff
-        sendCurrentStepOff();
-        noteHeld = false;
-        stepStartMs = now;
-
-        // Advance to next step (after pause)
-    } else {
-        return;  // still holding note
-    }
-
-    // Handle pause and advance (when noteHeld just became false)
-    if (!noteHeld && (now - stepStartMs >= step.pauseMs)) {
-        currentStep++;
-        if (currentStep >= seq.stepCount) {
-            if (seq.loop) {
-                currentStep = 0;
-            } else {
-                stopAll();
-            }
+    case PH_NOTE_ON:
+        // Holding note — wait for duration to elapse
+        if (now - phaseStartMs >= step.durationMs) {
+            sendCurrentStepOff();
+            playerPhase  = PH_PAUSE;
+            phaseStartMs = now;
         }
+        break;
+
+    case PH_PAUSE:
+        // Silence between notes — wait for pause to elapse
+        if (now - phaseStartMs >= step.pauseMs) {
+            // Advance to next step
+            currentStep++;
+            if (currentStep >= seq.stepCount) {
+                if (seq.loop) {
+                    currentStep = 0;
+                } else {
+                    stopAll();
+                    return;
+                }
+            }
+            // Immediately start next note
+            sendCurrentStepOn();
+            playerPhase  = PH_NOTE_ON;
+            phaseStartMs = now;
+        }
+        break;
     }
 }
 
@@ -292,7 +304,7 @@ static SenderInfo buildDisplayInfo() {
     info.currentVelocity = lastVelocity;
 
     // Copy current step notes
-    if (playing && noteHeld) {
+    if (playing && playerPhase == PH_NOTE_ON) {
         const NoteStep& step = ALL_SEQUENCES[currentSeq].steps[currentStep];
         memcpy(info.currentNotes, step.notes, sizeof(step.notes));
         info.currentNoteCount = step.count;
@@ -366,8 +378,7 @@ void loop() {
         } else {
             playing     = true;
             currentStep = 0;
-            noteHeld    = false;
-            stepStartMs = now;
+            playerPhase = PH_IDLE;
             lastStatus  = 0;
             Serial.printf("[SEQ] Playing: %s\n", ALL_SEQUENCES[currentSeq].name);
             if (!bleConnected) Serial.println("[SEQ] (BLE not connected — display only)");
