@@ -78,8 +78,13 @@ void ESPNowConnection::_onReceive(const uint8_t* mac, const uint8_t* data, int l
     _instance->enqueueMidiMessage(data, len);
 }
 
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+void ESPNowConnection::_onSend(const wifi_tx_info_t* info, esp_now_send_status_t status) {
+    (void)info;
+#else
 void ESPNowConnection::_onSend(const uint8_t* mac, esp_now_send_status_t status) {
     (void)mac;
+#endif
     (void)status;
 }
 

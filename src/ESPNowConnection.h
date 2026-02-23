@@ -71,7 +71,11 @@ private:
     static void _onReceive(const uint8_t* mac, const uint8_t* data, int len);
     #endif
 
+    #if ESP_ARDUINO_VERSION_MAJOR >= 3
+    static void _onSend(const wifi_tx_info_t* info, esp_now_send_status_t status);
+    #else
     static void _onSend(const uint8_t* mac, esp_now_send_status_t status);
+    #endif
 };
 
 #endif // ESPNOW_CONNECTION_H
