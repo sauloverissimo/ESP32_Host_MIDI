@@ -13,7 +13,8 @@
 // If ESP32_Host_MIDI.h was included first, these are already defined.
 // Otherwise, detect features from ESP-IDF / SDK configuration.
 #ifndef ESP32_HOST_MIDI_HAS_USB
-  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || \
+      defined(CONFIG_IDF_TARGET_ESP32P4)
     #define ESP32_HOST_MIDI_HAS_USB 1
   #else
     #define ESP32_HOST_MIDI_HAS_USB 0
@@ -33,6 +34,14 @@
     #define ESP32_HOST_MIDI_HAS_PSRAM 1
   #else
     #define ESP32_HOST_MIDI_HAS_PSRAM 0
+  #endif
+#endif
+
+#ifndef ESP32_HOST_MIDI_HAS_ETH_MAC
+  #if defined(CONFIG_IDF_TARGET_ESP32P4)
+    #define ESP32_HOST_MIDI_HAS_ETH_MAC 1
+  #else
+    #define ESP32_HOST_MIDI_HAS_ETH_MAC 0
   #endif
 #endif
 

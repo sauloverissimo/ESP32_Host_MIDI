@@ -1,0 +1,105 @@
+site_name: 🎛️ ESP32 Host MIDI
+site_url: https://sauloverissimo.github.io/ESP32_Host_MIDI
+site_description: Hub MIDI universal para ESP32 — 9 transportes, uma API
+site_author: Saulo Verissimo
+repo_url: https://github.com/sauloverissimo/ESP32_Host_MIDI
+repo_name: sauloverissimo/ESP32_Host_MIDI
+
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Modo escuro
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.path
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+plugins:
+  - search:
+      lang: pt
+
+nav:
+  - 🏠 Início: index.md
+  - 📖 Guia:
+    - Introdução: guia/introducao.md
+    - Instalação: guia/instalacao.md
+    - Primeiros Passos: guia/primeiros-passos.md
+    - Configuração: guia/configuracao.md
+  - 📡 Transportes:
+    - Visão Geral: transportes/visao-geral.md
+    - USB Host (OTG): transportes/usb-host.md
+    - BLE MIDI: transportes/ble-midi.md
+    - USB Device: transportes/usb-device.md
+    - UART / DIN-5: transportes/uart-din5.md
+    - RTP-MIDI (WiFi): transportes/rtp-midi.md
+    - Ethernet MIDI: transportes/ethernet-midi.md
+    - ESP-NOW: transportes/esp-now.md
+    - OSC: transportes/osc.md
+    - MIDI 2.0 / UMP: transportes/midi2-udp.md
+  - 🧩 Funcionalidades:
+    - Detecção de Acordes: funcionalidades/deteccao-acordes.md
+    - Notas Ativas: funcionalidades/notas-ativas.md
+    - Histórico (PSRAM): funcionalidades/historico-psram.md
+    - GingoAdapter: funcionalidades/gingo-adapter.md
+  - 📚 API:
+    - Referência Completa: api/referencia.md
+  - 💡 Exemplos:
+    - T-Display-S3 Piano: exemplos/t-display-s3.md
+    - UART Básico: exemplos/uart-basico.md
+    - RTP-MIDI WiFi: exemplos/rtp-midi-wifi.md
+    - OSC Bridge: exemplos/osc-bridge.md
+    - ESP-NOW Jam: exemplos/esp-now-jam.md
+    - MIDI 2.0 UDP: exemplos/midi2-udp.md
+    - Ethernet MIDI: exemplos/ethernet-midi.md
+  - 🔧 Avançado:
+    - Hardware Suportado: avancado/hardware.md
+    - MIDI 2.0 / UMP: avancado/midi2-ump.md
+    - Troubleshooting: avancado/troubleshooting.md
+  - 🗺️ Roadmap: roadmap.md

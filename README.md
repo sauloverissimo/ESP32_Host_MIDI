@@ -1,609 +1,1168 @@
-# ESP32_Host_MIDI
+# ESP32\_Host\_MIDI
 
-![image](https://github.com/user-attachments/assets/bba1c679-6c76-45b7-aa29-a3201a69b36a)
+<p align="center">
+  <img src="examples/T-Display-S3-MIDI2-UDP/images/MIDI2.jpeg" width="280" alt="MIDI 2.0 UDP" />
+  <img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="280" alt="Piano Visualizer" />
+  <img src="examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="280" alt="BLE MIDI Receiver" />
+</p>
 
-![Arduino](https://img.shields.io/badge/Arduino-IDE%20%7C%20CLI-00979D?logo=arduino&logoColor=white)
-![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-FF7F00?logo=platformio&logoColor=white)
-![ESP-IDF](https://img.shields.io/badge/ESP--IDF-Arduino%20Component-E7352C?logo=espressif&logoColor=white)
-![License](https://img.shields.io/github/license/sauloverissimo/ESP32_Host_MIDI)
-![Version](https://img.shields.io/github/v/release/sauloverissimo/ESP32_Host_MIDI)
+<p align="center">
+  <img src="https://img.shields.io/badge/MIDI-1.0-009B77?style=flat-square" />
+  <img src="https://img.shields.io/badge/MIDI-2.0%20%2F%20UMP-00A86B?style=flat-square" />
+  <img src="https://img.shields.io/badge/USB-MIDI-0076A8?style=flat-square&logo=usb&logoColor=white" />
+  <img src="https://img.shields.io/badge/BLE-MIDI-0082FC?style=flat-square&logo=bluetooth&logoColor=white" />
+  <img src="https://img.shields.io/badge/Apple-MIDI%20%2F%20RTP-555555?style=flat-square&logo=apple&logoColor=white" />
+  <br/>
+  <img src="https://img.shields.io/badge/iOS-Compatible-007AFF?style=flat-square&logo=apple&logoColor=white" />
+  <img src="https://img.shields.io/badge/macOS-Compatible-000000?style=flat-square&logo=apple&logoColor=white" />
+  <img src="https://img.shields.io/badge/Windows-Compatible-0078D4?style=flat-square&logo=windows&logoColor=white" />
+  <img src="https://img.shields.io/badge/Android-Compatible-34A853?style=flat-square&logo=android&logoColor=white" />
+  <br/>
+  <img src="https://img.shields.io/badge/WiFi-RTP%20%7C%20OSC%20%7C%20UDP-2496ED?style=flat-square&logo=wifi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Ethernet-AppleMIDI-00843E?style=flat-square" />
+  <img src="https://img.shields.io/badge/OSC-Max%20%7C%20PD%20%7C%20SC-FF6B35?style=flat-square" />
+  <img src="https://img.shields.io/badge/DIN--5-UART%20MIDI-8B0000?style=flat-square" />
+  <img src="https://img.shields.io/badge/ESP--NOW-Mesh%20Radio-E7352C?style=flat-square&logo=espressif&logoColor=white" />
+  <br/>
+  <img src="https://img.shields.io/badge/Arduino-IDE%20%7C%20CLI-00979D?style=flat-square&logo=arduino&logoColor=white" />
+  <img src="https://img.shields.io/badge/PlatformIO-Compatible-FF7F00?style=flat-square&logo=platformio&logoColor=white" />
+  <img src="https://img.shields.io/badge/ESP--IDF-Arduino%20Component-E7352C?style=flat-square&logo=espressif&logoColor=white" />
+  <img src="https://img.shields.io/github/license/sauloverissimo/ESP32_Host_MIDI?style=flat-square" />
+  <img src="https://img.shields.io/github/v/release/sauloverissimo/ESP32_Host_MIDI?style=flat-square" />
+</p>
 
-**Receive and send MIDI on ESP32 — via USB-OTG, Bluetooth Low Energy, and ESP-NOW.**
+<p align="center">
+  <a href="#english">🇺🇸 English</a> &nbsp;·&nbsp; <a href="#português-brasil">🇧🇷 Português (Brasil)</a>
+</p>
 
-ESP32_Host_MIDI turns your ESP32 into a MIDI hub. Plug a USB MIDI keyboard, connect a phone app via Bluetooth, bridge two ESP32s wirelessly with ESP-NOW, or do all at the same time. The library handles the low-level transport and gives you a clean, high-level API to read notes, detect chords, and send MIDI messages back.
+---
+
+## English
+
+**The universal MIDI hub for ESP32 — 9 transports, one API.**
+
+ESP32\_Host\_MIDI turns your ESP32 into a full-featured, multi-protocol MIDI hub. Connect a USB keyboard, receive notes from an iPhone via Bluetooth, bridge your DAW over WiFi with RTP-MIDI (Apple MIDI), control Max/MSP via OSC, reach 40-year-old synths through a DIN-5 serial cable, link multiple ESP32 boards wirelessly with ESP-NOW, and exchange MIDI 2.0 packets with full 16-bit velocity — **all simultaneously, all through the same clean event API.**
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
 
+void setup() { midiHandler.begin(); }
+
+void loop() {
+    midiHandler.task();
+    for (const auto& ev : midiHandler.getQueue())
+        Serial.printf("%-12s %-4s ch=%d  vel=%d\n",
+            ev.status.c_str(), ev.noteOctave.c_str(),
+            ev.channel, ev.velocity);
+}
+```
+
+---
+
+### What can you build?
+
+> A partial list. Every combination of transports opens a new instrument, tool, or installation.
+
+**Wireless MIDI interfaces**
+- USB keyboard → ESP32 → WiFi → macOS (Logic Pro / GarageBand) — no drivers, no cables to the Mac
+- iPhone / iPad BLE app → ESP32 → USB MIDI Device → DAW port — iOS apps become studio controllers
+- ESP32 presents itself as a USB MIDI Class Compliant interface — plug into any computer, it just works
+
+**Custom hardware instruments**
+- **Effects pedal board** — ESP32 sends Program Change / CC messages to a Daisy Seed or hardware multi-effects unit; display shows preset name and bank
+- **MIDI drum pad** — piezo sensors on ADC inputs → velocity-sensitive MIDI notes → USB or BLE
+- **Custom synthesizer** — ESP32 receives MIDI and controls an external DAC + VCO/VCA analog circuit, or triggers a Daisy Seed running a synth engine
+- **MIDI controller** — encoders, faders, buttons, touchpads → USB MIDI Device → any DAW
+- **MIDI to CV converter** — ESP32 + external DAC (MCP4728, MCP4921) → 0–5 V CV / gate for Eurorack and analog synths
+- **Wireless expression pedal** — foot controller with ESP-NOW → central ESP32 hub → CC messages
+- **Smart metronome / clock** — generates MIDI Clock at precise BPM, sent simultaneously over USB, BLE, DIN-5, and WiFi
+- **Theremin with MIDI output** — ultrasonic sensors or capacitive touch → pitch + volume → MIDI notes
+- **MIDI accordion or wind controller** — pressure sensors + buttons → ESP32 → BLE → iPad instrument
+
+**Bridges and routers**
+- DIN-5 vintage synth → ESP32 → USB Device → modern DAW — zero-driver adapter
+- Wireless stage rig: ESP-NOW mesh of performers → single USB output to FOH computer
+- MIDI 2.0 experimenter: two ESP32 boards exchange 16-bit velocity over UDP
+
+**Creative software integration**
+- Max/MSP / Pure Data / SuperCollider ↔ ESP32 over OSC — bidirectional, address-mapped
+- TouchOSC tablet → ESP32 → DIN-5 hardware synth — touchscreen for vintage gear
+- Algorithmic composition in Max → OSC → ESP32 → BLE → iOS instrument app
+
+**Monitoring and education**
+- Live piano roll: keys lit as you play, scrollable view on a 1.9" display
+- Real-time chord detection: plays a chord, see its name instantly ("Cmaj7", "Dm7♭5")
+- MIDI event logger with timestamps, channel, velocity, and chord grouping
+
+---
+
+### Transport Matrix
+
+| Transport | Protocol | Physical | Latency | Requires |
+|-----------|----------|----------|---------|----------|
+| [USB Host](#usb-host-otg) | USB MIDI 1.0 | USB-OTG cable | < 1 ms | ESP32-S3 / S2 / P4 |
+| [BLE MIDI](#ble-midi) | BLE MIDI 1.0 | Bluetooth LE | 3–15 ms | Any ESP32 with BT |
+| [USB Device](#usb-device) | USB MIDI 1.0 | USB-OTG cable | < 1 ms | ESP32-S3 / S2 / P4 |
+| [ESP-NOW MIDI](#esp-now-midi) | ESP-NOW | 2.4 GHz radio | 1–5 ms | Any ESP32 |
+| [RTP-MIDI (WiFi)](#rtp-midi--apple-midi) | AppleMIDI / RFC 6295 | WiFi UDP | 5–20 ms | Any ESP32 with WiFi |
+| [Ethernet MIDI](#ethernet-midi) | AppleMIDI / RFC 6295 | Wired (W5x00 / native) | 2–10 ms | W5500 SPI or ESP32-P4 |
+| [OSC](#osc) | Open Sound Control | WiFi UDP | 5–15 ms | Any ESP32 with WiFi |
+| [UART / DIN-5](#uart--din-5) | Serial MIDI 1.0 | DIN-5 connector | < 1 ms | Any ESP32 |
+| [MIDI 2.0 / UMP](#midi-20--ump) | UMP over UDP | WiFi UDP | 5–20 ms | Any ESP32 with WiFi |
+
+All transports share a single `MIDIHandler` event queue and the same send API. Mix and match at will.
+
+---
+
+### Quick Start
+
+```cpp
+#include <ESP32_Host_MIDI.h>
+// Arduino IDE: Tools > USB Mode → "USB Host"
+
 void setup() {
+    Serial.begin(115200);
     midiHandler.begin();
 }
 
 void loop() {
     midiHandler.task();
+    for (const auto& ev : midiHandler.getQueue())
+        Serial.println(ev.noteOctave.c_str());
+}
+```
 
-    // Read what's playing
-    auto notes = midiHandler.getActiveNotesVector();  // ["C4", "E4", "G4"]
+Access individual fields:
 
-    // Send MIDI via any connected transport
-    midiHandler.sendNoteOn(1, 60, 100);   // Channel 1, Middle C, velocity 100
+```cpp
+for (const auto& ev : midiHandler.getQueue()) {
+    ev.status;      // "NoteOn" | "NoteOff" | "ControlChange" | "PitchBend" …
+    ev.channel;     // 1–16
+    ev.note;        // MIDI note number (0–127)
+    ev.noteOctave;  // "C4", "D#5" …
+    ev.velocity;    // 0–127
+    ev.pitchBend;   // 0–16383 (center = 8192)
+    ev.chordIndex;  // groups simultaneous notes
+    ev.timestamp;   // millis() at arrival
 }
 ```
 
 ---
 
-## What it does
+### Gallery
 
-- **USB Host MIDI** — ESP32 acts as USB host. Plug any class-compliant MIDI controller (keyboard, pad, etc.) directly into the ESP32's USB-OTG port.
-- **BLE MIDI (bidirectional)** — ESP32 acts as a BLE MIDI peripheral. A phone app or DAW connects to it. Both can send and receive MIDI.
-- **ESP-NOW MIDI** — Ultra-low latency wireless MIDI (~1-5ms) between ESP32 devices. No WiFi network needed. Broadcast (no pairing) or unicast (peer-to-peer).
-- **Transport abstraction** — `MIDITransport` interface lets you add custom transports (ESP-NOW, RTP-MIDI, serial, etc.) via `addTransport()`. USB and BLE are built-in; others plug in at runtime.
-- **MIDI processing** — Parses NoteOn, NoteOff, ControlChange, ProgramChange, PitchBend, ChannelPressure. Converts note numbers to names ("C4"), groups simultaneous notes into chords, tracks active notes.
-- **Thread-safe** — All transports use ring buffers with spinlock protection. USB runs on a dedicated FreeRTOS task (Core 0). All MIDI processing happens on the main loop (Core 1), so your code never sees race conditions.
+<p align="center">
+  <img src="examples/T-Display-S3-MIDI2-UDP/images/MIDI2.jpeg" width="240" />&nbsp;
+  <img src="examples/RTP-MIDI-WiFi/images/RTP.jpeg" width="240" />&nbsp;
+  <img src="examples/RTP-MIDI-WiFi/images/RTP2.jpeg" width="240" />
+</p>
+<p align="center"><em>MIDI 2.0 UDP with 16-bit velocity bar · RTP-MIDI / Apple MIDI connecting to macOS</em></p>
+
+<p align="center">
+  <img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Queue/images/queue.jpeg" width="240" />
+</p>
+<p align="center"><em>25-key scrolling piano roll · Real-time chord name (Gingoduino) · Event queue debug</em></p>
+
+<p align="center">
+  <img src="examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-BLE-Sender/images/BLE.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Piano-Debug/images/pianno-debug.jpeg" width="240" />
+</p>
+<p align="center"><em>BLE Receiver (iPhone → ESP32) · BLE Sender · Piano debug view</em></p>
+
+> **Videos** — each example folder contains an `.mp4` demo inside `examples/<name>/images/`.
 
 ---
 
-## Platform compatibility
+### Architecture
 
-### Build systems
-
-| Platform | Compatible? | Notes |
-|----------|:-----------:|-------|
-| **Arduino IDE** | Yes | Native support. Just install and use. |
-| **PlatformIO (Arduino framework)** | Yes | Add to `lib_deps` in `platformio.ini` (see below). |
-| **PlatformIO (ESP-IDF + Arduino)** | Yes | Use `framework = arduino, espidf` in `platformio.ini`. |
-| **ESP-IDF pure (no Arduino)** | No | Requires `Arduino.h`, `String`, `millis()`, and the ESP32 BLE Arduino library. |
-
-**PlatformIO example:**
-
-```ini
-[env:esp32s3]
-platform = espressif32
-board = esp32-s3-devkitc-1
-framework = arduino
-lib_deps =
-    https://github.com/sauloverissimo/ESP32_Host_MIDI.git
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║  INPUTS                          MIDIHandler             OUTPUTS    ║
+║                                                                      ║
+║  USB keyboard ──[USBConnection]────►  ┌──────────────┐              ║
+║  iPhone BLE   ──[BLEConnection]────►  │              │              ║
+║  macOS WiFi   ──[RTPMIDIConn.]─────►  │  Event Queue │──► getQueue()║
+║  DAW USB out  ──[USBDeviceConn]────►  │  (ring buf,  │              ║
+║  Max/MSP OSC  ──[OSCConnection]────►  │  thread-safe)│──► Active    ║
+║  W5500 LAN    ──[EthernetMIDI]─────►  │              │    notes     ║
+║  DIN-5 serial ──[UARTConnection]───►  │  Chord       │              ║
+║  ESP32 radio  ──[ESPNowConn.]──────►  │  detection   │──► Chord     ║
+║  MIDI 2.0 UDP ──[MIDI2UDPConn.]────►  └──────┬───────┘    names     ║
+║                                              │                      ║
+║                                              ▼                      ║
+║                                     sendMidiMessage()               ║
+║                                  (broadcasts to ALL transports)     ║
+╚══════════════════════════════════════════════════════════════════════╝
 ```
 
-> **Other languages** (MicroPython, Rust, TinyGo, Lua, etc.): not compatible. The library is C++ and depends on the Arduino-ESP32 core and ESP-IDF APIs.
+**Core 0** — USB Host task, BLE stack, radio / network drivers (FreeRTOS tasks)
+**Core 1** — `midiHandler.task()` + your `loop()` code
+**Thread safety** — ring buffers + `portMUX` spinlocks on every transport
 
-### ESP32 chip support
+Every transport implements the same `MIDITransport` abstract interface. Adding a new transport is one line: `midiHandler.addTransport(&myTransport)`.
 
-The library uses **compile-time feature detection** to automatically enable or disable USB and BLE based on the target chip. Select the correct board — the library adapts. ESP-NOW is available on all chips.
+---
 
-| Chip | USB Host | BLE | ESP-NOW | Dual-Core | PSRAM | Status |
-|------|:--------:|:---:|:-------:|:---------:|:-----:|--------|
-| **ESP32-S3** | Yes | Yes | Yes | Yes | Yes | **Recommended** |
-| **ESP32-S2** | Yes | No | Yes | No | depends | Supported |
-| **ESP32** (classic) | No | Yes | Yes | Yes | depends | Supported |
-| **ESP32-C3** | No | Yes | Yes | No | No | Supported |
-| **ESP32-C6** | No | Yes | Yes | No | No | Supported |
-| **ESP32-H2** | No | Yes | No | No | No | Supported |
-| **ESP32-P4** | Yes | No | TBD | Yes | Yes | Supported |
+### Transports
 
-> **Single-core chips** (S2, C3, C6, H2): USB or BLE shares CPU time with `loop()`. Keep `loop()` lightweight and call `midiHandler.task()` frequently.
+#### USB Host (OTG)
 
-### Feature detection macros
+Connects any class-compliant USB MIDI device — keyboards, pads, interfaces, drum machines, controllers — directly to the ESP32's USB-OTG port. No hub, no driver, no OS configuration.
+
+**Boards:** ESP32-S3, ESP32-S2, ESP32-P4 · **Arduino IDE:** `Tools > USB Mode → "USB Host"`
 
 ```cpp
-#if ESP32_HOST_MIDI_HAS_USB
-  // USB Host is available (ESP32-S2, S3, P4)
-#endif
-#if ESP32_HOST_MIDI_HAS_BLE
-  // BLE MIDI is available (ESP32, S3, C3, C6, H2)
-#endif
-#if ESP32_HOST_MIDI_HAS_PSRAM
-  // PSRAM is available for history buffer
-#endif
+#include <ESP32_Host_MIDI.h>
+void setup() { midiHandler.begin(); }
 ```
 
-### Other boards
-
-| Board | Compatible? | Reason |
-|-------|:-----------:|--------|
-| **Arduino Nano ESP32** (ESP32-S3) | Yes | Works natively |
-| **Seeed XIAO ESP32-S3** | Yes | Works natively |
-| **Seeed XIAO ESP32-C3** | Yes | BLE only |
-| **Raspberry Pi Pico** | No | Different USB Host API |
-| **Teensy 4.x** | No | Different USB Host API |
-| **Arduino Uno / Mega** (AVR) | No | No USB Host, no BLE, no STL |
-
-> See [ROADMAP.md](ROADMAP.md) for plans to support additional platforms.
+**Examples:** `T-Display-S3`, `T-Display-S3-Queue`, `T-Display-S3-Piano`, `T-Display-S3-Gingoduino`
 
 ---
 
-## Getting started
+#### BLE MIDI
+
+The ESP32 advertises as a BLE MIDI 1.0 peripheral. macOS (**Audio MIDI Setup → Bluetooth**), iOS (**GarageBand, AUM, Loopy, Moog**), and Android connect without any pairing ritual. Also supports Central (scanner) mode to connect to another BLE MIDI device.
+
+**Boards:** Any ESP32 with Bluetooth · **Range:** ~30 m · **Latency:** 3–15 ms
+
+```cpp
+#include <ESP32_Host_MIDI.h>
+void setup() { midiHandler.begin(); }  // BLE advertises automatically
+```
+
+<p align="center">
+  <img src="examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="320" />
+</p>
+
+**Examples:** `T-Display-S3-BLE-Sender`, `T-Display-S3-BLE-Receiver`
+
+---
+
+#### USB Device
+
+The ESP32-S3 presents itself as a class-compliant USB MIDI interface to the host computer. macOS, Windows, and Linux recognise it instantly — no driver. Acts as a transparent bridge: any MIDI from BLE, WiFi, UART, or ESP-NOW is forwarded to the DAW via USB, and vice versa.
+
+**Boards:** ESP32-S3, ESP32-S2, ESP32-P4 · **Arduino IDE:** `Tools > USB Mode → "USB-OTG (TinyUSB)"`
+> Cannot coexist with USB Host — both use the OTG port.
+
+```cpp
+#include "src/USBDeviceConnection.h"
+
+USBDeviceConnection usbMIDI("ESP32 MIDI");   // name shown in DAW MIDI port list
+
+void setup() {
+    midiHandler.addTransport(&usbMIDI);
+    usbMIDI.begin();
+    midiHandler.begin();
+}
+```
+
+**Examples:** `USB-Device-MIDI`, `T-Display-S3-USB-Device`
+
+---
+
+#### ESP-NOW MIDI
+
+Ultra-low-latency (~1–5 ms) wireless MIDI between ESP32 boards via Espressif's proprietary peer-to-peer radio. No WiFi router, no handshake, no pairing. Broadcast mode (all boards receive everyone's notes) or unicast.
+
+**Boards:** Any ESP32 · **Range:** ~200 m open air · **Infrastructure:** none
+
+```cpp
+#include "src/ESPNowConnection.h"
+
+ESPNowConnection espNow;
+
+void setup() {
+    espNow.begin();
+    midiHandler.addTransport(&espNow);
+    midiHandler.begin();
+}
+```
+
+**Examples:** `ESP-NOW-MIDI`, `T-Display-S3-ESP-NOW-Jam`
+
+---
+
+#### RTP-MIDI / Apple MIDI
+
+Implements **Apple MIDI** (RTP-MIDI, RFC 6295) over WiFi UDP. macOS and iOS discover the ESP32 automatically via **mDNS Bonjour** — it appears in **Audio MIDI Setup → Network** with no manual configuration. Compatible with Logic Pro, GarageBand, Ableton, and any CoreMIDI app.
+
+**Requires:** `lathoub/Arduino-AppleMIDI-Library v3.x`
+
+```cpp
+#include <WiFi.h>
+#include "src/RTPMIDIConnection.h"
+
+RTPMIDIConnection rtpMIDI;
+
+void setup() {
+    WiFi.begin("YourSSID", "YourPassword");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+    midiHandler.addTransport(&rtpMIDI);
+    rtpMIDI.begin();
+    midiHandler.begin();
+}
+```
+
+<p align="center">
+  <img src="examples/RTP-MIDI-WiFi/images/RTP.jpeg" width="300" />&nbsp;
+  <img src="examples/RTP-MIDI-WiFi/images/RTP2.jpeg" width="300" />
+</p>
+
+**Examples:** `RTP-MIDI-WiFi`
+
+---
+
+#### Ethernet MIDI
+
+Same RTP-MIDI / AppleMIDI protocol over a wired W5x00 SPI Ethernet module or ESP32-P4 native Ethernet MAC. Lower and more consistent latency than WiFi. Ideal for studio racks and live venues with managed networks.
+
+**Requires:** `lathoub/Arduino-AppleMIDI-Library v3.x` + `Arduino Ethernet library`
+
+```cpp
+#include <SPI.h>
+#include "src/EthernetMIDIConnection.h"
+
+EthernetMIDIConnection ethMIDI;
+static const uint8_t MAC[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+
+void setup() {
+    midiHandler.addTransport(&ethMIDI);
+    ethMIDI.begin(MAC);   // DHCP — pass a static IPAddress as second arg for fixed IP
+    midiHandler.begin();
+}
+```
+
+**Examples:** `Ethernet-MIDI`
+
+---
+
+#### OSC
+
+Bidirectional **OSC ↔ MIDI** bridge over WiFi UDP. Receives OSC messages from Max/MSP, Pure Data, SuperCollider, and TouchOSC and converts them to MIDI events — and sends every MIDI event out as an OSC message.
+
+**Address map:** `/midi/noteon`, `/midi/noteoff`, `/midi/cc`, `/midi/pc`, `/midi/pitchbend`, `/midi/aftertouch`
+
+**Requires:** `CNMAT/OSC library`
+
+```cpp
+#include <WiFi.h>
+#include "src/OSCConnection.h"
+
+OSCConnection oscMIDI;
+
+void setup() {
+    WiFi.begin("YourSSID", "YourPassword");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+    midiHandler.addTransport(&oscMIDI);
+    oscMIDI.begin(8000, IPAddress(192, 168, 1, 100), 9000);
+    midiHandler.begin();
+}
+```
+
+**Examples:** `OSC-MIDI-WiFi`, `T-Display-S3-OSC`
+
+---
+
+#### UART / DIN-5
+
+Standard MIDI serial (31250 baud, 8N1) for connecting **vintage hardware** — synthesizers, drum machines, mixers, sequencers, anything with a DIN-5 connector. Supports running status, real-time messages (Clock, Start, Stop), and multiple simultaneous UART ports (ESP32-P4 has five hardware UARTs).
+
+**Hardware:** TX → DIN-5 pin 5 via 220 Ω; PC-900V / 6N138 optocoupler on RX → DIN-5 pin 4
+
+```cpp
+#include "src/UARTConnection.h"
+
+UARTConnection uartMIDI;
+
+void setup() {
+    uartMIDI.begin(Serial1, /*RX=*/16, /*TX=*/17);
+    midiHandler.addTransport(&uartMIDI);
+    midiHandler.begin();
+}
+```
+
+**Examples:** `UART-MIDI-Basic`, `P4-Dual-UART-MIDI`
+
+---
+
+#### MIDI 2.0 / UMP
+
+MIDI 2.0 implemented end-to-end with `MIDI2UDPConnection` — a custom 12-byte UDP protocol carrying **Universal MIDI Packets** between ESP32 boards. Communicate at full MIDI 2.0 resolution: 16-bit velocity, 32-bit CC, 32-bit pitch bend. Received MIDI 2.0 packets are automatically scaled down to MIDI 1.0 for all other transports.
+
+**Protocol:** `"UMP2"` magic (4 bytes) + Word0 + Word1 (big-endian uint32 each)
+
+```cpp
+#include <WiFi.h>
+#include "src/MIDI2UDPConnection.h"
+
+MIDI2UDPConnection midi2udp;
+
+void setup() {
+    WiFi.begin("YourSSID", "YourPassword");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+    midi2udp.begin(5006, IPAddress(192, 168, 1, 20), 5006);
+    midiHandler.addTransport(&midi2udp);
+    midiHandler.begin();
+}
+
+// Access 16-bit / 32-bit values from the last received packet:
+const UMPResult& r = midi2udp.lastResult();
+Serial.printf("note=%d  vel16=%u  vel7=%d\n", r.note, r.velocity16, r.midi1[2]);
+```
+
+**MIDI 2.0 data layer (`MIDI2Support.h`):**
+
+```cpp
+#include "src/MIDI2Support.h"
+
+uint16_t vel16 = MIDI2Scaler::scale7to16(100);              // 7-bit → 16-bit
+UMPWord64 pkt  = UMPBuilder::noteOn(0, 0, 60, vel16);       // build UMP packet
+UMPResult r    = UMPParser::parseMIDI2(pkt);                // parse it back
+```
+
+<p align="center">
+  <img src="examples/T-Display-S3-MIDI2-UDP/images/MIDI2.jpeg" width="380" />
+</p>
+<p align="center"><em>T-Display-S3-MIDI2-UDP — two boards exchange MIDI 2.0 UMP over UDP, 16-bit velocity bar</em></p>
+
+**Examples:** `T-Display-S3-MIDI2-UDP`, `MIDI2-UDP`
+
+---
+
+### Bridge Use Cases
+
+Any MIDI arriving on any transport is automatically forwarded to all others — no extra code.
+
+| Bridge | Diagram |
+|--------|---------|
+| Wireless keyboard → DAW | iPhone BLE → ESP32 → USB Device → Logic Pro |
+| USB keyboard → WiFi | USB keyboard → ESP32 → RTP-MIDI → macOS |
+| Legacy to modern | DIN-5 synth → ESP32 → USB Device → any DAW |
+| Modern to legacy | macOS → RTP-MIDI → ESP32 → DIN-5 → 1980s drum machine |
+| Wireless stage mesh | ESP-NOW nodes → ESP32 hub → USB → FOH computer |
+| Creative software | Max/MSP OSC → ESP32 → BLE → iPad instrument app |
+| MIDI 2.0 → vintage | ESP32-A UDP/MIDI2 → ESP32-B → DIN-5 → analog synth |
+
+**Full hub — receive everything, send everywhere:**
+
+```
+USB keyboard ─┐
+iPhone BLE   ─┤
+macOS RTP   ──┼──► MIDIHandler ──► USB Device (DAW)
+DIN-5 synth ─┤               ──► BLE (iOS app)
+TouchOSC    ─┤               ──► DIN-5 (drum machine)
+ESP-NOW     ─┘               ──► ESP-NOW (stage nodes)
+```
+
+---
+
+### Hardware Ecosystem
+
+ESP32\_Host\_MIDI acts as the **MIDI brain and protocol hub**. It connects and communicates with a broad ecosystem of boards and devices.
+
+#### Boards you can connect to the ESP32
+
+| Board | Connection | Use case |
+|-------|-----------|----------|
+| **[Daisy Seed](https://electro-smith.com/daisy)** (Electro-Smith) | UART / DIN-5 or USB | DSP audio synthesis engine; ESP32 sends MIDI, Daisy plays notes |
+| **Teensy 4.x** (PJRC) | UART serial or USB Host | Complex MIDI routing or synthesis; excellent USB MIDI native support |
+| **Arduino UNO / MEGA / Nano** | UART serial (DIN-5) | Classic MIDI projects; ESP32 is the wireless gateway |
+| **Raspberry Pi** | RTP-MIDI, OSC, or USB | DAW host, audio processing, generative composition |
+| **Eurorack / modular synths** | MIDI DIN-5 → CV/gate interface | Pitch CV, gate, velocity → analogue voltage via converter module |
+| **Hardware synthesizers** | DIN-5 | Any keyboard, rack synth, or effects unit with MIDI In/Out/Thru |
+| **iPad / iPhone** | BLE MIDI | GarageBand, AUM, Moog apps, NLog, Animoog — all CoreMIDI-compatible |
+| **Computer DAW** | USB Device or RTP-MIDI | Logic Pro, Ableton, Bitwig, FL Studio, Reaper, Pro Tools |
+
+> **Daisy Seed + ESP32** is a particularly powerful combination: the ESP32 handles all MIDI connectivity (USB, BLE, WiFi, DIN-5) and the Daisy Seed processes audio in real time at 48 kHz / 24-bit with its ARM Cortex-M7 DSP. They talk over a single UART/DIN-5 cable.
+
+> **Teensy 4.1** can run complex MIDI logic, arpeggiators, chord voicers, or sequencers, while ESP32 handles wireless transport — each board doing what it does best.
+
+#### Hardware projects you can build
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  PROJECT               │  COMPONENTS                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  Wireless MIDI pedal   │  ESP32 + buttons + enclosure → ESP-NOW     │
+│  board                 │  → central hub → DIN-5 / USB to amp rack   │
+├─────────────────────────────────────────────────────────────────────┤
+│  MIDI drum pad         │  ESP32 + piezo sensors + ADC → velocity-   │
+│                        │  sensitive MIDI notes over USB or BLE       │
+├─────────────────────────────────────────────────────────────────────┤
+│  Synthesizer           │  ESP32 + Daisy Seed: ESP32 bridges all     │
+│                        │  MIDI protocols, Daisy generates audio      │
+├─────────────────────────────────────────────────────────────────────┤
+│  MIDI to CV converter  │  ESP32 + MCP4728 DAC → 0–5 V pitch CV +   │
+│                        │  gate for Eurorack / analogue synths        │
+├─────────────────────────────────────────────────────────────────────┤
+│  Custom MIDI           │  ESP32-S3 + encoders + faders + OLED →     │
+│  controller            │  USB MIDI Device recognized by any DAW      │
+├─────────────────────────────────────────────────────────────────────┤
+│  Piano learning aid    │  ESP32 + RGB LEDs on piano keys + display  │
+│                        │  → lights the correct key for each note     │
+├─────────────────────────────────────────────────────────────────────┤
+│  Wireless expression   │  ESP32 + FSR / potentiometer in foot       │
+│  pedal                 │  enclosure → CC messages via ESP-NOW        │
+├─────────────────────────────────────────────────────────────────────┤
+│  MIDI arpeggiator /    │  ESP32 receives chords, generates          │
+│  sequencer             │  arpeggiated patterns, sends to DIN-5       │
+├─────────────────────────────────────────────────────────────────────┤
+│  Theremin / air synth  │  Ultrasonic sensors → pitch + volume →     │
+│                        │  MIDI notes via BLE or USB                  │
+├─────────────────────────────────────────────────────────────────────┤
+│  Interactive art       │  Motion / proximity / touch sensors →      │
+│  installation          │  MIDI → generative music / light control    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Display Examples (T-Display-S3)
+
+The LilyGO T-Display-S3 has a 1.9" 170×320 ST7789 display + ESP32-S3. These examples show a live MIDI dashboard in landscape mode (320×170 after `setRotation(2)`).
+
+| Example | Transport | What the display shows |
+|---------|-----------|------------------------|
+| `T-Display-S3` | USB Host | Active notes + event log |
+| `T-Display-S3-Queue` | USB Host | Full event queue debug view |
+| `T-Display-S3-Piano` | USB Host | 25-key scrollable piano roll |
+| `T-Display-S3-Piano-Debug` | USB Host | Piano roll + extended debug info |
+| `T-Display-S3-Gingoduino` | USB Host + BLE | Chord names (music theory engine) |
+| `T-Display-S3-BLE-Sender` | BLE | Send mode status + event log |
+| `T-Display-S3-BLE-Receiver` | BLE | Receive mode + note log |
+| `T-Display-S3-ESP-NOW-Jam` | ESP-NOW | Peer status + jam events |
+| `T-Display-S3-OSC` | OSC + WiFi | WiFi status + OSC bridge log |
+| `T-Display-S3-USB-Device` | BLE + USB Device | Dual status + bridge log |
+| `T-Display-S3-MIDI2-UDP` | MIDI 2.0 UDP | WiFi + Peer status, 16-bit velocity bar |
+
+---
+
+### Gingoduino — Music Theory on Embedded Systems
+
+[**Gingoduino**](https://github.com/sauloverissimo/gingoduino) is a music theory library for embedded systems — the same engine that powers the `T-Display-S3-Gingoduino` example. When integrated via `GingoAdapter.h`, it listens to the same MIDI event stream and continuously analyses the active notes to produce:
+
+- **Chord name** — "Cmaj7", "Dm7♭5", "G7", "Am" with extensions and alterations
+- **Root note** — identified root pitch of the chord
+- **Active note set** — structured list of currently pressed notes
+- **Interval analysis** — intervals between notes (M3, m7, P5, etc.)
+- **Scale matching** — identifies likely scale (major, minor, modes)
+
+Everything runs **on-device** at interrupt speed — no cloud, no network, no latency.
+
+```cpp
+#include "src/GingoAdapter.h"  // requires Gingoduino ≥ v0.2.2
+
+void loop() {
+    midiHandler.task();
+
+    // Chord name updates automatically as notes arrive and are released:
+    std::string chord = gingoAdapter.getChordName();  // "Cmaj7", "Dm", "G7sus4" …
+    std::string root  = gingoAdapter.getRootNote();    // "C", "D", "G" …
+
+    display.setChord(chord.c_str());
+}
+```
+
+<p align="center">
+  <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="360" />
+</p>
+<p align="center"><em>T-Display-S3-Gingoduino: chord name, root note, and active keys updated in real time</em></p>
+
+**→ [github.com/sauloverissimo/gingoduino](https://github.com/sauloverissimo/gingoduino)**
+
+---
+
+### Gingo — Music Theory for Python and Desktop
+
+[**Gingo**](https://github.com/sauloverissimo/gingo) is the desktop and Python counterpart of Gingoduino — the same music theory concepts ported to Python for use in scripts, DAW integrations, MIDI processors, composition tools, and web apps.
+
+Use it to:
+- Analyse MIDI files and extract chord progressions
+- Build Python MIDI processors that recognise chords on the fly
+- Create web applications with real-time music theory annotation
+- Prototype music theory algorithms before porting them to Gingoduino
+- Generate chord charts, lead sheets, and educational exercises
+
+```python
+from gingo import Gingo
+
+g = Gingo()
+chord = g.identify([60, 64, 67, 71])   # C E G B
+print(chord.name)   # "Cmaj7"
+print(chord.root)   # "C"
+```
+
+**→ [github.com/sauloverissimo/gingo](https://github.com/sauloverissimo/gingo)**
+**→ [sauloverissimo.github.io/gingo](https://sauloverissimo.github.io/gingo/)**
+
+> **ESP32 + Gingo workflow:** prototype music theory algorithms in Python with Gingo → port the logic to Gingoduino on ESP32 → display chord names live on T-Display-S3.
+
+---
+
+### Hardware Compatibility
+
+#### Chip → available transports
+
+| Chip | USB Host | BLE | USB Device | WiFi | Ethernet (native) | UART | ESP-NOW |
+|------|:--------:|:---:|:----------:|:----:|:-----------------:|:----:|:-------:|
+| ESP32-S3 | ✅ | ✅ | ✅ | ✅ | ❌ (W5500 SPI) | ✅ | ✅ |
+| ESP32-S2 | ✅ | ❌ | ✅ | ✅ | ❌ (W5500 SPI) | ✅ | ❌ |
+| ESP32-P4 | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ ×5 | ❌ |
+| ESP32 (classic) | ❌ | ✅ | ❌ | ✅ | ❌ (W5500 SPI) | ✅ | ✅ |
+| ESP32-C3 / C6 / H2 | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+
+> W5500 SPI Ethernet works on **any** ESP32 via `EthernetMIDIConnection`.
+
+#### Recommended boards
+
+| Use case | Board |
+|----------|-------|
+| Best all-round (USB Host + BLE + WiFi + display) | **LilyGO T-Display-S3** |
+| Full USB Host + USB Device + BLE | Any ESP32-S3 DevKit |
+| Ultra-low-latency wireless stage mesh | ESP32 DevKit (ESP-NOW) |
+| Wired studio rack | ESP32-P4 native Ethernet or any ESP32 + W5500 |
+| DIN-5 MIDI gateway | Any ESP32 + UART optocoupler |
+| MIDI 2.0 experiments | Two ESP32-S3 boards on the same WiFi |
+
+---
 
 ### Installation
 
-1. **Arduino IDE**: Download as ZIP and install via *Sketch > Include Library > Add .ZIP Library*, or clone directly into your Arduino `libraries/` folder.
-2. **PlatformIO**: Add the GitHub URL to `lib_deps` in your `platformio.ini` (see above).
+**Arduino IDE:** Sketch → Include Library → Manage Libraries → search **ESP32_Host_MIDI**
 
-### Dependencies
+**PlatformIO:**
+```ini
+[env:esp32-s3-devkitc-1]
+platform = espressif32
+board    = esp32-s3-devkitc-1
+framework = arduino
 
-- **ESP32 Arduino Core** 2.0.0+ (includes USB Host and BLE support)
-- **[LovyanGFX](https://github.com/lovyan03/LovyanGFX)** 0.4.x+ (only for display examples)
-- **[Gingoduino](https://github.com/sauloverissimo/gingoduino)** v0.2.2+ (optional, for music theory analysis)
+lib_deps =
+    sauloverissimo/ESP32_Host_MIDI
+    # lathoub/Arduino-AppleMIDI-Library  ; RTP-MIDI + Ethernet MIDI
+    # arduino-libraries/Ethernet          ; Ethernet MIDI
+    # CNMAT/OSC                           ; OSC
+    # sauloverissimo/gingoduino           ; Chord names
+```
 
-### Quick start
+**Board package:** `Tools > Boards Manager → "esp32" by Espressif → ≥ 3.0.0`
+USB Host and USB Device require **arduino-esp32 ≥ 3.0** (TinyUSB MIDI).
+
+| Transport | Required library |
+|-----------|-----------------|
+| RTP-MIDI / Ethernet MIDI | `lathoub/Arduino-AppleMIDI-Library` |
+| Ethernet MIDI | `arduino-libraries/Ethernet` |
+| OSC | `CNMAT/OSC` |
+| Chord names | `sauloverissimo/gingoduino` |
+| USB Host / Device / BLE / ESP-NOW | Built into arduino-esp32 |
+
+---
+
+### API Reference
+
+```cpp
+// Setup
+midiHandler.begin();               // start built-in transports (USB, BLE, ESP-NOW)
+midiHandler.begin(cfg);            // with custom config
+midiHandler.addTransport(&t);      // register external transport
+
+// Receive
+const auto& q = midiHandler.getQueue();                        // event ring buffer
+std::vector<std::string> n = midiHandler.getActiveNotesVector(); // ["C4","E4","G4"]
+std::string chord = midiHandler.getChordName();                 // "Cmaj7"
+
+// Send (broadcasts to ALL transports simultaneously)
+midiHandler.sendNoteOn(ch, note, vel);
+midiHandler.sendNoteOff(ch, note, vel);
+midiHandler.sendControlChange(ch, ctrl, val);
+midiHandler.sendProgramChange(ch, prog);
+midiHandler.sendPitchBend(ch, val);          // 0–16383, center = 8192
+```
+
+**MIDIHandlerConfig:**
+```cpp
+MIDIHandlerConfig cfg;
+cfg.maxEvents      = 20;    // queue capacity
+cfg.enableHistory  = true;  // keep full history
+cfg.chordDetection = true;  // group simultaneous notes
+```
+
+**Custom transport interface:**
+```cpp
+class MyTransport : public MIDITransport {
+public:
+    void task() override;
+    bool isConnected() const override;
+    bool sendMidiMessage(const uint8_t* data, size_t len) override;
+protected:
+    void dispatchMidiData(const uint8_t* data, size_t len); // inject received MIDI
+    void dispatchConnected();
+    void dispatchDisconnected();
+};
+midiHandler.addTransport(&myTransport);
+```
+
+---
+
+### File Structure
+
+```
+ESP32_Host_MIDI/
+├── src/
+│   ├── ESP32_Host_MIDI.h             ← main include (USB + BLE + ESP-NOW built-in)
+│   ├── MIDIHandler.h / .cpp          ← event queue, chord detection, active notes
+│   ├── MIDITransport.h               ← abstract transport interface
+│   ├── MIDIHandlerConfig.h           ← config struct
+│   ├── USBConnection.h / .cpp        ← USB Host OTG
+│   ├── BLEConnection.h / .cpp        ← BLE MIDI
+│   ├── ESPNowConnection.h / .cpp     ← ESP-NOW MIDI
+│   ├── UARTConnection.h / .cpp       ← UART / DIN-5
+│   ├── USBDeviceConnection.h         ← USB MIDI Device (header-only)
+│   ├── RTPMIDIConnection.h / .cpp    ← RTP-MIDI over WiFi (header-only)
+│   ├── EthernetMIDIConnection.h      ← AppleMIDI over Ethernet (header-only)
+│   ├── OSCConnection.h               ← OSC ↔ MIDI bridge (header-only)
+│   ├── MIDI2UDPConnection.h          ← MIDI 2.0 / UMP over UDP (header-only)
+│   ├── GingoAdapter.h                ← Gingoduino chord integration
+│   └── MIDI2Support.h                ← MIDI 2.0 UMP parser + scaler + builder
+└── examples/
+    ├── T-Display-S3/                 T-Display-S3-Queue/
+    ├── T-Display-S3-Piano/           T-Display-S3-Piano-Debug/
+    ├── T-Display-S3-Gingoduino/      T-Display-S3-BLE-Sender/
+    ├── T-Display-S3-BLE-Receiver/    T-Display-S3-ESP-NOW-Jam/
+    ├── T-Display-S3-OSC/             T-Display-S3-USB-Device/
+    ├── T-Display-S3-MIDI2-UDP/       ESP-NOW-MIDI/
+    ├── UART-MIDI-Basic/              P4-Dual-UART-MIDI/
+    ├── RTP-MIDI-WiFi/                Ethernet-MIDI/
+    ├── OSC-MIDI-WiFi/                MIDI2-UDP/
+    └── USB-Device-MIDI/
+```
+
+---
+
+### License
+
+MIT — see [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Built with ❤️ for musicians, makers, and researchers.<br/>
+  Issues and contributions welcome:
+  <a href="https://github.com/sauloverissimo/ESP32_Host_MIDI">github.com/sauloverissimo/ESP32_Host_MIDI</a>
+</p>
+
+---
+
+
+## Português (Brasil)
+
+**O hub MIDI universal para ESP32 — 9 transportes, uma única API.**
+
+ESP32\_Host\_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o DAW pelo WiFi com RTP-MIDI (Apple MIDI), controle o Max/MSP via OSC, alcance sintetizadores de 40 anos por um cabo DIN-5, ligue vários ESP32 sem fio via ESP-NOW e troque pacotes MIDI 2.0 com velocidade de 16 bits — **tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.**
+
+```cpp
+#include <ESP32_Host_MIDI.h>
+
+void setup() { midiHandler.begin(); }
+
+void loop() {
+    midiHandler.task();
+    for (const auto& ev : midiHandler.getQueue())
+        Serial.printf("%-12s %-4s ch=%d  vel=%d\n",
+            ev.status.c_str(), ev.noteOctave.c_str(),
+            ev.channel, ev.velocity);
+}
+```
+
+---
+
+### O que você pode construir?
+
+> Uma lista parcial. Cada combinação de transportes abre um novo instrumento, ferramenta ou instalação.
+
+**Interfaces MIDI sem fio**
+- Teclado USB → ESP32 → WiFi → macOS (Logic Pro / GarageBand) — sem drivers, sem cabos para o Mac
+- App BLE no iPhone / iPad → ESP32 → USB MIDI Device → porta do DAW — apps iOS viram controladores de estúdio
+- ESP32 se apresenta como interface USB MIDI Class Compliant — conecte em qualquer computador e funciona
+
+**Hardware customizado**
+- **Pedalboard de efeitos** — ESP32 envia Program Change / CC para Daisy Seed ou multi-efeitos; display mostra nome do preset
+- **Pad de bateria MIDI** — sensores piezo nas entradas ADC → notas MIDI com sensibilidade a velocidade → USB ou BLE
+- **Sintetizador customizado** — ESP32 recebe MIDI e controla circuito analógico externo com DAC + VCO/VCA, ou dispara uma Daisy Seed com engine de síntese
+- **Controlador MIDI** — encoders, faders, botões, touchpads → USB MIDI Device → qualquer DAW
+- **Conversor MIDI para CV** — ESP32 + DAC externo (MCP4728, MCP4921) → CV 0–5 V / gate para Eurorack e sintetizadores analógicos
+- **Pedal de expressão sem fio** — controlador de pé com ESP-NOW → hub ESP32 central → mensagens CC
+- **Metrônomo / clock inteligente** — gera MIDI Clock em BPM preciso, enviado simultaneamente por USB, BLE, DIN-5 e WiFi
+- **Theremin com saída MIDI** — sensores ultrassônicos ou toque capacitivo → pitch + volume → notas MIDI
+- **Acordeão ou controlador de sopro MIDI** — sensores de pressão + botões → ESP32 → BLE → app instrumento no iPad
+
+**Pontes e roteadores**
+- Sintetizador DIN-5 → ESP32 → USB Device → DAW moderno — adaptador sem driver
+- Rig de palco sem fio: mesh ESP-NOW de performers → saída USB única para o computador da FOH
+- Experimentos MIDI 2.0: dois ESP32 trocam velocidade de 16 bits via UDP
+
+**Integração com software criativo**
+- Max/MSP / Pure Data / SuperCollider ↔ ESP32 via OSC — bidirecional, com endereços mapeados
+- TouchOSC no tablet → ESP32 → sintetizador DIN-5 — touchscreen para hardware vintage
+- Composição algorítmica no Max → OSC → ESP32 → BLE → app instrumento no iPad
+
+**Monitoramento e educação**
+- Piano roll ao vivo: teclas iluminadas ao tocar, visão de 25 teclas com rolagem em display de 1,9"
+- Detecção de acordes em tempo real: toque um acorde e veja o nome instantaneamente ("Cmaj7", "Dm7♭5")
+- Logger de eventos MIDI com timestamps, canal, velocidade e agrupamento de acordes
+
+---
+
+### Matriz de Transportes
+
+| Transporte | Protocolo | Física | Latência | Requer |
+|-----------|----------|----------|---------|----------|
+| USB Host | USB MIDI 1.0 | Cabo USB-OTG | < 1 ms | ESP32-S3 / S2 / P4 |
+| BLE MIDI | BLE MIDI 1.0 | Bluetooth LE | 3–15 ms | Qualquer ESP32 com BT |
+| USB Device | USB MIDI 1.0 | Cabo USB-OTG | < 1 ms | ESP32-S3 / S2 / P4 |
+| ESP-NOW MIDI | ESP-NOW | Rádio 2,4 GHz | 1–5 ms | Qualquer ESP32 |
+| RTP-MIDI (WiFi) | AppleMIDI / RFC 6295 | UDP WiFi | 5–20 ms | Qualquer ESP32 com WiFi |
+| Ethernet MIDI | AppleMIDI / RFC 6295 | Cabeado (W5x00 / nativo) | 2–10 ms | W5500 SPI ou ESP32-P4 |
+| OSC | Open Sound Control | UDP WiFi | 5–15 ms | Qualquer ESP32 com WiFi |
+| UART / DIN-5 | Serial MIDI 1.0 | Conector DIN-5 | < 1 ms | Qualquer ESP32 |
+| MIDI 2.0 / UMP | UMP via UDP | UDP WiFi | 5–20 ms | Qualquer ESP32 com WiFi |
+
+---
+
+### Início Rápido
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
 
 void setup() {
     Serial.begin(115200);
-
-    MIDIHandlerConfig config;
-    config.bleName = "My MIDI Device";    // BLE advertising name
-    config.chordTimeWindow = 50;          // 50ms chord grouping window
-
-    midiHandler.begin(config);
-}
-
-void loop() {
-    midiHandler.task();  // MUST be called every loop iteration
-
-    // Check what's playing
-    if (midiHandler.getActiveNotesCount() > 0) {
-        Serial.println(midiHandler.getActiveNotes().c_str());  // "{C4, E4, G4}"
-    }
-}
-```
-
-### Board settings (Arduino IDE)
-
-- Board: **ESP32S3 Dev Module** (or your specific board)
-- USB Mode: **USB-OTG (TinyUSB)** (required for USB Host)
-
----
-
-## Receiving MIDI
-
-Both USB and BLE reception work automatically after calling `midiHandler.begin()`. MIDI events are parsed, converted, and made available through the API.
-
-### Reading the event queue
-
-```cpp
-const auto& queue = midiHandler.getQueue();
-for (const auto& event : queue) {
-    Serial.printf("[%s] ch=%d note=%s vel=%d\n",
-        event.status.c_str(), event.channel,
-        event.noteOctave.c_str(), event.velocity);
-}
-```
-
-### Active notes
-
-```cpp
-// As a formatted string
-String notes = midiHandler.getActiveNotes().c_str();  // "{C4, E4, G4}"
-
-// As a vector
-auto vec = midiHandler.getActiveNotesVector();  // ["C4", "E4", "G4"]
-
-// As a bool array (best for real-time rendering)
-bool active[128];
-midiHandler.fillActiveNotes(active);
-if (active[60]) { /* middle C is pressed */ }
-```
-
-### Chord detection
-
-```cpp
-int chord = midiHandler.lastChord(midiHandler.getQueue());
-auto noteNames = midiHandler.getChord(chord, midiHandler.getQueue(), {"noteName"});
-// noteNames: ["C", "E", "G"]
-
-// Shorthand for the last chord:
-auto answer = midiHandler.getAnswer("noteName");
-```
-
-### MIDIEventData fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `index` | `int` | Global event counter |
-| `msgIndex` | `int` | Links NoteOn/NoteOff pairs |
-| `timestamp` | `unsigned long` | Timestamp in ms (`millis()`) |
-| `delay` | `unsigned long` | Delta time since previous event |
-| `channel` | `int` | MIDI channel (1-16) |
-| `status` | `std::string` | `"NoteOn"`, `"NoteOff"`, `"ControlChange"`, `"ProgramChange"`, `"PitchBend"`, `"ChannelPressure"` |
-| `note` | `int` | MIDI note number (or CC number) |
-| `noteName` | `std::string` | Musical note name ("C", "D#") |
-| `noteOctave` | `std::string` | Note with octave ("C4", "D#5") |
-| `velocity` | `int` | Velocity (or CC value, program number, pressure) |
-| `chordIndex` | `int` | Groups simultaneously pressed notes |
-| `pitchBend` | `int` | 14-bit value (0-16383, center = 8192) |
-
----
-
-## Sending MIDI
-
-Send methods work via any transport that supports sending (BLE, ESP-NOW, or custom transports). All methods return `true` if the message was sent, `false` if no transport is available.
-
-```cpp
-// Notes (channel: 1-16)
-midiHandler.sendNoteOn(1, 60, 100);    // Channel 1, Middle C, velocity 100
-midiHandler.sendNoteOff(1, 60, 0);     // Release
-
-// Control Change
-midiHandler.sendControlChange(1, 1, 64);   // CC#1 (Mod Wheel), value 64
-
-// Program Change
-midiHandler.sendProgramChange(1, 5);   // Program 5
-
-// Pitch Bend (-8192 to 8191, 0 = center)
-midiHandler.sendPitchBend(1, 0);       // Center
-midiHandler.sendPitchBend(1, 4096);    // Bend up
-
-// Raw MIDI bytes (status + data, no headers)
-uint8_t raw[] = {0x90, 60, 100};
-midiHandler.sendRaw(raw, 3);
-
-// Check BLE connection
-#if ESP32_HOST_MIDI_HAS_BLE
-if (midiHandler.isBleConnected()) {
-    // A phone/DAW is connected via BLE
-}
-#endif
-```
-
-### USB-to-BLE bridge example
-
-```cpp
-#include <ESP32_Host_MIDI.h>
-
-void setup() {
-    midiHandler.begin();
-    midiHandler.setRawMidiCallback(onRawMidi);
-}
-
-// Forward every incoming MIDI message to BLE
-void onRawMidi(const uint8_t* raw, size_t rawLen, const uint8_t* midi3) {
-    midiHandler.sendRaw(midi3, 3);
-}
-
-void loop() {
-    midiHandler.task();
-}
-```
-
----
-
-## Transport abstraction
-
-The library uses a `MIDITransport` interface that decouples MIDI processing from specific hardware. USB and BLE are built-in transports registered automatically. You can add custom transports via `addTransport()`.
-
-### Architecture
-
-```
-MIDIHandler ──[MIDITransport*]──> USBConnection     (built-in, automatic)
-             ──[MIDITransport*]──> BLEConnection     (built-in, automatic)
-             ──[MIDITransport*]──> ESPNowConnection  (addTransport, manual)
-             ──[MIDITransport*]──> YourTransport     (addTransport, manual)
-```
-
-### Creating a custom transport
-
-```cpp
-#include "MIDITransport.h"
-
-class MyTransport : public MIDITransport {
-public:
-    bool begin() { /* init hardware */ return true; }
-
-    void task() override {
-        // Read from hardware, then deliver to MIDIHandler:
-        if (hasData) dispatchMidiData(midiBytes, 3);
-    }
-
-    bool isConnected() const override { return initialized; }
-
-    // Optional: override sendMidiMessage() if your transport supports sending
-    bool sendMidiMessage(const uint8_t* data, size_t length) override {
-        // Send bytes over your transport
-        return true;
-    }
-};
-
-MyTransport custom;
-void setup() {
-    custom.begin();
-    midiHandler.addTransport(&custom);
-    midiHandler.begin();
-}
-```
-
----
-
-## ESP-NOW MIDI
-
-ESP-NOW provides ultra-low latency wireless MIDI (~1-5ms) between ESP32 devices. No WiFi router needed — devices communicate directly. Ideal for wireless MIDI on stage.
-
-| Feature | Value |
-|---------|-------|
-| Latency | ~1-5ms (vs 10-20ms for BLE) |
-| Range | ~200m outdoor, ~50m indoor |
-| Pairing | Not required (broadcast mode) |
-| Max peers | 20 (unicast) / unlimited (broadcast) |
-| Bidirectional | Yes |
-
-### Basic usage
-
-```cpp
-#include "ESP32_Host_MIDI.h"
-#include "ESPNowConnection.h"
-
-ESPNowConnection espNow;
-
-void setup() {
-    espNow.begin();                          // Init WiFi + ESP-NOW
-    midiHandler.addTransport(&espNow);       // Register with MIDIHandler
     midiHandler.begin();
 }
 
 void loop() {
     midiHandler.task();
-    // Incoming ESP-NOW MIDI is now parsed like USB/BLE:
-    // getActiveNotes(), getAnswer(), sendNoteOn(), etc.
-}
-```
-
-### Standalone (without MIDIHandler)
-
-```cpp
-#include "ESPNowConnection.h"
-
-ESPNowConnection espNow;
-
-void onData(void* ctx, const uint8_t* data, size_t len) {
-    Serial.printf("MIDI: %02X %02X %02X\n", data[0], data[1], data[2]);
-}
-
-void setup() {
-    espNow.begin();
-    espNow.setMidiCallback(onData, nullptr);
-}
-
-void loop() {
-    espNow.task();
-    // Send a NoteOn
-    uint8_t msg[] = {0x90, 60, 100};
-    espNow.sendMidiMessage(msg, 3);
-}
-```
-
-### Peer management
-
-```cpp
-// By default, ESP-NOW broadcasts to all devices on the same channel.
-// To target specific devices:
-uint8_t peerMAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-espNow.addPeer(peerMAC);
-
-// Get this device's MAC (tell the other device to add it):
-uint8_t myMAC[6];
-espNow.getLocalMAC(myMAC);
-```
-
----
-
-## Using raw MIDI data (without MIDIHandler)
-
-For custom parsers, MIDI routing, or minimal footprint, use `USBConnection` or `BLEConnection` directly with callbacks:
-
-```cpp
-#include "USBConnection.h"
-#include "BLEConnection.h"
-
-USBConnection usb;
-BLEConnection ble;
-
-void onUsbData(void* ctx, const uint8_t* data, size_t len) {
-    // USB-MIDI: 4 bytes per event [CIN, Status, Data1, Data2]
-    Serial.printf("USB: %02X %02X %02X %02X\n", data[0], data[1], data[2], data[3]);
-}
-
-void onBleData(void* ctx, const uint8_t* data, size_t len) {
-    // BLE: raw MIDI bytes (header already stripped)
-    Serial.printf("BLE: %02X %02X %02X\n", data[0], data[1], data[2]);
-}
-
-void setup() {
-    usb.setMidiCallback(onUsbData, nullptr);
-    usb.setConnectionCallbacks(onConnect, onDisconnect, nullptr);
-    usb.begin();
-
-    ble.setMidiCallback(onBleData, nullptr);
-    ble.begin("My Device");
-}
-
-void loop() {
-    usb.task();
-    ble.task();
+    for (const auto& ev : midiHandler.getQueue())
+        Serial.println(ev.noteOctave.c_str());
 }
 ```
 
 ---
 
-## Configuration
+### Galeria
 
-```cpp
-MIDIHandlerConfig config;
-config.maxEvents = 30;            // Event queue size (SRAM)
-config.chordTimeWindow = 50;      // Chord grouping window (ms). 0 = legacy
-config.velocityThreshold = 10;    // Ignore ghost notes below this velocity
-config.historyCapacity = 1000;    // PSRAM history buffer. 0 = disabled
-config.bleName = "My MIDI Device"; // BLE advertising name
+<p align="center">
+  <img src="examples/T-Display-S3-MIDI2-UDP/images/MIDI2.jpeg" width="240" />&nbsp;
+  <img src="examples/RTP-MIDI-WiFi/images/RTP.jpeg" width="240" />&nbsp;
+  <img src="examples/RTP-MIDI-WiFi/images/RTP2.jpeg" width="240" />
+</p>
+<p align="center"><em>MIDI 2.0 UDP com barra de velocidade de 16 bits · RTP-MIDI / Apple MIDI conectando ao macOS</em></p>
 
-midiHandler.begin(config);
-```
+<p align="center">
+  <img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Queue/images/queue.jpeg" width="240" />
+</p>
+<p align="center"><em>Piano roll de 25 teclas rolável · Nome de acorde em tempo real (Gingoduino) · Debug da fila de eventos</em></p>
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `maxEvents` | 20 | Maximum events in the active queue (SRAM) |
-| `chordTimeWindow` | 0 | Time window (ms) for chord grouping. 0 = legacy mode |
-| `velocityThreshold` | 0 | Minimum velocity to accept NoteOn. 0 = accept all |
-| `historyCapacity` | 0 | PSRAM history buffer size. 0 = disabled |
-| `bleName` | `"ESP32 MIDI BLE"` | BLE advertising device name |
+<p align="center">
+  <img src="examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-BLE-Sender/images/BLE.jpeg" width="240" />&nbsp;
+  <img src="examples/T-Display-S3-Piano-Debug/images/pianno-debug.jpeg" width="240" />
+</p>
+<p align="center"><em>BLE Receiver (iPhone → ESP32) · BLE Sender · Piano debug</em></p>
 
----
-
-## Architecture
-
-All transports share the same pattern: data arrives in a background task/callback, gets enqueued into a spinlock-protected ring buffer, and is processed on the main loop via `task()`.
-
-```
-┌──────────────────────────────┐    ┌──────────────────────────────┐
-│       Background Tasks        │    │     Core 1 (main loop)        │
-│                               │    │                               │
-│  USB: _usbTask (Core 0)      │    │   midiHandler.task()          │
-│  • USB host polling           │───>│   • transport[0]->task()      │
-│  • Enqueue to ring buffer     │    │   • transport[1]->task()      │
-│                               │    │   • transport[N]->task()      │
-│  BLE: ESP-IDF BLE task        │    │   • handleMidiMessage()       │
-│  • onWrite callback           │───>│   • User logic                │
-│  • Enqueue to ring buffer     │    │   • Display rendering         │
-│                               │    │                               │
-│  ESP-NOW: WiFi task           │    │                               │
-│  • _onReceive callback        │───>│                               │
-│  • Enqueue to ring buffer     │    │                               │
-└──────────────────────────────┘    └──────────────────────────────┘
-          ▲                                     │
-          │      Ring Buffers (64 msgs each)    │
-          └──────── spinlock-safe ──────────────┘
-```
-
-### Connection lifecycle (BLE)
-
-- **Advertising** starts automatically in `begin()`.
-- When a central (phone/DAW) **connects**, the transport dispatches a connection event.
-- When it **disconnects**, active notes are cleared (prevents stuck notes) and advertising restarts automatically.
+> **Vídeos** — cada pasta de exemplo contém um arquivo `.mp4` em `examples/<nome>/images/`.
 
 ---
 
-## Music theory with Gingoduino
+### Arquitetura
 
-For chord identification, harmonic field deduction, and progression analysis, use the [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) with the optional `GingoAdapter.h`:
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║  ENTRADAS                        MIDIHandler              SAÍDAS    ║
+║                                                                      ║
+║  Teclado USB ──[USBConnection]─────►  ┌──────────────┐              ║
+║  iPhone BLE  ──[BLEConnection]─────►  │              │              ║
+║  macOS WiFi  ──[RTPMIDIConn.]──────►  │  Fila de     │──► getQueue()║
+║  DAW USB out ──[USBDeviceConn]─────►  │  Eventos     │              ║
+║  Max/MSP OSC ──[OSCConnection]─────►  │  (ring buf,  │──► Notas     ║
+║  W5500 LAN   ──[EthernetMIDI]──────►  │  thread-safe)│    ativas    ║
+║  Serial DIN-5──[UARTConnection]────►  │              │              ║
+║  Rádio ESP32 ──[ESPNowConn.]───────►  │  Detecção de │──► Nomes de  ║
+║  MIDI 2.0 UDP──[MIDI2UDPConn.]─────►  │  acordes     │    acordes   ║
+║                                       └──────┬───────┘              ║
+║                                              ▼                      ║
+║                                     sendMidiMessage()               ║
+║                                  (envia para TODOS os transportes)  ║
+╚══════════════════════════════════════════════════════════════════════╝
+```
+
+**Core 0** — USB Host, pilha BLE, drivers de rádio/rede (tarefas FreeRTOS)
+**Core 1** — `midiHandler.task()` + seu código em `loop()`
+
+---
+
+### Transportes
+
+Todos os transportes têm a mesma estrutura:
 
 ```cpp
-#include <ESP32_Host_MIDI.h>
-#include <GingoAdapter.h>
+// Inclua apenas os transportes que você usar:
+#include "src/UARTConnection.h"     // DIN-5 MIDI serial
+#include "src/RTPMIDIConnection.h"  // Apple MIDI via WiFi
+#include "src/OSCConnection.h"      // OSC via WiFi
+#include "src/MIDI2UDPConnection.h" // MIDI 2.0 via UDP
+
+// Registre no setup():
+midiHandler.addTransport(&meuTransporte);
+meuTransporte.begin(/* parâmetros */);
+midiHandler.begin();
+```
+
+Para detalhes de cada transporte, exemplos de código e fotos, veja a [seção em inglês acima](#transports).
+
+---
+
+### Casos de Uso — Pontes Multi-Protocolo
+
+Todo MIDI recebido por qualquer transporte é automaticamente encaminhado para todos os outros — sem código extra.
+
+| Ponte | Diagrama |
+|--------|---------|
+| Teclado sem fio → DAW | iPhone BLE → ESP32 → USB Device → Logic Pro |
+| Teclado USB → WiFi | Teclado USB → ESP32 → RTP-MIDI → macOS |
+| Legado para moderno | Sintetizador DIN-5 → ESP32 → USB Device → qualquer DAW |
+| Moderno para legado | macOS → RTP-MIDI → ESP32 → DIN-5 → caixa de ritmo dos anos 80 |
+| Rig de palco sem fio | Nós ESP-NOW → hub ESP32 → USB → computador FOH |
+| Software criativo | Max/MSP OSC → ESP32 → BLE → app instrumento no iPad |
+| MIDI 2.0 → vintage | ESP32-A UDP/MIDI2 → ESP32-B → DIN-5 → sintetizador analógico |
+
+---
+
+### Ecossistema de Hardware
+
+O ESP32\_Host\_MIDI funciona como o **cérebro MIDI e hub de protocolos**, conectando-se a um amplo ecossistema de placas e dispositivos.
+
+#### Placas que você pode conectar ao ESP32
+
+| Placa | Conexão | Caso de uso |
+|-------|-----------|-------------|
+| **[Daisy Seed](https://electro-smith.com/daisy)** (Electro-Smith) | UART / DIN-5 ou USB | Engine de síntese de áudio DSP; ESP32 envia MIDI, Daisy toca as notas |
+| **Teensy 4.x** (PJRC) | UART serial ou USB Host | Roteamento MIDI complexo ou síntese; excelente suporte USB MIDI nativo |
+| **Arduino UNO / MEGA / Nano** | UART serial (DIN-5) | Projetos MIDI clássicos; ESP32 é o gateway sem fio |
+| **Raspberry Pi** | RTP-MIDI, OSC ou USB | Host de DAW, processamento de áudio, composição generativa |
+| **Eurorack / sintetizadores modulares** | DIN-5 MIDI → interface CV/gate | CV de pitch, gate, velocidade → tensão analógica via módulo conversor |
+| **Sintetizadores de hardware** | DIN-5 | Qualquer teclado, sintetizador em rack ou unidade de efeitos com MIDI |
+| **iPad / iPhone** | BLE MIDI | GarageBand, AUM, apps Moog, NLog, Animoog — todos compatíveis com CoreMIDI |
+| **DAW no computador** | USB Device ou RTP-MIDI | Logic Pro, Ableton, Bitwig, FL Studio, Reaper, Pro Tools |
+
+> **Daisy Seed + ESP32** é uma combinação especialmente poderosa: o ESP32 cuida de toda a conectividade MIDI (USB, BLE, WiFi, DIN-5) e a Daisy Seed processa áudio em tempo real a 48 kHz / 24 bits com seu DSP ARM Cortex-M7. Comunicam-se por um único cabo UART/DIN-5.
+
+> **Teensy 4.1** pode executar lógica MIDI complexa, arpejadores, voicers de acordes ou sequenciadores, enquanto o ESP32 cuida do transporte sem fio — cada placa fazendo o que faz melhor.
+
+#### Projetos de hardware que você pode construir
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  PROJETO                │  COMPONENTES                               │
+├─────────────────────────────────────────────────────────────────────┤
+│  Pedalboard sem fio     │  ESP32 + botões + carcaça → ESP-NOW       │
+│                         │  → hub central → DIN-5 / USB para rack    │
+├─────────────────────────────────────────────────────────────────────┤
+│  Pad de bateria MIDI    │  ESP32 + sensores piezo + ADC → notas     │
+│                         │  MIDI sensíveis à velocidade via USB/BLE   │
+├─────────────────────────────────────────────────────────────────────┤
+│  Sintetizador           │  ESP32 + Daisy Seed: ESP32 faz a ponte    │
+│                         │  de todos os protocolos, Daisy gera áudio │
+├─────────────────────────────────────────────────────────────────────┤
+│  Conversor MIDI para CV │  ESP32 + DAC MCP4728 → CV 0–5 V + gate   │
+│                         │  para Eurorack / sintetizadores analógicos │
+├─────────────────────────────────────────────────────────────────────┤
+│  Controlador MIDI       │  ESP32-S3 + encoders + faders + OLED →   │
+│  customizado            │  USB MIDI Device reconhecido por qualquer  │
+│                         │  DAW sem driver                            │
+├─────────────────────────────────────────────────────────────────────┤
+│  Auxiliar de piano /    │  ESP32 + LEDs RGB nas teclas + display    │
+│  ferramenta de ensino   │  → ilumina a tecla correta para cada nota  │
+├─────────────────────────────────────────────────────────────────────┤
+│  Pedal de expressão     │  ESP32 + FSR / potenciômetro em carcaça   │
+│  sem fio                │  de pé → mensagens CC via ESP-NOW          │
+├─────────────────────────────────────────────────────────────────────┤
+│  Arpejador / sequenciador│  ESP32 recebe acordes, gera padrões      │
+│                         │  arpejados, envia para DIN-5               │
+├─────────────────────────────────────────────────────────────────────┤
+│  Theremin / sintetizador│  Sensores ultrassônicos → pitch + volume  │
+│  por ar                 │  → notas MIDI via BLE ou USB               │
+├─────────────────────────────────────────────────────────────────────┤
+│  Instalação de arte     │  Sensores de movimento / proximidade /    │
+│  interativa             │  toque → MIDI → música generativa / luz    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Gingoduino — Teoria Musical em Sistemas Embarcados
+
+[**Gingoduino**](https://github.com/sauloverissimo/gingoduino) é uma biblioteca de teoria musical para sistemas embarcados — o mesmo motor que alimenta o exemplo `T-Display-S3-Gingoduino`. Quando integrada via `GingoAdapter.h`, ela escuta o mesmo fluxo de eventos MIDI e analisa continuamente as notas ativas para produzir:
+
+- **Nome do acorde** — "Cmaj7", "Dm7♭5", "G7", "Am" com extensões e alterações
+- **Nota raiz** — pitch raiz identificado do acorde
+- **Conjunto de notas ativas** — lista estruturada das notas pressionadas no momento
+- **Análise de intervalos** — intervalos entre as notas (3M, 7m, 5J, etc.)
+- **Identificação de escala** — detecta a escala provável (maior, menor, modos)
+
+Tudo roda **no dispositivo** em velocidade de interrupção — sem nuvem, sem rede, sem latência.
+
+```cpp
+#include "src/GingoAdapter.h"  // requer Gingoduino ≥ v0.2.2
 
 void loop() {
     midiHandler.task();
 
-    char chordName[16];
-    if (GingoAdapter::identifyLastChord(midiHandler, chordName, sizeof(chordName))) {
-        Serial.println(chordName);  // "CM", "Am7", "Gdim"
-    }
+    std::string chord = gingoAdapter.getChordName();  // "Cmaj7", "Dm", "G7sus4" …
+    std::string root  = gingoAdapter.getRootNote();   // "C", "D", "G" …
+
+    display.setChord(chord.c_str());
 }
 ```
 
-> See the **T-Display-S3-Gingoduino** example for a complete working sketch.
+<p align="center">
+  <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="360" />
+</p>
+<p align="center"><em>T-Display-S3-Gingoduino: nome do acorde, nota raiz e teclas ativas em tempo real</em></p>
+
+**→ [github.com/sauloverissimo/gingoduino](https://github.com/sauloverissimo/gingoduino)**
 
 ---
 
-## Examples
+### Gingo — Teoria Musical para Python e Desktop
 
-### T-Display-S3-Piano
+[**Gingo**](https://github.com/sauloverissimo/gingo) é a versão desktop e Python do Gingoduino — os mesmos conceitos de teoria musical portados para Python, para uso em scripts, integrações com DAW, processadores MIDI, ferramentas de composição e aplicações web.
 
-25-key piano visualizer with real-time note display, PCM5102A DAC synth output, and Gingoduino music theory analysis. USB MIDI input.
+Use para:
+- Analisar arquivos MIDI e extrair progressões de acordes
+- Criar processadores MIDI em Python que reconhecem acordes em tempo real
+- Desenvolver aplicações web com anotação de teoria musical
+- Prototipar algoritmos de teoria musical antes de portá-los para o Gingoduino no ESP32
+- Gerar cifras, leadsheets e exercícios educativos
 
-<img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="480">
+```python
+from gingo import Gingo
 
-<video src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.mp4" width="480" controls></video>
-
----
-
-### T-Display-S3-BLE-Sender + T-Display-S3-BLE-Receiver
-
-Wireless MIDI demo using Bluetooth Low Energy. The **Sender** plays pre-programmed musical sequences (scales, chords, Fur Elise, jazz progressions) and shows didactic information: note names, raw MIDI hex bytes, mini piano. The **Receiver** displays incoming notes on a piano visualizer with audio output.
-
-<img src="examples/T-Display-S3-BLE-Sender/images/BLE.jpeg" width="480">
-
-<video src="examples/T-Display-S3-BLE-Sender/images/BLE.mp4" width="480" controls></video>
-
----
-
-### T-Display-S3-ESP-NOW-Jam
-
-Bidirectional wireless MIDI jam session via ESP-NOW. **Same sketch runs on two boards.** Each board plays sequences and sees the other's notes on a dual-layer piano -- cyan for local notes, magenta for remote notes, green when both play the same key. No pairing needed, ultra-low latency (~1-5ms).
-
----
-
-### T-Display-S3-Gingoduino
-
-Music theory analysis on display: note names, intervals, chord identification, and harmonic field deduction. Requires [Gingoduino](https://github.com/sauloverissimo/gingoduino) v0.2.2+.
-
-<img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="480">
-
-<video src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.mp4" width="480" controls></video>
-
----
-
-### T-Display-S3-Queue
-
-Full MIDI event queue visualization with active notes display. Button to clear the queue.
-
-<img src="examples/T-Display-S3-Queue/images/queue.jpeg" width="480">
-
-<video src="examples/T-Display-S3-Queue/images/queue.mp4" width="480" controls></video>
-
----
-
-### T-Display-S3-Piano-Debug
-
-On-display MIDI monitor for debugging without Serial (USB port is used for USB Host). Shows raw events, active notes, and timing.
-
-<img src="examples/T-Display-S3-Piano-Debug/images/pianno-debug.jpeg" width="480">
-
-<video src="examples/T-Display-S3-Piano-Debug/images/piano_debug.mp4" width="480" controls></video>
-
----
-
-### ESP-NOW-MIDI
-
-Minimal ESP-NOW wireless MIDI example. Serial output only -- no display needed. Sends and receives MIDI via broadcast. Good starting point for any ESP32 board.
-
-### UART-MIDI-Basic
-
-Traditional 5-pin DIN MIDI input/output via UART. Works with any ESP32 board and a standard MIDI optocoupler circuit.
-
----
-
-## File structure
-
-```
-src/
-  ESP32_Host_MIDI.h         — Main header (includes everything)
-  MIDITransport.h           — Abstract transport interface
-  MIDIHandlerConfig.h       — Configuration struct
-  MIDIHandler.h/.cpp        — MIDI parsing, event queue, chord detection, transport orchestration
-  USBConnection.h/.cpp      — USB Host MIDI (ring buffer, Core 0 task)
-  BLEConnection.h/.cpp      — BLE MIDI (ring buffer, send/receive, GATT server)
-  ESPNowConnection.h/.cpp   — ESP-NOW MIDI (ring buffer, broadcast/unicast)
-  UARTConnection.h/.cpp     — UART MIDI (5-pin DIN via optocoupler)
-  GingoAdapter.h            — Optional bridge to Gingoduino
-
-examples/
-  ESP-NOW-MIDI/               — Wireless MIDI between ESP32 devices (serial only)
-  UART-MIDI-Basic/            — Traditional 5-pin DIN MIDI via UART
-  T-Display-S3-Piano/         — Piano visualizer + PCM5102A synth + Gingoduino
-  T-Display-S3-BLE-Sender/    — BLE MIDI sender with didactic display
-  T-Display-S3-BLE-Receiver/  — BLE MIDI receiver with piano visualizer
-  T-Display-S3-ESP-NOW-Jam/   — Bidirectional ESP-NOW MIDI jam (same sketch on 2 boards)
-  T-Display-S3-Queue/         — Event queue visualization
-  T-Display-S3-Gingoduino/    — Music theory analysis on display
-  T-Display-S3-Piano-Debug/   — On-display MIDI debugger
+g = Gingo()
+chord = g.identify([60, 64, 67, 71])   # C Mi Sol Si
+print(chord.name)   # "Cmaj7"
+print(chord.root)   # "C"
 ```
 
+**→ [github.com/sauloverissimo/gingo](https://github.com/sauloverissimo/gingo)**
+**→ [sauloverissimo.github.io/gingo](https://sauloverissimo.github.io/gingo/)**
+
+> **Fluxo ESP32 + Gingo:** prototipe algoritmos de teoria musical em Python com o Gingo → porte a lógica para o Gingoduino no ESP32 → exiba nomes de acordes ao vivo no T-Display-S3.
+
 ---
 
-## Contributing
+### Compatibilidade de Hardware
 
-Contributions, bug reports, and suggestions are welcome! Open an issue or submit a pull request on [GitHub](https://github.com/sauloverissimo/ESP32_Host_MIDI).
+#### Chip → transportes disponíveis
 
-## License
+| Chip | USB Host | BLE | USB Device | WiFi | Ethernet nativo | UART | ESP-NOW |
+|------|:--------:|:---:|:----------:|:----:|:---------------:|:----:|:-------:|
+| ESP32-S3 | ✅ | ✅ | ✅ | ✅ | ❌ (W5500 SPI) | ✅ | ✅ |
+| ESP32-S2 | ✅ | ❌ | ✅ | ✅ | ❌ (W5500 SPI) | ✅ | ❌ |
+| ESP32-P4 | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ ×5 | ❌ |
+| ESP32 (clássico) | ❌ | ✅ | ❌ | ✅ | ❌ (W5500 SPI) | ✅ | ✅ |
+| ESP32-C3 / C6 / H2 | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
 
-MIT License. See [LICENSE](LICENSE.txt).
+> **Ethernet SPI W5500** funciona em **qualquer** ESP32 via `EthernetMIDIConnection`.
+
+#### Placas recomendadas
+
+| Caso de uso | Placa |
+|-------------|-------|
+| Melhor para tudo (USB Host + BLE + WiFi + display) | **LilyGO T-Display-S3** |
+| USB Host + USB Device + pilha BLE completa | Qualquer ESP32-S3 DevKit |
+| Mesh sem fio com latência ultra-baixa | ESP32 DevKit (ESP-NOW) |
+| Rack de estúdio com Ethernet | ESP32-P4 (MAC nativo) ou qualquer ESP32 + W5500 |
+| Gateway MIDI DIN-5 | Qualquer ESP32 + optoacoplador UART |
+| Experimentos MIDI 2.0 | Dois ESP32-S3 na mesma rede WiFi |
+
+---
+
+### Instalação
+
+**Arduino IDE:** Sketch → Incluir Biblioteca → Gerenciar Bibliotecas → pesquise **ESP32_Host_MIDI**
+
+**PlatformIO:**
+```ini
+[env:esp32-s3-devkitc-1]
+platform = espressif32
+board    = esp32-s3-devkitc-1
+framework = arduino
+
+lib_deps =
+    sauloverissimo/ESP32_Host_MIDI
+    # lathoub/Arduino-AppleMIDI-Library  ; RTP-MIDI + Ethernet MIDI
+    # arduino-libraries/Ethernet          ; Ethernet MIDI
+    # CNMAT/OSC                           ; OSC
+    # sauloverissimo/gingoduino           ; Nomes de acordes
+```
+
+**Pacote de placa:** `Boards Manager → "esp32" por Espressif → ≥ 3.0.0`
+
+---
+
+### Exemplos com Display (T-Display-S3)
+
+| Exemplo | Transporte | O que o display mostra |
+|---------|-----------|------------------------|
+| `T-Display-S3` | USB Host | Notas ativas + log de eventos |
+| `T-Display-S3-Queue` | USB Host | Fila completa em debug |
+| `T-Display-S3-Piano` | USB Host | Piano roll de 25 teclas rolável |
+| `T-Display-S3-Piano-Debug` | USB Host | Piano roll + debug estendido |
+| `T-Display-S3-Gingoduino` | USB Host + BLE | Nomes de acordes via teoria musical |
+| `T-Display-S3-BLE-Sender` | BLE | Status do modo envio + log |
+| `T-Display-S3-BLE-Receiver` | BLE | Modo recepção + log de notas |
+| `T-Display-S3-ESP-NOW-Jam` | ESP-NOW | Status do par + eventos de jam |
+| `T-Display-S3-OSC` | OSC + WiFi | Status WiFi + log ponte OSC |
+| `T-Display-S3-USB-Device` | BLE + USB Device | Status duplo + log ponte |
+| `T-Display-S3-MIDI2-UDP` | MIDI 2.0 UDP | Status WiFi + par, barra vel. 16 bits |
+
+---
+
+### Referência da API
+
+```cpp
+midiHandler.begin();                // inicia transportes built-in
+midiHandler.task();                 // chamar em cada loop()
+midiHandler.addTransport(&t);       // registrar transporte externo
+
+const auto& q = midiHandler.getQueue();
+std::vector<std::string> n = midiHandler.getActiveNotesVector(); // ["C4","E4","G4"]
+std::string chord = midiHandler.getChordName();                  // "Cmaj7"
+
+midiHandler.sendNoteOn(ch, note, vel);
+midiHandler.sendNoteOff(ch, note, vel);
+midiHandler.sendControlChange(ch, ctrl, val);
+midiHandler.sendProgramChange(ch, prog);
+midiHandler.sendPitchBend(ch, val);   // 0–16383, centro = 8192
+```
+
+---
+
+### Licença
+
+MIT — veja [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Construído com ❤️ para músicos, makers e pesquisadores.<br/>
+  Issues e contribuições são bem-vindos:
+  <a href="https://github.com/sauloverissimo/ESP32_Host_MIDI">github.com/sauloverissimo/ESP32_Host_MIDI</a>
+</p>
