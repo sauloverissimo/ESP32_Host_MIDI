@@ -83,19 +83,28 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
 
 // ── BLE Functions ─────────────────────────────────────────────────────────────
 
+// Scan runs in a FreeRTOS task so it doesn't block the display/player loop.
+static void scanTask(void* param) {
+    BLEScan* pScan = BLEDevice::getScan();
+    pScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(), true);
+    pScan->setActiveScan(true);
+    pScan->start(5);  // 5 seconds, blocking inside this task
+    bleScanning = false;
+    Serial.println("[BLE] Scan done.");
+    vTaskDelete(nullptr);
+}
+
 static void startScan() {
     if (bleScanning) return;
     Serial.println("[BLE] Scanning...");
     bleScanning = true;
-    BLEScan* pScan = BLEDevice::getScan();
-    pScan->setAdvertisedDeviceCallbacks(new ScanCallbacks(), true);
-    pScan->setActiveScan(true);
-    pScan->start(5, false);  // 5 seconds, non-blocking
-    bleScanning = false;
+    xTaskCreatePinnedToCore(scanTask, "ble_scan", 4096, nullptr, 1, nullptr, 0);
 }
 
-static bool connectToServer() {
-    if (!targetDevice) return false;
+static volatile bool bleConnecting = false;
+
+// Connection runs in a FreeRTOS task to avoid blocking the display/player.
+static void connectTask(void* param) {
     Serial.printf("[BLE] Connecting to '%s'...\n", TARGET_NAME);
 
     if (!pClient) {
@@ -105,25 +114,38 @@ static bool connectToServer() {
 
     if (!pClient->connect(targetDevice)) {
         Serial.println("[BLE] Connection failed.");
-        return false;
+        bleConnecting = false;
+        vTaskDelete(nullptr);
+        return;
     }
 
     BLERemoteService* svc = pClient->getService(BLEUUID(BLE_MIDI_SERVICE_UUID));
     if (!svc) {
         Serial.println("[BLE] MIDI service not found.");
         pClient->disconnect();
-        return false;
+        bleConnecting = false;
+        vTaskDelete(nullptr);
+        return;
     }
 
     pChar = svc->getCharacteristic(BLEUUID(BLE_MIDI_CHARACTERISTIC_UUID));
     if (!pChar) {
         Serial.println("[BLE] MIDI characteristic not found.");
         pClient->disconnect();
-        return false;
+        bleConnecting = false;
+        vTaskDelete(nullptr);
+        return;
     }
 
     Serial.println("[BLE] Ready to send MIDI!");
-    return true;
+    bleConnecting = false;
+    vTaskDelete(nullptr);
+}
+
+static void startConnect() {
+    if (bleConnecting || bleScanning) return;
+    bleConnecting = true;
+    xTaskCreatePinnedToCore(connectTask, "ble_conn", 4096, nullptr, 1, nullptr, 0);
 }
 
 // Send a BLE MIDI packet with correct BLE MIDI 1.0 header.
@@ -204,7 +226,7 @@ static void stopAll() {
 }
 
 static void playerTick(unsigned long now) {
-    if (!playing || !bleConnected) return;
+    if (!playing) return;
 
     const Sequence& seq = ALL_SEQUENCES[currentSeq];
     const NoteStep& step = seq.steps[currentStep];
@@ -302,10 +324,10 @@ void loop() {
     uint32_t now = millis();
 
     // ── BLE reconnection ──────────────────────────────────────────────────────
-    if (!bleConnected && !bleScanning && (now - lastReconnectMs > 3000)) {
+    if (!bleConnected && !bleScanning && !bleConnecting && (now - lastReconnectMs > 3000)) {
         lastReconnectMs = now;
         if (targetDevice) {
-            connectToServer();
+            startConnect();
         } else {
             startScan();
         }
@@ -327,15 +349,14 @@ void loop() {
         if (playing) {
             stopAll();
             Serial.println("[SEQ] Stopped.");
-        } else if (bleConnected) {
+        } else {
             playing     = true;
             currentStep = 0;
             noteHeld    = false;
             stepStartMs = now;
             lastStatus  = 0;
             Serial.printf("[SEQ] Playing: %s\n", ALL_SEQUENCES[currentSeq].name);
-        } else {
-            Serial.println("[SEQ] Cannot play — BLE not connected.");
+            if (!bleConnected) Serial.println("[SEQ] (BLE not connected — display only)");
         }
     }
 
