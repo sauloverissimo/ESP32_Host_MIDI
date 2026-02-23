@@ -512,7 +512,7 @@ void loop() {
 
 <img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="480">
 
-https://github.com/user-attachments/assets/pianno-MIDI-25.mp4
+<video src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.mp4" width="480" controls></video>
 
 ---
 
@@ -522,7 +522,7 @@ Wireless MIDI demo using Bluetooth Low Energy. The **Sender** plays pre-programm
 
 <img src="examples/T-Display-S3-BLE-Sender/images/BLE.jpeg" width="480">
 
-https://github.com/user-attachments/assets/BLE.mp4
+<video src="examples/T-Display-S3-BLE-Sender/images/BLE.mp4" width="480" controls></video>
 
 ---
 
@@ -538,7 +538,7 @@ Music theory analysis on display: note names, intervals, chord identification, a
 
 <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="480">
 
-https://github.com/user-attachments/assets/gingo-duino-integration.mp4
+<video src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.mp4" width="480" controls></video>
 
 ---
 
@@ -548,7 +548,7 @@ Full MIDI event queue visualization with active notes display. Button to clear t
 
 <img src="examples/T-Display-S3-Queue/images/queue.jpeg" width="480">
 
-https://github.com/user-attachments/assets/queue.mp4
+<video src="examples/T-Display-S3-Queue/images/queue.mp4" width="480" controls></video>
 
 ---
 
@@ -558,7 +558,7 @@ On-display MIDI monitor for debugging without Serial (USB port is used for USB H
 
 <img src="examples/T-Display-S3-Piano-Debug/images/pianno-debug.jpeg" width="480">
 
-https://github.com/user-attachments/assets/piano_debug.mp4
+<video src="examples/T-Display-S3-Piano-Debug/images/piano_debug.mp4" width="480" controls></video>
 
 ---
 
