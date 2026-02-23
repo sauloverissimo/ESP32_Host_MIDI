@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <freertos/portmacro.h>
 #include "MIDITransport.h"
 

@@ -113,7 +113,7 @@ bool ESPNowConnection::removePeer(const uint8_t mac[6]) {
 }
 
 void ESPNowConnection::getLocalMAC(uint8_t mac[6]) const {
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    WiFi.macAddress(mac);
 }
 
 // ---------- Ring Buffer ----------

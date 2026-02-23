@@ -25,7 +25,7 @@ void BLEConnection::begin(const std::string& deviceName) {
 
     sendMutex = xSemaphoreCreateMutex();
 
-    BLEDevice::init(deviceName);
+    BLEDevice::init(String(deviceName.c_str()));
     pServer = BLEDevice::createServer();
 
     // Server callbacks: handle connect/disconnect and restart advertising automatically.
