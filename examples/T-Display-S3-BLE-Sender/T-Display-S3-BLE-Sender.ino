@@ -100,7 +100,7 @@ static bool connectToServer() {
 
     if (!pClient) {
         pClient = BLEDevice::createClient();
-        pClient->setCallbacks(&clientCbs);
+        pClient->setClientCallbacks(&clientCbs);
     }
 
     if (!pClient->connect(targetDevice)) {
