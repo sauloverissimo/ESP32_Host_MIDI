@@ -9,12 +9,18 @@
 // Thread safety: FreeRTOS queue — noteOn/noteOff are safe from any task
 
 #include <Arduino.h>
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+#include <driver/i2s_std.h>
+#else
 #include <driver/i2s.h>
+#endif
 #include <cmath>
 #include <cstring>
 #include "mapping.h"
 
+#if ESP_ARDUINO_VERSION_MAJOR < 3
 static const i2s_port_t SYNTH_PORT     = I2S_NUM_0;
+#endif
 static const int        SYNTH_SR       = 44100;
 static const int        SYNTH_BUF      = 256;    // samples per DMA buffer
 static const int        SYNTH_VOICES   = 8;
@@ -25,6 +31,25 @@ public:
     void begin() {
         _buildSinTable();
 
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+        // New I2S driver (ESP-IDF 5.x)
+        i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+        chan_cfg.dma_desc_num  = 8;
+        chan_cfg.dma_frame_num = SYNTH_BUF;
+        i2s_new_channel(&chan_cfg, &_tx_handle, nullptr);
+
+        i2s_std_config_t std_cfg = {};
+        std_cfg.clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(SYNTH_SR);
+        std_cfg.slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO);
+        std_cfg.gpio_cfg.mclk = I2S_GPIO_UNUSED;
+        std_cfg.gpio_cfg.bclk = (gpio_num_t)I2S_BCK_PIN;
+        std_cfg.gpio_cfg.ws   = (gpio_num_t)I2S_WS_PIN;
+        std_cfg.gpio_cfg.dout = (gpio_num_t)I2S_DATA_OUT_PIN;
+        std_cfg.gpio_cfg.din  = I2S_GPIO_UNUSED;
+        i2s_channel_init_std_mode(_tx_handle, &std_cfg);
+        i2s_channel_enable(_tx_handle);
+#else
+        // Legacy I2S driver (ESP-IDF 4.x)
         i2s_config_t cfg = {};
         cfg.mode                 = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
         cfg.sample_rate          = SYNTH_SR;
@@ -45,6 +70,7 @@ public:
         pins.data_in_num  = I2S_PIN_NO_CHANGE;
         i2s_set_pin(SYNTH_PORT, &pins);
         i2s_zero_dma_buffer(SYNTH_PORT);
+#endif
 
         memset(_voices, 0, sizeof(_voices));
         _queue = xQueueCreate(64, sizeof(NoteMsg));
@@ -78,6 +104,9 @@ private:
     Voice            _voices[SYNTH_VOICES];
     float            _sinTable[SYNTH_SIN_LEN];
     QueueHandle_t    _queue;
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    i2s_chan_handle_t _tx_handle = nullptr;
+#endif
 
     void _buildSinTable() {
         for (int i = 0; i < SYNTH_SIN_LEN; i++)
@@ -157,7 +186,11 @@ private:
             }
 
             size_t bw;
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+            i2s_channel_write(s->_tx_handle, buf, sizeof(buf), &bw, portMAX_DELAY);
+#else
             i2s_write(SYNTH_PORT, buf, sizeof(buf), &bw, portMAX_DELAY);
+#endif
         }
     }
 };
