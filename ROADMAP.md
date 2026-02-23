@@ -1,13 +1,18 @@
 # ROADMAP — ESP32_Host_MIDI
 
-## Current State (v3.0.0)
+## Current State (v4.0.0)
 
-- Full support for ESP32-S3 (USB + BLE + PSRAM + dual-core)
+- Full support for ESP32-S3 (USB + BLE + ESP-NOW + PSRAM + dual-core)
 - Compile-time conditional: USB and BLE are automatically enabled/disabled based on target chip
 - ESP32 family chips with BLE (ESP32, C3, C6, H2) can use BLE MIDI only
 - ESP32-S2 and ESP32-P4 can use USB Host MIDI only
-- MIDIHandler works on all ESP32 variants (processes MIDI bytes regardless of transport)
+- ESP-NOW available on all ESP32 variants with WiFi
+- **Transport Abstraction Layer** — `MIDITransport` interface decouples MIDIHandler from transport specifics. USB and BLE are built-in; custom transports plug in via `addTransport()`
+- **ESP-NOW transport** — ultra-low latency (~1-5ms), broadcast/unicast, bidirectional
+- **BLE MIDI is bidirectional** — send MIDI to connected DAW/app via `sendNoteOn()`, `sendNoteOff()`, `sendControlChange()`, `sendProgramChange()`, `sendPitchBend()`, `sendRaw()`
+- **All transports use the same ring buffer architecture** — thread-safe spinlock, `task()` drains from main loop
 - Optional Gingoduino integration via GingoAdapter.h
+- Compatible with Arduino IDE, PlatformIO, and ESP-IDF (Arduino component)
 
 ---
 
@@ -15,37 +20,23 @@
 
 **Goal:** Ensure robust operation across all ESP32 variants.
 
-- [ ] **Single-core optimization** — Profile and optimize BLE MIDI reception on ESP32-C3/C6/H2. These single-core chips share CPU time between BLE stack and user code. Consider:
-  - Reducing BLE callback overhead
-  - Adding a lightweight BLE ring buffer (similar to USB ring buffer)
-  - Documenting minimum `loop()` timing requirements
-
+- [x] **BLE ring buffer** — BLE now uses the same ring buffer + spinlock architecture as USB. BLE callbacks enqueue to the buffer; `task()` drains on the main loop.
+- [x] **BLE MIDI output** — BLE is bidirectional. ESP32 sends NOTIFY to the connected central (app/DAW).
+- [ ] **Single-core profiling** — Profile and optimize MIDI on ESP32-C3/C6/H2 (single-core). Ring buffer is in place; remaining work is documenting minimum `loop()` timing requirements.
 - [ ] **ESP32-P4 validation** — Test USB Host MIDI on ESP32-P4 (dual-core RISC-V with USB-OTG). Verify ESP-IDF USB Host API compatibility.
-
 - [ ] **PSRAM fallback** — History buffer already falls back to heap `malloc()` when PSRAM is unavailable. Validate on chips without PSRAM (ESP32-C3, ESP32-H2).
-
-- [ ] **BLE MIDI output** — Currently BLE is receive-only (server). Add BLE MIDI client mode to send MIDI messages to other BLE devices.
 
 ---
 
 ## Phase 2 — Transport Abstraction Layer
 
-**Goal:** Decouple MIDIHandler from ESP32-specific transport, enabling portability to other platforms.
+**Goal:** Decouple MIDIHandler from ESP32-specific transport, enabling portability and extensibility.
 
-- [ ] **Define `MIDITransport` interface** — Abstract base class:
-  ```cpp
-  class MIDITransport {
-  public:
-      virtual bool begin() = 0;
-      virtual void task() = 0;
-      virtual void setCallback(MIDICallback cb) = 0;
-      virtual bool isConnected() const = 0;
-  };
-  ```
-
-- [ ] **Refactor USBConnection and BLEConnection** to implement `MIDITransport`
-
-- [ ] **Move MIDIHandler to platform-independent code** — MIDIHandler already only uses standard C++ (`<deque>`, `<string>`, `<vector>`, `<map>`). With transport abstraction, it could compile on any platform with C++11 STL support.
+- [x] **`MIDITransport` interface** — Abstract base class with `task()`, `isConnected()`, `sendMidiMessage()`, and callback registration via function pointers (`setMidiCallback`, `setConnectionCallbacks`).
+- [x] **USBConnection and BLEConnection** refactored to implement `MIDITransport`. Removed internal subclasses from MIDIHandler.
+- [x] **MIDIHandler transport array** — `MIDITransport* transports[4]` with `addTransport()`. Built-in transports auto-registered in `begin()`.
+- [x] **ESP-NOW transport** — `ESPNowConnection` class. Ultra-low latency (~1-5ms), broadcast/unicast, bidirectional. Registered via `addTransport()`.
+- [ ] **RTP-MIDI (WiFi) transport** — Network MIDI over UDP, compatible with macOS, Ableton, and iOS via AppleMIDI session protocol. Candidate approach: wrap [Arduino-AppleMIDI-Library](https://github.com/lathoub/Arduino-AppleMIDI-Library) (MIT, 321 stars) as a `MIDITransport`.
 
 ---
 

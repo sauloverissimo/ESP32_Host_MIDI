@@ -12,41 +12,38 @@
 #include "USBConnection.h"
 #include "BLEConnection.h"
 
-// --- USB: Subclass with override ---
+// --- Transport instances ---
 
-class MyRawUSB : public USBConnection {
-public:
-    void onMidiDataReceived(const uint8_t* data, size_t length) override {
-        // data[0] = Cable Number / Code Index Number (USB-MIDI header)
-        // data[1] = MIDI status byte (e.g., 0x90 = NoteOn ch1)
-        // data[2] = MIDI data byte 1 (e.g., note number)
-        // data[3] = MIDI data byte 2 (e.g., velocity)
-        Serial.printf("[USB] CIN:%02X  Status:%02X  Data1:%02X  Data2:%02X\n",
-                      data[0], data[1], data[2], data[3]);
-    }
-
-    void onDeviceConnected() override {
-        Serial.println("[USB] MIDI device connected!");
-    }
-
-    void onDeviceDisconnected() override {
-        Serial.println("[USB] MIDI device disconnected!");
-    }
-};
-
-MyRawUSB usbMidi;
-
-// --- BLE: Callback function ---
-
+USBConnection usbMidi;
 BLEConnection bleMidi;
 
-void onBleRawData(const uint8_t* data, size_t length) {
+// --- MIDI data callbacks (set via MIDITransport API) ---
+
+void onUsbData(void* ctx, const uint8_t* data, size_t length) {
+    // USB-MIDI: 4 bytes per event
+    // data[0] = Cable Number / Code Index Number (USB-MIDI header)
+    // data[1] = MIDI status byte (e.g., 0x90 = NoteOn ch1)
+    // data[2] = MIDI data byte 1 (e.g., note number)
+    // data[3] = MIDI data byte 2 (e.g., velocity)
+    Serial.printf("[USB] CIN:%02X  Status:%02X  Data1:%02X  Data2:%02X\n",
+                  data[0], data[1], data[2], data[3]);
+}
+
+void onBleData(void* ctx, const uint8_t* data, size_t length) {
+    // BLE MIDI: raw bytes (header already stripped by BLEConnection)
     Serial.printf("[BLE] Raw %d bytes:", length);
     for (size_t i = 0; i < length; i++) {
         Serial.printf(" %02X", data[i]);
     }
     Serial.println();
 }
+
+// --- Connection callbacks ---
+
+void onUsbConnected(void* ctx)    { Serial.println("[USB] MIDI device connected!"); }
+void onUsbDisconnected(void* ctx) { Serial.println("[USB] MIDI device disconnected!"); }
+void onBleConnected(void* ctx)    { Serial.println("[BLE] Central connected!"); }
+void onBleDisconnected(void* ctx) { Serial.println("[BLE] Central disconnected."); }
 
 // --- Setup & Loop ---
 
@@ -57,6 +54,13 @@ void setup() {
     Serial.println("No MIDIHandler — direct access to raw bytes.");
     Serial.println();
 
+    // Set callbacks via MIDITransport API
+    usbMidi.setMidiCallback(onUsbData, nullptr);
+    usbMidi.setConnectionCallbacks(onUsbConnected, onUsbDisconnected, nullptr);
+
+    bleMidi.setMidiCallback(onBleData, nullptr);
+    bleMidi.setConnectionCallbacks(onBleConnected, onBleDisconnected, nullptr);
+
     // Initialize USB Host (runs on core 0)
     if (usbMidi.begin()) {
         Serial.println("USB Host initialized. Waiting for MIDI device...");
@@ -65,7 +69,6 @@ void setup() {
     }
 
     // Initialize BLE MIDI server
-    bleMidi.setMidiMessageCallback(onBleRawData);
     bleMidi.begin("ESP32 Raw MIDI");
     Serial.println("BLE MIDI server started. Advertising as 'ESP32 Raw MIDI'.");
     Serial.println();

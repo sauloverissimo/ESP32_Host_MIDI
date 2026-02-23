@@ -1,382 +1,552 @@
-# ESP32_Host_MIDI 🎹📡
+# ESP32_Host_MIDI
 
 ![image](https://github.com/user-attachments/assets/bba1c679-6c76-45b7-aa29-a3201a69b36a)
 
-Project developed for the Arduino IDE.
+![Arduino](https://img.shields.io/badge/Arduino-IDE%20%7C%20CLI-00979D?logo=arduino&logoColor=white)
+![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-FF7F00?logo=platformio&logoColor=white)
+![ESP-IDF](https://img.shields.io/badge/ESP--IDF-Arduino%20Component-E7352C?logo=espressif&logoColor=white)
+![License](https://img.shields.io/github/license/sauloverissimo/ESP32_Host_MIDI)
+![Version](https://img.shields.io/github/v/release/sauloverissimo/ESP32_Host_MIDI)
 
-This project provides a complete solution for receiving, interpreting, and displaying MIDI messages via USB and BLE on the ESP32-S2/S3 using devices like the T‑Display S3. The library is modular and can be easily adapted to other hardware by providing a `mapping.h` file with pin definitions for your board.
+**Receive and send MIDI on ESP32 — via USB-OTG, Bluetooth Low Energy, and ESP-NOW.**
 
----
-
-## Compatibility
-
-### ESP32 Family
-
-The library uses **compile-time feature detection** (`#ifdef`) to automatically enable or disable USB and BLE based on the target chip. You only need to select the correct board in the Arduino IDE — the library adapts automatically.
-
-| Board | USB Host | BLE | Dual-Core | PSRAM | MIDIHandler | Status |
-|-------|:---:|:---:|:---:|:---:|:---:|---|
-| **ESP32-S3** | ✅ | ✅ | ✅ | ✅ (most modules) | ✅ USB + BLE | **Fully supported** (recommended) |
-| **ESP32-S2** | ✅ | ❌ | ❌ | depends | ✅ USB only | Supported |
-| **ESP32** (classic) | ❌ | ✅ | ✅ | depends | ✅ BLE only | Supported |
-| **ESP32-C3** | ❌ | ✅ | ❌ | ❌ | ✅ BLE only | Supported ⚠️ |
-| **ESP32-C6** | ❌ | ✅ | ❌ | ❌ | ✅ BLE only | Supported ⚠️ |
-| **ESP32-H2** | ❌ | ✅ | ❌ | ❌ | ✅ BLE only | Supported ⚠️ |
-| **ESP32-P4** | ✅ | ❌ | ✅ | ✅ | ✅ USB only | Supported |
-
-> ⚠️ **Single-core warning:** On single-core chips (ESP32-S2, ESP32-C3, ESP32-C6, ESP32-H2), USB or BLE processing shares CPU time with your `loop()`. If `loop()` performs heavy operations (display rendering, Serial prints), MIDI events may be delayed or lost. On ESP32-S2 (USB), the library mitigates this with a higher-priority FreeRTOS task. On single-core BLE chips, keep `loop()` lightweight and call `midiHandler.task()` frequently.
-
-### Feature Detection Macros
-
-The library defines these macros automatically in `ESP32_Host_MIDI.h`:
-
-| Macro | Condition | Effect |
-|-------|-----------|--------|
-| `ESP32_HOST_MIDI_HAS_USB` | ESP32-S2 or ESP32-S3 | Enables USBConnection |
-| `ESP32_HOST_MIDI_HAS_BLE` | `CONFIG_BT_ENABLED` | Enables BLEConnection |
-| `ESP32_HOST_MIDI_HAS_PSRAM` | `CONFIG_SPIRAM` | Uses PSRAM for history buffer |
-
-You can check these in your sketch:
-```cpp
-#if ESP32_HOST_MIDI_HAS_USB
-  Serial.println("USB Host available");
-#endif
-#if ESP32_HOST_MIDI_HAS_BLE
-  Serial.println("BLE MIDI available");
-#endif
-```
-
-### Other Platforms
-
-| Board | Compatible? | Reason |
-|-------|:---:|---|
-| **Arduino Nano ESP32** (ESP32-S3) | ✅ | It's an ESP32-S3 — works natively |
-| **Raspberry Pi Pico / Pico 2** (RP2040/RP2350) | ❌ | Different USB Host API (TinyUSB/PIO), no ESP-IDF, no ESP32 BLE stack |
-| **Arduino Uno / Mega** (AVR) | ❌ | No USB Host, no BLE, no C++ STL (`<deque>`, `<string>`, `<vector>`) |
-| **Arduino Nano 33 BLE** (nRF52840) | ❌ | BLE API differs (ArduinoBLE vs ESP32 BLE), no USB Host |
-| **Teensy 4.x** | ❌ | USB Host API differs, no ESP-IDF |
-| **Daisy Seed** (STM32H7) | ❌ | Different USB Host API (STM32 HAL), no ESP-IDF |
-| **Seeed XIAO ESP32-S3** | ✅ | It's an ESP32-S3 — works natively |
-| **Seeed XIAO ESP32-C3** | ✅ | BLE only (no USB Host) |
-
-> **Note:** See [ROADMAP.md](ROADMAP.md) for the plan to support additional platforms in future releases.
-
----
-
-## Overview
-
-The **ESP32_Host_MIDI** library allows the ESP32 to:
-- Act as a USB host for MIDI devices (via the **USBConnection** module),
-- Function as a BLE MIDI server (via the **BLEConnection** module),
-- Process and interpret MIDI messages (using the **MIDIHandler** module), and
-- Display formatted MIDI data on a display (via the **ST7789_Handler** module in examples).
-
-The core header **ESP32_Host_MIDI.h** integrates the USB/BLE connectivity and MIDI handling functionalities.
-
----
-
-## Architecture: Dual-Core USB Processing
-
-One of the key design decisions in this library is the separation of USB MIDI reception from the main Arduino `loop()`:
-
-```
-┌─────────────────────────┐    ┌─────────────────────────┐
-│       Core 0            │    │       Core 1             │
-│  ┌───────────────────┐  │    │  ┌────────────────────┐  │
-│  │   _usbTask()      │  │    │  │   Arduino loop()   │  │
-│  │                    │  │    │  │                    │  │
-│  │ • USB host polling │  │    │  │ • midiHandler.task │  │
-│  │ • Transfer submit  │──┼────┼──│   → processQueue() │  │
-│  │ • _onReceive()     │  │    │  │ • Display render   │  │
-│  │ • Enqueue to ring  │  │    │  │ • User logic       │  │
-│  │   buffer (spinlock)│  │    │  │                    │  │
-│  └───────────────────┘  │    │  └────────────────────┘  │
-└─────────────────────────┘    └─────────────────────────┘
-         ▲                              │
-         │      Ring Buffer (64 msgs)   │
-         └──────── spinlock-safe ───────┘
-```
-
-**Why?** USB MIDI devices can send multiple events in a single USB transfer (up to 16 events in a 64-byte packet). If the main loop is busy (e.g., rendering a display via SPI, which can take 20-50ms), USB polling stalls and MIDI events get lost — especially Note-Off messages during fast chord playing.
-
-**How it works:**
-1. `USBConnection::begin()` creates a dedicated FreeRTOS task pinned to **core 0** with priority 5.
-2. This task continuously calls `usb_host_lib_handle_events()` and `usb_host_client_handle_events()` in a tight loop, ensuring USB transfers are always serviced promptly.
-3. When MIDI data arrives, `_onReceive()` iterates over all 4-byte USB-MIDI packets in the transfer and enqueues them into a **spinlock-protected ring buffer**.
-4. On **core 1**, `task()` (called from the Arduino `loop()`) drains the ring buffer and processes each MIDI event via `handleMidiMessage()`.
-
-> On single-core ESP32 variants (ESP32-S2), the dedicated task still helps because its higher priority allows FreeRTOS to preempt the main loop for USB servicing.
-
----
-
-## File Structure
-
-### Core Library Files (in the `src/` folder)
-
-- **USBConnection.h / USBConnection.cpp**
-  Implements the USB host functionality to receive MIDI data from connected MIDI devices.
-  USB event handling runs on a dedicated FreeRTOS task (core 0) for reliable reception.
-  - **Key Functions:**
-    - `begin()`: Initializes the USB host, registers the client, and starts the USB task on core 0.
-    - `task()`: Drains the ring buffer and forwards MIDI data to `onMidiDataReceived()`. Call this from `loop()`.
-    - `onMidiDataReceived()`: Virtual function (to be overridden) for processing received MIDI messages (4 bytes: CIN + 3 MIDI bytes).
-
-- **BLEConnection.h / BLEConnection.cpp**
-  Implements the BLE MIDI server, enabling the ESP32 to receive MIDI messages via Bluetooth Low Energy.
-  - **Key Functions:**
-    - `begin()`: Initializes the BLE server and starts advertising the MIDI service.
-    - `task()`: Processes BLE events (if needed).
-    - `setMidiMessageCallback()`: Registers a callback to handle incoming BLE MIDI messages.
-    - `onMidiDataReceived()`: Virtual function (to be overridden) for processing BLE MIDI messages.
-
-- **MIDIHandler.h / MIDIHandler.cpp**
-  Processes and interprets raw MIDI data (removing USB headers when necessary) and manages MIDI events.
-  Uses **MIDI 1.0 standard terminology** for all fields and status types.
-  - **Features:**
-    - Handles MIDI events: NoteOn, NoteOff, ControlChange, ProgramChange, PitchBend, and ChannelPressure.
-    - Converts MIDI note numbers into musical notes (e.g., "C4").
-    - Groups simultaneous notes into chords via `chordIndex`.
-    - Maintains the state of active notes and an optional history buffer (using PSRAM).
-    - Provides utility functions to retrieve formatted MIDI event data.
-  - **MIDIEventData struct fields:**
-    - `index` — Global event counter
-    - `msgIndex` — Links NoteOn/NoteOff pairs
-    - `timestamp` — Event time in milliseconds
-    - `delay` — Delta time since previous event
-    - `channel` — MIDI channel (1-16)
-    - `status` — Event type: `"NoteOn"`, `"NoteOff"`, `"ControlChange"`, `"ProgramChange"`, `"PitchBend"`, `"ChannelPressure"`
-    - `note` — MIDI note number (or controller number for ControlChange)
-    - `noteName` — Musical note name (e.g., "C", "D#")
-    - `noteOctave` — Note with octave (e.g., "C4", "D#5")
-    - `velocity` — Velocity (or CC value, program number, or pressure)
-    - `chordIndex` — Groups simultaneously pressed notes
-    - `pitchBend` — 14-bit pitch bend value (0-16383, center = 8192)
-  - **Key Functions:**
-    - `begin()`: Initializes the MIDI handler and associated USB/BLE connections.
-    - `task()`: Processes incoming USB and BLE MIDI events.
-    - `handleMidiMessage(data, length)`: Interprets raw MIDI messages.
-    - `getChord(chord, queue, fields)`: Retrieves events from a specific chord.
-    - `lastChord(queue)`: Returns the highest chord index.
-    - `getAnswer(field)`: Returns data from the last chord (e.g., `getAnswer("noteName")`).
-    - `fillActiveNotes(bool out[128])`: Copies the current active notes state to a flat boolean array. Preferred over `getActiveNotes()` for real-time display rendering.
-    - `setRawMidiCallback(callback)`: Registers a callback that fires with raw MIDI bytes before parsing. Useful for debugging and logging.
-    - `clearQueue()`: Clears the event queue and resets all internal state.
-    - `enableHistory(capacity)`: Enables a PSRAM history buffer.
-
-- **MIDIHandlerConfig.h**
-  Configuration struct for calibrating MIDIHandler behavior (chord detection, velocity filter, queue size, etc.).
-
-- **GingoAdapter.h** *(optional)*
-  Bridge header for [Gingoduino](https://github.com/sauloverissimo/gingoduino) integration. Provides functions to convert MIDIHandler chord data into Gingoduino objects for chord identification, harmonic field deduction, and progression analysis. Only include this if you have the Gingoduino library installed.
-
-- **ESP32_Host_MIDI.h**
-  The core header that includes the USB/BLE connectivity, configuration, and MIDI handling modules.
-
-### Example Files (in the `examples/` folder)
-
-- **Raw-USB-BLE/** — Demonstrates using USBConnection and BLEConnection directly for raw MIDI byte access, without MIDIHandler. Serial output only, no display required.
-- **T-Display-S3/** — Displays the note names from the last MIDI chord on the ST7789 display using `getAnswer("noteName")`.
-- **T-Display-S3-Queue/** — Displays the full MIDI event queue and active notes on the display. Includes a hardware button (GPIO 14) to clear the queue at any time. Useful for debugging and detailed event visualization.
-- **T-Display-S3-Gingoduino/** — Integrates with the [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) on the T-Display S3. Identifies notes (name + frequency), intervals, chords, and deduces harmonic fields — all shown on the ST7789 display and Serial.
-- **T-Display-S3-Piano/** — Full piano visualizer with 25-key display, real-time key highlighting, music theory analysis (Gingoduino), and sine wave synthesizer (PCM5102A DAC via I2S). Anti-tearing via full-screen sprite in PSRAM.
-- **T-Display-S3-Piano-Debug/** — On-display MIDI event monitor for diagnosing USB MIDI issues without Serial access (USB Host mode prevents Serial Monitor). Shows raw bytes, parsed events, and a mini-piano bar with colour-coded log.
-
----
-
-## Operation
-
-1. **MIDI USB-OTG Reception:**
-   When a MIDI device is connected via USB, the **USBConnection** module captures the MIDI data and passes it to **MIDIHandler** for processing.
-
-2. **MIDI BLE Reception:**
-   The **BLEConnection** module enables the ESP32 to operate as a BLE MIDI server, receiving MIDI messages from paired Bluetooth devices.
-
-3. **MIDI Message Processing:**
-   **MIDIHandler** interprets incoming MIDI messages (NoteOn, NoteOff, ControlChange, ProgramChange, PitchBend, ChannelPressure), converts MIDI note numbers into musical notes, groups simultaneous notes into chords, and optionally stores events in a history buffer.
-
-4. **Display Output:**
-   The **ST7789_Handler** module handles the display of formatted MIDI information on the T‑Display S3, ensuring smooth text rendering without flickering.
-
----
-
-## Configuration
-
-MIDIHandler behavior can be customized using the `MIDIHandlerConfig` struct. All fields have sensible defaults — you only need to change what you want to calibrate:
+ESP32_Host_MIDI turns your ESP32 into a MIDI hub. Plug a USB MIDI keyboard, connect a phone app via Bluetooth, bridge two ESP32s wirelessly with ESP-NOW, or do all at the same time. The library handles the low-level transport and gives you a clean, high-level API to read notes, detect chords, and send MIDI messages back.
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
 
 void setup() {
-    MIDIHandlerConfig config;
-    config.maxEvents = 30;            // Larger event queue
-    config.chordTimeWindow = 50;      // 50ms chord grouping window
-    config.velocityThreshold = 10;    // Ignore ghost notes below velocity 10
-    config.historyCapacity = 1000;    // Enable PSRAM history
-    config.bleName = "My MIDI Device";
+    midiHandler.begin();
+}
 
-    midiHandler.begin(config);
+void loop() {
+    midiHandler.task();
+
+    // Read what's playing
+    auto notes = midiHandler.getActiveNotesVector();  // ["C4", "E4", "G4"]
+
+    // Send MIDI via any connected transport
+    midiHandler.sendNoteOn(1, 60, 100);   // Channel 1, Middle C, velocity 100
 }
 ```
 
-Calling `midiHandler.begin()` without a config uses all defaults — fully backward compatible.
+---
 
-### Configuration Parameters
+## What it does
+
+- **USB Host MIDI** — ESP32 acts as USB host. Plug any class-compliant MIDI controller (keyboard, pad, etc.) directly into the ESP32's USB-OTG port.
+- **BLE MIDI (bidirectional)** — ESP32 acts as a BLE MIDI peripheral. A phone app or DAW connects to it. Both can send and receive MIDI.
+- **ESP-NOW MIDI** — Ultra-low latency wireless MIDI (~1-5ms) between ESP32 devices. No WiFi network needed. Broadcast (no pairing) or unicast (peer-to-peer).
+- **Transport abstraction** — `MIDITransport` interface lets you add custom transports (ESP-NOW, RTP-MIDI, serial, etc.) via `addTransport()`. USB and BLE are built-in; others plug in at runtime.
+- **MIDI processing** — Parses NoteOn, NoteOff, ControlChange, ProgramChange, PitchBend, ChannelPressure. Converts note numbers to names ("C4"), groups simultaneous notes into chords, tracks active notes.
+- **Thread-safe** — All transports use ring buffers with spinlock protection. USB runs on a dedicated FreeRTOS task (Core 0). All MIDI processing happens on the main loop (Core 1), so your code never sees race conditions.
+
+---
+
+## Platform compatibility
+
+### Build systems
+
+| Platform | Compatible? | Notes |
+|----------|:-----------:|-------|
+| **Arduino IDE** | Yes | Native support. Just install and use. |
+| **PlatformIO (Arduino framework)** | Yes | Add to `lib_deps` in `platformio.ini` (see below). |
+| **PlatformIO (ESP-IDF + Arduino)** | Yes | Use `framework = arduino, espidf` in `platformio.ini`. |
+| **ESP-IDF pure (no Arduino)** | No | Requires `Arduino.h`, `String`, `millis()`, and the ESP32 BLE Arduino library. |
+
+**PlatformIO example:**
+
+```ini
+[env:esp32s3]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+lib_deps =
+    https://github.com/sauloverissimo/ESP32_Host_MIDI.git
+```
+
+> **Other languages** (MicroPython, Rust, TinyGo, Lua, etc.): not compatible. The library is C++ and depends on the Arduino-ESP32 core and ESP-IDF APIs.
+
+### ESP32 chip support
+
+The library uses **compile-time feature detection** to automatically enable or disable USB and BLE based on the target chip. Select the correct board — the library adapts. ESP-NOW is available on all chips.
+
+| Chip | USB Host | BLE | ESP-NOW | Dual-Core | PSRAM | Status |
+|------|:--------:|:---:|:-------:|:---------:|:-----:|--------|
+| **ESP32-S3** | Yes | Yes | Yes | Yes | Yes | **Recommended** |
+| **ESP32-S2** | Yes | No | Yes | No | depends | Supported |
+| **ESP32** (classic) | No | Yes | Yes | Yes | depends | Supported |
+| **ESP32-C3** | No | Yes | Yes | No | No | Supported |
+| **ESP32-C6** | No | Yes | Yes | No | No | Supported |
+| **ESP32-H2** | No | Yes | No | No | No | Supported |
+| **ESP32-P4** | Yes | No | TBD | Yes | Yes | Supported |
+
+> **Single-core chips** (S2, C3, C6, H2): USB or BLE shares CPU time with `loop()`. Keep `loop()` lightweight and call `midiHandler.task()` frequently.
+
+### Feature detection macros
+
+```cpp
+#if ESP32_HOST_MIDI_HAS_USB
+  // USB Host is available (ESP32-S2, S3, P4)
+#endif
+#if ESP32_HOST_MIDI_HAS_BLE
+  // BLE MIDI is available (ESP32, S3, C3, C6, H2)
+#endif
+#if ESP32_HOST_MIDI_HAS_PSRAM
+  // PSRAM is available for history buffer
+#endif
+```
+
+### Other boards
+
+| Board | Compatible? | Reason |
+|-------|:-----------:|--------|
+| **Arduino Nano ESP32** (ESP32-S3) | Yes | Works natively |
+| **Seeed XIAO ESP32-S3** | Yes | Works natively |
+| **Seeed XIAO ESP32-C3** | Yes | BLE only |
+| **Raspberry Pi Pico** | No | Different USB Host API |
+| **Teensy 4.x** | No | Different USB Host API |
+| **Arduino Uno / Mega** (AVR) | No | No USB Host, no BLE, no STL |
+
+> See [ROADMAP.md](ROADMAP.md) for plans to support additional platforms.
+
+---
+
+## Getting started
+
+### Installation
+
+1. **Arduino IDE**: Download as ZIP and install via *Sketch > Include Library > Add .ZIP Library*, or clone directly into your Arduino `libraries/` folder.
+2. **PlatformIO**: Add the GitHub URL to `lib_deps` in your `platformio.ini` (see above).
+
+### Dependencies
+
+- **ESP32 Arduino Core** 2.0.0+ (includes USB Host and BLE support)
+- **[LovyanGFX](https://github.com/lovyan03/LovyanGFX)** 0.4.x+ (only for display examples)
+- **[Gingoduino](https://github.com/sauloverissimo/gingoduino)** v0.2.2+ (optional, for music theory analysis)
+
+### Quick start
+
+```cpp
+#include <ESP32_Host_MIDI.h>
+
+void setup() {
+    Serial.begin(115200);
+
+    MIDIHandlerConfig config;
+    config.bleName = "My MIDI Device";    // BLE advertising name
+    config.chordTimeWindow = 50;          // 50ms chord grouping window
+
+    midiHandler.begin(config);
+}
+
+void loop() {
+    midiHandler.task();  // MUST be called every loop iteration
+
+    // Check what's playing
+    if (midiHandler.getActiveNotesCount() > 0) {
+        Serial.println(midiHandler.getActiveNotes().c_str());  // "{C4, E4, G4}"
+    }
+}
+```
+
+### Board settings (Arduino IDE)
+
+- Board: **ESP32S3 Dev Module** (or your specific board)
+- USB Mode: **USB-OTG (TinyUSB)** (required for USB Host)
+
+---
+
+## Receiving MIDI
+
+Both USB and BLE reception work automatically after calling `midiHandler.begin()`. MIDI events are parsed, converted, and made available through the API.
+
+### Reading the event queue
+
+```cpp
+const auto& queue = midiHandler.getQueue();
+for (const auto& event : queue) {
+    Serial.printf("[%s] ch=%d note=%s vel=%d\n",
+        event.status.c_str(), event.channel,
+        event.noteOctave.c_str(), event.velocity);
+}
+```
+
+### Active notes
+
+```cpp
+// As a formatted string
+String notes = midiHandler.getActiveNotes().c_str();  // "{C4, E4, G4}"
+
+// As a vector
+auto vec = midiHandler.getActiveNotesVector();  // ["C4", "E4", "G4"]
+
+// As a bool array (best for real-time rendering)
+bool active[128];
+midiHandler.fillActiveNotes(active);
+if (active[60]) { /* middle C is pressed */ }
+```
+
+### Chord detection
+
+```cpp
+int chord = midiHandler.lastChord(midiHandler.getQueue());
+auto noteNames = midiHandler.getChord(chord, midiHandler.getQueue(), {"noteName"});
+// noteNames: ["C", "E", "G"]
+
+// Shorthand for the last chord:
+auto answer = midiHandler.getAnswer("noteName");
+```
+
+### MIDIEventData fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `index` | `int` | Global event counter |
+| `msgIndex` | `int` | Links NoteOn/NoteOff pairs |
+| `timestamp` | `unsigned long` | Timestamp in ms (`millis()`) |
+| `delay` | `unsigned long` | Delta time since previous event |
+| `channel` | `int` | MIDI channel (1-16) |
+| `status` | `std::string` | `"NoteOn"`, `"NoteOff"`, `"ControlChange"`, `"ProgramChange"`, `"PitchBend"`, `"ChannelPressure"` |
+| `note` | `int` | MIDI note number (or CC number) |
+| `noteName` | `std::string` | Musical note name ("C", "D#") |
+| `noteOctave` | `std::string` | Note with octave ("C4", "D#5") |
+| `velocity` | `int` | Velocity (or CC value, program number, pressure) |
+| `chordIndex` | `int` | Groups simultaneously pressed notes |
+| `pitchBend` | `int` | 14-bit value (0-16383, center = 8192) |
+
+---
+
+## Sending MIDI
+
+Send methods work via any transport that supports sending (BLE, ESP-NOW, or custom transports). All methods return `true` if the message was sent, `false` if no transport is available.
+
+```cpp
+// Notes (channel: 1-16)
+midiHandler.sendNoteOn(1, 60, 100);    // Channel 1, Middle C, velocity 100
+midiHandler.sendNoteOff(1, 60, 0);     // Release
+
+// Control Change
+midiHandler.sendControlChange(1, 1, 64);   // CC#1 (Mod Wheel), value 64
+
+// Program Change
+midiHandler.sendProgramChange(1, 5);   // Program 5
+
+// Pitch Bend (-8192 to 8191, 0 = center)
+midiHandler.sendPitchBend(1, 0);       // Center
+midiHandler.sendPitchBend(1, 4096);    // Bend up
+
+// Raw MIDI bytes (status + data, no headers)
+uint8_t raw[] = {0x90, 60, 100};
+midiHandler.sendRaw(raw, 3);
+
+// Check BLE connection
+#if ESP32_HOST_MIDI_HAS_BLE
+if (midiHandler.isBleConnected()) {
+    // A phone/DAW is connected via BLE
+}
+#endif
+```
+
+### USB-to-BLE bridge example
+
+```cpp
+#include <ESP32_Host_MIDI.h>
+
+void setup() {
+    midiHandler.begin();
+    midiHandler.setRawMidiCallback(onRawMidi);
+}
+
+// Forward every incoming MIDI message to BLE
+void onRawMidi(const uint8_t* raw, size_t rawLen, const uint8_t* midi3) {
+    midiHandler.sendRaw(midi3, 3);
+}
+
+void loop() {
+    midiHandler.task();
+}
+```
+
+---
+
+## Transport abstraction
+
+The library uses a `MIDITransport` interface that decouples MIDI processing from specific hardware. USB and BLE are built-in transports registered automatically. You can add custom transports via `addTransport()`.
+
+### Architecture
+
+```
+MIDIHandler ──[MIDITransport*]──> USBConnection     (built-in, automatic)
+             ──[MIDITransport*]──> BLEConnection     (built-in, automatic)
+             ──[MIDITransport*]──> ESPNowConnection  (addTransport, manual)
+             ──[MIDITransport*]──> YourTransport     (addTransport, manual)
+```
+
+### Creating a custom transport
+
+```cpp
+#include "MIDITransport.h"
+
+class MyTransport : public MIDITransport {
+public:
+    bool begin() { /* init hardware */ return true; }
+
+    void task() override {
+        // Read from hardware, then deliver to MIDIHandler:
+        if (hasData) dispatchMidiData(midiBytes, 3);
+    }
+
+    bool isConnected() const override { return initialized; }
+
+    // Optional: override sendMidiMessage() if your transport supports sending
+    bool sendMidiMessage(const uint8_t* data, size_t length) override {
+        // Send bytes over your transport
+        return true;
+    }
+};
+
+MyTransport custom;
+void setup() {
+    custom.begin();
+    midiHandler.addTransport(&custom);
+    midiHandler.begin();
+}
+```
+
+---
+
+## ESP-NOW MIDI
+
+ESP-NOW provides ultra-low latency wireless MIDI (~1-5ms) between ESP32 devices. No WiFi router needed — devices communicate directly. Ideal for wireless MIDI on stage.
+
+| Feature | Value |
+|---------|-------|
+| Latency | ~1-5ms (vs 10-20ms for BLE) |
+| Range | ~200m outdoor, ~50m indoor |
+| Pairing | Not required (broadcast mode) |
+| Max peers | 20 (unicast) / unlimited (broadcast) |
+| Bidirectional | Yes |
+
+### Basic usage
+
+```cpp
+#include "ESP32_Host_MIDI.h"
+#include "ESPNowConnection.h"
+
+ESPNowConnection espNow;
+
+void setup() {
+    espNow.begin();                          // Init WiFi + ESP-NOW
+    midiHandler.addTransport(&espNow);       // Register with MIDIHandler
+    midiHandler.begin();
+}
+
+void loop() {
+    midiHandler.task();
+    // Incoming ESP-NOW MIDI is now parsed like USB/BLE:
+    // getActiveNotes(), getAnswer(), sendNoteOn(), etc.
+}
+```
+
+### Standalone (without MIDIHandler)
+
+```cpp
+#include "ESPNowConnection.h"
+
+ESPNowConnection espNow;
+
+void onData(void* ctx, const uint8_t* data, size_t len) {
+    Serial.printf("MIDI: %02X %02X %02X\n", data[0], data[1], data[2]);
+}
+
+void setup() {
+    espNow.begin();
+    espNow.setMidiCallback(onData, nullptr);
+}
+
+void loop() {
+    espNow.task();
+    // Send a NoteOn
+    uint8_t msg[] = {0x90, 60, 100};
+    espNow.sendMidiMessage(msg, 3);
+}
+```
+
+### Peer management
+
+```cpp
+// By default, ESP-NOW broadcasts to all devices on the same channel.
+// To target specific devices:
+uint8_t peerMAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+espNow.addPeer(peerMAC);
+
+// Get this device's MAC (tell the other device to add it):
+uint8_t myMAC[6];
+espNow.getLocalMAC(myMAC);
+```
+
+---
+
+## Using raw MIDI data (without MIDIHandler)
+
+For custom parsers, MIDI routing, or minimal footprint, use `USBConnection` or `BLEConnection` directly with callbacks:
+
+```cpp
+#include "USBConnection.h"
+#include "BLEConnection.h"
+
+USBConnection usb;
+BLEConnection ble;
+
+void onUsbData(void* ctx, const uint8_t* data, size_t len) {
+    // USB-MIDI: 4 bytes per event [CIN, Status, Data1, Data2]
+    Serial.printf("USB: %02X %02X %02X %02X\n", data[0], data[1], data[2], data[3]);
+}
+
+void onBleData(void* ctx, const uint8_t* data, size_t len) {
+    // BLE: raw MIDI bytes (header already stripped)
+    Serial.printf("BLE: %02X %02X %02X\n", data[0], data[1], data[2]);
+}
+
+void setup() {
+    usb.setMidiCallback(onUsbData, nullptr);
+    usb.setConnectionCallbacks(onConnect, onDisconnect, nullptr);
+    usb.begin();
+
+    ble.setMidiCallback(onBleData, nullptr);
+    ble.begin("My Device");
+}
+
+void loop() {
+    usb.task();
+    ble.task();
+}
+```
+
+---
+
+## Configuration
+
+```cpp
+MIDIHandlerConfig config;
+config.maxEvents = 30;            // Event queue size (SRAM)
+config.chordTimeWindow = 50;      // Chord grouping window (ms). 0 = legacy
+config.velocityThreshold = 10;    // Ignore ghost notes below this velocity
+config.historyCapacity = 1000;    // PSRAM history buffer. 0 = disabled
+config.bleName = "My MIDI Device"; // BLE advertising name
+
+midiHandler.begin(config);
+```
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `maxEvents` | 20 | Maximum events in the active queue (SRAM) |
-| `chordTimeWindow` | 0 | Time window (ms) for chord grouping. 0 = legacy (chord ends only when all notes released) |
+| `chordTimeWindow` | 0 | Time window (ms) for chord grouping. 0 = legacy mode |
 | `velocityThreshold` | 0 | Minimum velocity to accept NoteOn. 0 = accept all |
 | `historyCapacity` | 0 | PSRAM history buffer size. 0 = disabled |
 | `bleName` | `"ESP32 MIDI BLE"` | BLE advertising device name |
 
 ---
 
-## Using Raw MIDI Data (Without MIDIHandler)
+## Architecture
 
-The **USBConnection** and **BLEConnection** modules can be used independently, without MIDIHandler, when you need direct access to raw MIDI bytes. This is useful for building custom MIDI parsers, MIDI routing, or minimal memory footprint applications.
+All transports share the same pattern: data arrives in a background task/callback, gets enqueued into a spinlock-protected ring buffer, and is processed on the main loop via `task()`.
 
-### USB: Override `onMidiDataReceived()`
-
-```cpp
-#include "USBConnection.h"
-
-class MyUSB : public USBConnection {
-    void onMidiDataReceived(const uint8_t* data, size_t length) override {
-        // data[0] = USB-MIDI CIN byte, data[1..3] = MIDI bytes
-        uint8_t status = data[1] & 0xF0;
-        uint8_t channel = (data[1] & 0x0F) + 1;
-        // ... your processing here
-    }
-};
-
-MyUSB usb;
-void setup() { usb.begin(); }
-void loop()  { usb.task(); }
+```
+┌──────────────────────────────┐    ┌──────────────────────────────┐
+│       Background Tasks        │    │     Core 1 (main loop)        │
+│                               │    │                               │
+│  USB: _usbTask (Core 0)      │    │   midiHandler.task()          │
+│  • USB host polling           │───>│   • transport[0]->task()      │
+│  • Enqueue to ring buffer     │    │   • transport[1]->task()      │
+│                               │    │   • transport[N]->task()      │
+│  BLE: ESP-IDF BLE task        │    │   • handleMidiMessage()       │
+│  • onWrite callback           │───>│   • User logic                │
+│  • Enqueue to ring buffer     │    │   • Display rendering         │
+│                               │    │                               │
+│  ESP-NOW: WiFi task           │    │                               │
+│  • _onReceive callback        │───>│                               │
+│  • Enqueue to ring buffer     │    │                               │
+└──────────────────────────────┘    └──────────────────────────────┘
+          ▲                                     │
+          │      Ring Buffers (64 msgs each)    │
+          └──────── spinlock-safe ──────────────┘
 ```
 
-### BLE: Use callback or override
+### Connection lifecycle (BLE)
 
-```cpp
-#include "BLEConnection.h"
-
-BLEConnection ble;
-
-void onMidi(const uint8_t* data, size_t length) {
-    // Process raw BLE MIDI data
-}
-
-void setup() {
-    ble.setMidiMessageCallback(onMidi);
-    ble.begin("My Device");
-}
-void loop() { ble.task(); }
-```
-
-See the **Raw-USB-BLE** example for a complete working sketch.
+- **Advertising** starts automatically in `begin()`.
+- When a central (phone/DAW) **connects**, the transport dispatches a connection event.
+- When it **disconnects**, active notes are cleared (prevents stuck notes) and advertising restarts automatically.
 
 ---
 
-## Music Theory with Gingoduino
+## Music theory with Gingoduino
 
-ESP32_Host_MIDI groups simultaneous notes into chords via `chordIndex`, but does not perform music theory analysis. For chord identification, harmonic field deduction, and progression analysis, use the [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) together with the optional **GingoAdapter.h** bridge header.
-
-### Using GingoAdapter (recommended)
+For chord identification, harmonic field deduction, and progression analysis, use the [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) with the optional `GingoAdapter.h`:
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
 #include <GingoAdapter.h>
 
-using namespace gingoduino;
-
 void loop() {
     midiHandler.task();
 
-    // Identify chords
     char chordName[16];
     if (GingoAdapter::identifyLastChord(midiHandler, chordName, sizeof(chordName))) {
         Serial.println(chordName);  // "CM", "Am7", "Gdim"
     }
-
-    // Deduce harmonic field from all chords in the queue
-    FieldMatch fields[3];
-    uint8_t n = GingoAdapter::deduceFieldFromQueue(midiHandler, fields, 3);
-    if (n > 0) {
-        Serial.printf("Field: %s (matched %d/%d)\n",
-                      fields[0].tonicName, fields[0].matched, fields[0].total);
-    }
 }
 ```
-
-### GingoAdapter Functions
-
-**Note Conversion:**
-
-| Function | Description |
-|----------|-------------|
-| `midiToGingoNotes(midiNotes, count, output)` | Converts MIDI note numbers to sorted `GingoNote` array. |
-| `activeNotesToGingo(handler, output)` | Converts currently active notes to `GingoNote` array. |
-
-**Chord Identification:**
-
-| Function | Description |
-|----------|-------------|
-| `identifyLastChord(handler, output, maxLen)` | Identifies the last chord in the queue. |
-| `identifyChord(handler, chordIndex, output, maxLen)` | Identifies a specific chord by index. |
-
-**Harmonic Field Deduction** (requires Gingoduino Tier 2+):
-
-| Function | Description |
-|----------|-------------|
-| `deduceField(chordNames, count, output, maxResults)` | Deduces harmonic fields from chord name strings. |
-| `deduceFieldFromQueue(handler, output, maxResults)` | Scans the MIDIHandler queue, identifies chords, and deduces the harmonic field. |
-
-**Progression Analysis** (requires Gingoduino Tier 3):
-
-| Function | Description |
-|----------|-------------|
-| `identifyProgression(tonic, scale, branches, count, result)` | Identifies the best progression match. |
-| `predictNext(tonic, scale, branches, count, output, maxResults)` | Predicts next branches from a partial sequence. |
 
 > See the **T-Display-S3-Gingoduino** example for a complete working sketch.
 
 ---
 
-## Customization
+## Examples
 
-The library is designed to be modular:
-- Each example provides its own `mapping.h` with pin assignments. Create or modify this file to match your board.
-- The core modules **USBConnection**, **BLEConnection**, and **MIDIHandler** can be extended or replaced to suit specific application requirements.
-- The display handler (`ST7789_Handler`) lives in the examples, not in the core library, so you can replace it with any display driver.
+| Example | Description |
+|---------|-------------|
+| **Raw-USB-BLE** | USB and BLE raw access via callbacks without MIDIHandler. Serial output only. |
+| **ESP-NOW-MIDI** | Wireless MIDI between two ESP32 devices via ESP-NOW. Broadcast mode. |
+| **T-Display-S3** | Note names on ST7789 display using `getAnswer("noteName")`. |
+| **T-Display-S3-Queue** | Full event queue and active notes on display. Button to clear. |
+| **T-Display-S3-Gingoduino** | Music theory: notes, intervals, chords, harmonic fields on display. |
+| **T-Display-S3-Piano** | 25-key piano visualizer + PCM5102A synth + Gingoduino analysis. |
+| **T-Display-S3-Piano-Debug** | On-display MIDI monitor for debugging without Serial (USB Host mode). |
 
 ---
 
-## Getting Started
+## File structure
 
-1. **Install Dependencies:**
-   - Arduino IDE (1.8.19+ or 2.x).
-   - ESP32 Arduino Core 2.0.0+ (includes USB Host and BLE support).
-   - [LovyanGFX](https://github.com/lovyan03/LovyanGFX) library (0.4.x+) for display management (T-Display S3 examples).
-   - [Gingoduino](https://github.com/sauloverissimo/gingoduino) library (v0.2.2+) — *optional*, only needed for the T-Display-S3-Gingoduino example and GingoAdapter.h.
-   - BLE libraries are included in the ESP32 Arduino Core.
+```
+src/
+  ESP32_Host_MIDI.h       — Main header (includes everything)
+  MIDITransport.h         — Abstract transport interface
+  MIDIHandlerConfig.h     — Configuration struct
+  MIDIHandler.h/.cpp      — MIDI parsing, event queue, chord detection, transport orchestration
+  USBConnection.h/.cpp    — USB Host MIDI (ring buffer, Core 0 task)
+  BLEConnection.h/.cpp    — BLE MIDI (ring buffer, send/receive, GATT server)
+  ESPNowConnection.h/.cpp — ESP-NOW MIDI (ring buffer, broadcast/unicast)
+  GingoAdapter.h          — Optional bridge to Gingoduino
 
-2. **Load the Example:**
-   Open one of the example sketches from `examples/` in the Arduino IDE, adjust the pin configuration in the example's `mapping.h` if necessary, and upload it to your ESP32-S3 board.
-   - Select board: **ESP32S3 Dev Module** (or your specific board).
-   - Set **USB Mode** to **USB-OTG (TinyUSB)** in the board settings.
-
-3. **Connect a MIDI Device:**
-   Use a USB MIDI device or pair a BLE MIDI device to test MIDI message reception and display.
+examples/
+  Raw-USB-BLE/              — Raw MIDI via callbacks (no MIDIHandler)
+  ESP-NOW-MIDI/             — Wireless MIDI between ESP32 devices
+  T-Display-S3/             — Basic display example
+  T-Display-S3-Queue/       — Event queue visualization
+  T-Display-S3-Gingoduino/  — Music theory analysis
+  T-Display-S3-Piano/       — Piano visualizer + synth
+  T-Display-S3-Piano-Debug/ — On-display MIDI debugger
+```
 
 ---
 
 ## Contributing
 
-Contributions, bug reports, and suggestions are welcome!
-Feel free to open an issue or submit a pull request on GitHub.
-
----
+Contributions, bug reports, and suggestions are welcome! Open an issue or submit a pull request on [GitHub](https://github.com/sauloverissimo/ESP32_Host_MIDI).
 
 ## License
 
-This project is released under the MIT License. See the [LICENSE](LICENSE.txt) file for details.
+MIT License. See [LICENSE](LICENSE.txt).

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include "MIDIHandlerConfig.h"
+#include "MIDITransport.h"
 
 // --- Feature detection macros ---
 // If ESP32_Host_MIDI.h was included first, these are already defined.
@@ -89,6 +90,25 @@ public:
   void clearActiveNotesNow();
   void clearQueue();
 
+  // Register an external transport (ESP-NOW, RTP-MIDI, custom, etc.).
+  // The transport must already be initialized (begin() called) before adding.
+  // MIDIHandler will call task() on it and receive data via callbacks.
+  void addTransport(MIDITransport* transport);
+
+  // MIDI Output — send via any transport that supports sending.
+  // channel: 1-16. Returns true if any transport sent the message.
+  bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
+  bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity);
+  bool sendControlChange(uint8_t channel, uint8_t controller, uint8_t value);
+  bool sendProgramChange(uint8_t channel, uint8_t program);
+  bool sendPitchBend(uint8_t channel, int value);  // value: -8192 to 8191
+  bool sendRaw(const uint8_t* data, size_t length);
+  bool sendBleRaw(const uint8_t* data, size_t length);  // backward compat alias
+
+#if ESP32_HOST_MIDI_HAS_BLE
+  bool isBleConnected() const;
+#endif
+
   // Chord event utility methods:
   int lastChord(const std::deque<MIDIEventData>& queue) const;
   std::vector<std::string> getChord(int chord, const std::deque<MIDIEventData>& queue, const std::vector<std::string>& fields = { "all" }, bool includeLabels = false) const;
@@ -123,32 +143,21 @@ private:
   std::string getNoteName(int note) const;
   std::string getNoteWithOctave(int note) const;
 
-#if ESP32_HOST_MIDI_HAS_USB
-  class MyUSBConnection : public USBConnection {
-  public:
-    MyUSBConnection(MIDIHandler* handler)
-      : handler(handler) {}
-    virtual void onMidiDataReceived(const uint8_t* data, size_t length) override {
-      handler->handleMidiMessage(data, length);
-    }
-  private:
-    MIDIHandler* handler;
-  };
-  MyUSBConnection usbCon;
-#endif
+  // --- Transport abstraction ---
+  static const int MAX_TRANSPORTS = 4;
+  MIDITransport* transports[MAX_TRANSPORTS];
+  int transportCount;
 
+  void registerTransport(MIDITransport* t);
+  static void _onTransportMidiData(void* ctx, const uint8_t* data, size_t len);
+  static void _onTransportDisconnected(void* ctx);
+
+  // Built-in transports (owned by MIDIHandler, registered automatically in begin())
+#if ESP32_HOST_MIDI_HAS_USB
+  USBConnection usbTransport;
+#endif
 #if ESP32_HOST_MIDI_HAS_BLE
-  class MyBLEConnection : public BLEConnection {
-  public:
-    MyBLEConnection(MIDIHandler* handler)
-      : handler(handler) {}
-    virtual void onMidiDataReceived(const uint8_t* data, size_t length) override {
-      handler->handleMidiMessage(data, length);
-    }
-  private:
-    MIDIHandler* handler;
-  };
-  MyBLEConnection bleCon;
+  BLEConnection bleTransport;
 #endif
 };
 

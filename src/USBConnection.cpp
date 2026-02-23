@@ -65,22 +65,8 @@ bool USBConnection::begin() {
 
 void USBConnection::task() {
     // USB polling runs on the dedicated task (_usbTask on core 0).
-    // Here we only drain the queue and forward to onMidiDataReceived().
+    // Here we only drain the queue and dispatch via MIDITransport callbacks.
     processQueue();
-}
-
-void USBConnection::onDeviceConnected() {
-    // Default implementation (empty). Upper layer can override.
-}
-
-void USBConnection::onDeviceDisconnected() {
-    // Default implementation (empty).
-}
-
-void USBConnection::onMidiDataReceived(const uint8_t* data, size_t length) {
-    // Default implementation (empty). Upper layer should override.
-    (void)data;
-    (void)length;
 }
 
 bool USBConnection::enqueueMidiMessage(const uint8_t* data, size_t /*length*/) {
@@ -114,7 +100,7 @@ bool USBConnection::dequeueMidiMessage(RawUsbMessage &msg) {
 void USBConnection::processQueue() {
     RawUsbMessage msg;
     while (dequeueMidiMessage(msg)) {
-        onMidiDataReceived(msg.data, msg.length);
+        dispatchMidiData(msg.data, msg.length);
     }
 }
 
@@ -169,7 +155,7 @@ void USBConnection::_clientEventCallback(const usb_host_client_event_msg_t *even
                 usbCon->_processConfig(config_desc);
             }
             usbCon->lastError = "";
-            usbCon->onDeviceConnected();
+            usbCon->dispatchConnected();
             break;
         case USB_HOST_CLIENT_EVENT_DEV_GONE:
             if (usbCon->midiTransfer) {
@@ -178,7 +164,7 @@ void USBConnection::_clientEventCallback(const usb_host_client_event_msg_t *even
             }
             usb_host_device_close(usbCon->clientHandle, usbCon->deviceHandle);
             usbCon->isReady = false;
-            usbCon->onDeviceDisconnected();
+            usbCon->dispatchDisconnected();
             break;
         default:
             break;

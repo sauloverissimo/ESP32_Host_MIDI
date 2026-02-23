@@ -27,7 +27,9 @@
   #define ESP32_HOST_MIDI_HAS_PSRAM 0
 #endif
 
-// --- Conditional includes ---
+// --- Includes ---
+
+#include "MIDITransport.h"
 
 #if ESP32_HOST_MIDI_HAS_USB
   #include "USBConnection.h"

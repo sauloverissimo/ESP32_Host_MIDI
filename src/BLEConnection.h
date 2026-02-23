@@ -4,47 +4,58 @@
 #include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
+#include <BLE2902.h>
+#include <freertos/portmacro.h>
+#include <freertos/semphr.h>
+#include "MIDITransport.h"
 
 // Standard BLE MIDI Service UUIDs (Apple/MIDI Association specification)
 #define BLE_MIDI_SERVICE_UUID        "03B80E5A-EDE8-4B33-A751-6CE34EC4C700"
 #define BLE_MIDI_CHARACTERISTIC_UUID "7772E5DB-3868-4112-A1A9-F2669D106BF3"
 
-// Structure to store a raw BLE packet (optional, useful for debugging).
+// Structure to store a raw BLE MIDI packet (after BLE MIDI header is stripped).
 struct RawBleMessage {
-    uint8_t data[64];  // Full received buffer (max 64 bytes)
-    size_t length;     // Actual number of bytes received
+    uint8_t data[20];  // Up to 18 MIDI bytes (BLE MIDI safe MTU minus 2-byte header)
+    size_t length;
 };
 
-class BLEConnection {
+class BLEConnection : public MIDITransport {
 public:
-    // Callback type for incoming MIDI messages
-    typedef void (*MIDIMessageCallback)(const uint8_t* data, size_t length);
-
     BLEConnection();
     virtual ~BLEConnection();
 
     // Initializes the BLE MIDI server and starts advertising.
-    // The deviceName parameter allows customizing the BLE device name.
     void begin(const std::string& deviceName = "ESP32 MIDI BLE");
 
-    // Processes BLE events (generally not needed periodically).
-    void task();
+    // Drains the ring buffer and dispatches MIDI data via MIDITransport callbacks. Call from loop().
+    void task() override;
 
-    // Returns whether a BLE device is currently connected.
-    bool isConnected() const;
+    // Returns whether a BLE central is currently connected.
+    bool isConnected() const override;
 
-    // Registers a callback to handle incoming BLE MIDI messages.
-    void setMidiMessageCallback(MIDIMessageCallback cb);
-
-    // Virtual callback invoked when a BLE MIDI message (4 bytes) is received.
-    // Upper layer or subclass should override this method.
-    virtual void onMidiDataReceived(const uint8_t* data, size_t length);
+    // Sends a MIDI message via BLE NOTIFY.
+    // data: raw MIDI bytes (status + data, no BLE header, no CIN byte).
+    // Returns true if connected and notification was sent.
+    bool sendMidiMessage(const uint8_t* data, size_t length) override;
 
 protected:
     BLEServer* pServer;
     BLECharacteristic* pCharacteristic;
-    BLECharacteristicCallbacks* pBleCallback;  // Managed to prevent memory leak
-    MIDIMessageCallback midiCallback;
+    BLECharacteristicCallbacks* pBleCallback;   // Managed to prevent memory leak
+    BLEServerCallbacks* pServerCallback;        // Managed to prevent memory leak
+    SemaphoreHandle_t sendMutex;
+
+    // Ring buffer for incoming BLE MIDI packets.
+    // Protected by spinlock — same pattern as USBConnection.
+    static const int QUEUE_SIZE = 64;
+    RawBleMessage bleQueue[QUEUE_SIZE];
+    volatile int queueHead;
+    volatile int queueTail;
+    portMUX_TYPE queueMux;
+
+    bool enqueueMidiMessage(const uint8_t* data, size_t length);
+    bool dequeueMidiMessage(RawBleMessage& msg);
+    void processQueue();
 };
 
 #endif // BLE_CONNECTION_H

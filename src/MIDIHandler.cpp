@@ -21,15 +21,10 @@ MIDIHandler::MIDIHandler()
     historyQueue(nullptr),
     historyQueueCapacity(0),
     historyQueueSize(0),
-    historyQueueHead(0)
-#if ESP32_HOST_MIDI_HAS_USB
-    , usbCon(this)
-#endif
-#if ESP32_HOST_MIDI_HAS_BLE
-    , bleCon(this)
-#endif
+    historyQueueHead(0),
+    transportCount(0)
 {
-  // History is disabled by default.
+  memset(transports, 0, sizeof(transports));
 }
 
 MIDIHandler::~MIDIHandler() {
@@ -53,11 +48,13 @@ void MIDIHandler::begin(const MIDIHandlerConfig& cfg) {
   this->maxEvents = cfg.maxEvents;
 
 #if ESP32_HOST_MIDI_HAS_USB
-  usbCon.begin();
+  registerTransport(&usbTransport);
+  usbTransport.begin();
 #endif
 
 #if ESP32_HOST_MIDI_HAS_BLE
-  bleCon.begin(std::string(cfg.bleName));
+  registerTransport(&bleTransport);
+  bleTransport.begin(std::string(cfg.bleName));
 #endif
 
   if (cfg.historyCapacity > 0) {
@@ -66,12 +63,30 @@ void MIDIHandler::begin(const MIDIHandlerConfig& cfg) {
 }
 
 void MIDIHandler::task() {
-#if ESP32_HOST_MIDI_HAS_USB
-  usbCon.task();
-#endif
-#if ESP32_HOST_MIDI_HAS_BLE
-  bleCon.task();
-#endif
+  for (int i = 0; i < transportCount; i++) {
+    transports[i]->task();
+  }
+}
+
+// --- Transport Abstraction ---
+
+void MIDIHandler::_onTransportMidiData(void* ctx, const uint8_t* data, size_t len) {
+  static_cast<MIDIHandler*>(ctx)->handleMidiMessage(data, len);
+}
+
+void MIDIHandler::_onTransportDisconnected(void* ctx) {
+  static_cast<MIDIHandler*>(ctx)->clearActiveNotesNow();
+}
+
+void MIDIHandler::registerTransport(MIDITransport* t) {
+  if (transportCount >= MAX_TRANSPORTS) return;
+  t->setMidiCallback(_onTransportMidiData, this);
+  t->setConnectionCallbacks(nullptr, _onTransportDisconnected, this);
+  transports[transportCount++] = t;
+}
+
+void MIDIHandler::addTransport(MIDITransport* transport) {
+  registerTransport(transport);
 }
 
 void MIDIHandler::enableHistory(int capacity) {
@@ -418,8 +433,12 @@ std::vector<std::string> MIDIHandler::getAnswer(const std::vector<std::string>& 
 
 
 void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
-  const uint8_t* midiData = (length == 3) ? data : (length >= 4 ? data + 1 : nullptr);
-  if (midiData == nullptr) return;
+  // USB-MIDI: 4+ bytes (CIN + MIDI), skip first byte.
+  // BLE/raw MIDI: 2-3 bytes, use directly.
+  const uint8_t* midiData;
+  if (length >= 4)      midiData = data + 1;  // USB-MIDI: skip CIN byte
+  else if (length >= 2) midiData = data;      // BLE/raw MIDI: status + data
+  else return;
 
   // Debug callback — fire before parsing
   if (rawMidiCb) rawMidiCb(data, length, midiData);
@@ -585,3 +604,72 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
 
   addEvent(event);
 }
+
+// --- MIDI Output (via any transport that supports sending) ---
+
+bool MIDIHandler::sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
+  if (channel == 0 || channel > 16) return false;
+  uint8_t data[3] = { (uint8_t)(0x90 | ((channel - 1) & 0x0F)), note, velocity };
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, 3)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
+  if (channel == 0 || channel > 16) return false;
+  uint8_t data[3] = { (uint8_t)(0x80 | ((channel - 1) & 0x0F)), note, velocity };
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, 3)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendControlChange(uint8_t channel, uint8_t controller, uint8_t value) {
+  if (channel == 0 || channel > 16) return false;
+  uint8_t data[3] = { (uint8_t)(0xB0 | ((channel - 1) & 0x0F)), controller, value };
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, 3)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendProgramChange(uint8_t channel, uint8_t program) {
+  if (channel == 0 || channel > 16) return false;
+  uint8_t data[2] = { (uint8_t)(0xC0 | ((channel - 1) & 0x0F)), program };
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, 2)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendPitchBend(uint8_t channel, int value) {
+  if (channel == 0 || channel > 16) return false;
+  // Normalize -8192..8191 to 0..16383 (center = 8192)
+  uint16_t v = (uint16_t)(value + 8192) & 0x3FFF;
+  uint8_t data[3] = { (uint8_t)(0xE0 | ((channel - 1) & 0x0F)),
+                      (uint8_t)(v & 0x7F),
+                      (uint8_t)((v >> 7) & 0x7F) };
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, 3)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendRaw(const uint8_t* data, size_t length) {
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i]->sendMidiMessage(data, length)) return true;
+  }
+  return false;
+}
+
+bool MIDIHandler::sendBleRaw(const uint8_t* data, size_t length) {
+  return sendRaw(data, length);
+}
+
+#if ESP32_HOST_MIDI_HAS_BLE
+bool MIDIHandler::isBleConnected() const {
+  return bleTransport.isConnected();
+}
+#endif
+

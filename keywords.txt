@@ -6,12 +6,15 @@
 # Classes (KEYWORD1)
 ######################################
 MIDIHandler              KEYWORD1
+MIDITransport            KEYWORD1
 USBConnection            KEYWORD1
 BLEConnection            KEYWORD1
 MIDIEventData            KEYWORD1
 MIDIHandlerConfig        KEYWORD1
 RawUsbMessage            KEYWORD1
 RawBleMessage            KEYWORD1
+ESPNowConnection         KEYWORD1
+RawEspNowMessage         KEYWORD1
 GingoAdapter             KEYWORD1
 ST7789_Handler           KEYWORD1
 
@@ -37,15 +40,11 @@ clearQueue                KEYWORD2
 lastChord                 KEYWORD2
 getChord                  KEYWORD2
 getAnswer                 KEYWORD2
-onMidiDataReceived        KEYWORD2
 isConnected               KEYWORD2
-setMidiMessageCallback    KEYWORD2
 enqueueMidiMessage        KEYWORD2
 dequeueMidiMessage        KEYWORD2
 getQueueSize              KEYWORD2
 getQueueMessage           KEYWORD2
-onDeviceConnected         KEYWORD2
-onDeviceDisconnected      KEYWORD2
 init                      KEYWORD2
 print                     KEYWORD2
 println                   KEYWORD2
@@ -56,6 +55,22 @@ midiToGingoNotes          KEYWORD2
 activeNotesToGingo        KEYWORD2
 deduceField               KEYWORD2
 deduceFieldFromQueue      KEYWORD2
+sendNoteOn                KEYWORD2
+sendNoteOff               KEYWORD2
+sendControlChange         KEYWORD2
+sendProgramChange         KEYWORD2
+sendPitchBend             KEYWORD2
+sendBleRaw                KEYWORD2
+sendRaw                   KEYWORD2
+sendMidiMessage           KEYWORD2
+isBleConnected            KEYWORD2
+addTransport              KEYWORD2
+addPeer                   KEYWORD2
+removePeer                KEYWORD2
+getLocalMAC               KEYWORD2
+setMidiCallback           KEYWORD2
+setConnectionCallbacks    KEYWORD2
+dispatchMidiData          KEYWORD2
 identifyProgression       KEYWORD2
 predictNext               KEYWORD2
 
