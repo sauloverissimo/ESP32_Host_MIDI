@@ -506,15 +506,69 @@ void loop() {
 
 ## Examples
 
-| Example | Description |
-|---------|-------------|
-| **Raw-USB-BLE** | USB and BLE raw access via callbacks without MIDIHandler. Serial output only. |
-| **ESP-NOW-MIDI** | Wireless MIDI between two ESP32 devices via ESP-NOW. Broadcast mode. |
-| **T-Display-S3** | Note names on ST7789 display using `getAnswer("noteName")`. |
-| **T-Display-S3-Queue** | Full event queue and active notes on display. Button to clear. |
-| **T-Display-S3-Gingoduino** | Music theory: notes, intervals, chords, harmonic fields on display. |
-| **T-Display-S3-Piano** | 25-key piano visualizer + PCM5102A synth + Gingoduino analysis. |
-| **T-Display-S3-Piano-Debug** | On-display MIDI monitor for debugging without Serial (USB Host mode). |
+### T-Display-S3-Piano
+
+25-key piano visualizer with real-time note display, PCM5102A DAC synth output, and Gingoduino music theory analysis. USB MIDI input.
+
+<img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="480">
+
+https://github.com/user-attachments/assets/pianno-MIDI-25.mp4
+
+---
+
+### T-Display-S3-BLE-Sender + T-Display-S3-BLE-Receiver
+
+Wireless MIDI demo using Bluetooth Low Energy. The **Sender** plays pre-programmed musical sequences (scales, chords, Fur Elise, jazz progressions) and shows didactic information: note names, raw MIDI hex bytes, mini piano. The **Receiver** displays incoming notes on a piano visualizer with audio output.
+
+<img src="examples/T-Display-S3-BLE-Sender/images/BLE.jpeg" width="480">
+
+https://github.com/user-attachments/assets/BLE.mp4
+
+---
+
+### T-Display-S3-ESP-NOW-Jam
+
+Bidirectional wireless MIDI jam session via ESP-NOW. **Same sketch runs on two boards.** Each board plays sequences and sees the other's notes on a dual-layer piano -- cyan for local notes, magenta for remote notes, green when both play the same key. No pairing needed, ultra-low latency (~1-5ms).
+
+---
+
+### T-Display-S3-Gingoduino
+
+Music theory analysis on display: note names, intervals, chord identification, and harmonic field deduction. Requires [Gingoduino](https://github.com/sauloverissimo/gingoduino) v0.2.2+.
+
+<img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="480">
+
+https://github.com/user-attachments/assets/gingo-duino-integration.mp4
+
+---
+
+### T-Display-S3-Queue
+
+Full MIDI event queue visualization with active notes display. Button to clear the queue.
+
+<img src="examples/T-Display-S3-Queue/images/queue.jpeg" width="480">
+
+https://github.com/user-attachments/assets/queue.mp4
+
+---
+
+### T-Display-S3-Piano-Debug
+
+On-display MIDI monitor for debugging without Serial (USB port is used for USB Host). Shows raw events, active notes, and timing.
+
+<img src="examples/T-Display-S3-Piano-Debug/images/pianno-debug.jpeg" width="480">
+
+https://github.com/user-attachments/assets/piano_debug.mp4
+
+---
+
+### ESP-NOW-MIDI
+
+Minimal ESP-NOW wireless MIDI example. Serial output only -- no display needed. Sends and receives MIDI via broadcast. Good starting point for any ESP32 board.
+
+### UART-MIDI-Basic
+
+Traditional 5-pin DIN MIDI input/output via UART. Works with any ESP32 board and a standard MIDI optocoupler circuit.
 
 ---
 
@@ -522,23 +576,26 @@ void loop() {
 
 ```
 src/
-  ESP32_Host_MIDI.h       — Main header (includes everything)
-  MIDITransport.h         — Abstract transport interface
-  MIDIHandlerConfig.h     — Configuration struct
-  MIDIHandler.h/.cpp      — MIDI parsing, event queue, chord detection, transport orchestration
-  USBConnection.h/.cpp    — USB Host MIDI (ring buffer, Core 0 task)
-  BLEConnection.h/.cpp    — BLE MIDI (ring buffer, send/receive, GATT server)
-  ESPNowConnection.h/.cpp — ESP-NOW MIDI (ring buffer, broadcast/unicast)
-  GingoAdapter.h          — Optional bridge to Gingoduino
+  ESP32_Host_MIDI.h         — Main header (includes everything)
+  MIDITransport.h           — Abstract transport interface
+  MIDIHandlerConfig.h       — Configuration struct
+  MIDIHandler.h/.cpp        — MIDI parsing, event queue, chord detection, transport orchestration
+  USBConnection.h/.cpp      — USB Host MIDI (ring buffer, Core 0 task)
+  BLEConnection.h/.cpp      — BLE MIDI (ring buffer, send/receive, GATT server)
+  ESPNowConnection.h/.cpp   — ESP-NOW MIDI (ring buffer, broadcast/unicast)
+  UARTConnection.h/.cpp     — UART MIDI (5-pin DIN via optocoupler)
+  GingoAdapter.h            — Optional bridge to Gingoduino
 
 examples/
-  Raw-USB-BLE/              — Raw MIDI via callbacks (no MIDIHandler)
-  ESP-NOW-MIDI/             — Wireless MIDI between ESP32 devices
-  T-Display-S3/             — Basic display example
-  T-Display-S3-Queue/       — Event queue visualization
-  T-Display-S3-Gingoduino/  — Music theory analysis
-  T-Display-S3-Piano/       — Piano visualizer + synth
-  T-Display-S3-Piano-Debug/ — On-display MIDI debugger
+  ESP-NOW-MIDI/               — Wireless MIDI between ESP32 devices (serial only)
+  UART-MIDI-Basic/            — Traditional 5-pin DIN MIDI via UART
+  T-Display-S3-Piano/         — Piano visualizer + PCM5102A synth + Gingoduino
+  T-Display-S3-BLE-Sender/    — BLE MIDI sender with didactic display
+  T-Display-S3-BLE-Receiver/  — BLE MIDI receiver with piano visualizer
+  T-Display-S3-ESP-NOW-Jam/   — Bidirectional ESP-NOW MIDI jam (same sketch on 2 boards)
+  T-Display-S3-Queue/         — Event queue visualization
+  T-Display-S3-Gingoduino/    — Music theory analysis on display
+  T-Display-S3-Piano-Debug/   — On-display MIDI debugger
 ```
 
 ---

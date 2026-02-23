@@ -1,18 +1,20 @@
 # ROADMAP — ESP32_Host_MIDI
 
-## Current State (v4.0.0)
+## Current State (v4.0.0+)
 
 - Full support for ESP32-S3 (USB + BLE + ESP-NOW + PSRAM + dual-core)
+- **Compatible with ESP32 Arduino Core 2.x and 3.x** (ESP-IDF 4.x and 5.x)
 - Compile-time conditional: USB and BLE are automatically enabled/disabled based on target chip
 - ESP32 family chips with BLE (ESP32, C3, C6, H2) can use BLE MIDI only
 - ESP32-S2 and ESP32-P4 can use USB Host MIDI only
 - ESP-NOW available on all ESP32 variants with WiFi
 - **Transport Abstraction Layer** — `MIDITransport` interface decouples MIDIHandler from transport specifics. USB and BLE are built-in; custom transports plug in via `addTransport()`
-- **ESP-NOW transport** — ultra-low latency (~1-5ms), broadcast/unicast, bidirectional
+- **4 built-in transports**: USB Host, BLE MIDI, ESP-NOW, UART (5-pin DIN)
 - **BLE MIDI is bidirectional** — send MIDI to connected DAW/app via `sendNoteOn()`, `sendNoteOff()`, `sendControlChange()`, `sendProgramChange()`, `sendPitchBend()`, `sendRaw()`
 - **All transports use the same ring buffer architecture** — thread-safe spinlock, `task()` drains from main loop
 - Optional Gingoduino integration via GingoAdapter.h
 - Compatible with Arduino IDE, PlatformIO, and ESP-IDF (Arduino component)
+- **9 examples** including BLE Sender/Receiver pair, ESP-NOW bidirectional jam, piano visualizer, music theory analysis, MIDI debugger, and UART MIDI
 
 ---
 
@@ -36,6 +38,7 @@
 - [x] **USBConnection and BLEConnection** refactored to implement `MIDITransport`. Removed internal subclasses from MIDIHandler.
 - [x] **MIDIHandler transport array** — `MIDITransport* transports[4]` with `addTransport()`. Built-in transports auto-registered in `begin()`.
 - [x] **ESP-NOW transport** — `ESPNowConnection` class. Ultra-low latency (~1-5ms), broadcast/unicast, bidirectional. Registered via `addTransport()`.
+- [x] **UART transport** — `UARTConnection` class. Traditional 5-pin DIN MIDI via optocoupler. Registered via `addTransport()`.
 - [ ] **RTP-MIDI (WiFi) transport** — Network MIDI over UDP, compatible with macOS, Ableton, and iOS via AppleMIDI session protocol. Candidate approach: wrap [Arduino-AppleMIDI-Library](https://github.com/lathoub/Arduino-AppleMIDI-Library) (MIT, 321 stars) as a `MIDITransport`.
 
 ---
