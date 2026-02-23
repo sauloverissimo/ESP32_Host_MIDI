@@ -71,9 +71,23 @@ static ClientCallbacks clientCbs;
 
 class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice advertisedDevice) override {
-        if (advertisedDevice.haveName() &&
-            strcmp(advertisedDevice.getName().c_str(), TARGET_NAME) == 0) {
-            Serial.printf("[BLE] Found '%s'!\n", TARGET_NAME);
+        // Log every device found (helps debugging)
+        const char* name = advertisedDevice.haveName()
+                         ? advertisedDevice.getName().c_str() : "(no name)";
+        Serial.printf("[BLE] Seen: '%s'  svc=%d\n",
+                      name, advertisedDevice.haveServiceUUID());
+
+        // Match by name OR by BLE MIDI service UUID.
+        // The advertising packet is only 31 bytes — with a 128-bit service UUID
+        // the device name may not fit if scan response is disabled on the server.
+        bool matchByName = advertisedDevice.haveName() &&
+                           strcmp(name, TARGET_NAME) == 0;
+        bool matchByUUID = advertisedDevice.haveServiceUUID() &&
+                           advertisedDevice.isAdvertisingService(BLEUUID(BLE_MIDI_SERVICE_UUID));
+
+        if (matchByName || matchByUUID) {
+            Serial.printf("[BLE] Found target! name='%s' byName=%d byUUID=%d\n",
+                          name, matchByName, matchByUUID);
             if (targetDevice) delete targetDevice;
             targetDevice = new BLEAdvertisedDevice(advertisedDevice);
             advertisedDevice.getScan()->stop();
