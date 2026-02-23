@@ -33,7 +33,9 @@ static PianoInfo info = {};
 
 // ── Simple note analysis (no Gingoduino dependency) ──────────────────────────
 static void analyzeNotes() {
+    bool ble = info.bleConnected;  // preserve across memset
     memset(&info, 0, sizeof(info));
+    info.bleConnected = ble;
     int count = 0;
     int pos = 0;
     for (int n = 0; n < 128; n++) {
