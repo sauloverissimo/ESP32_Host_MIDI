@@ -114,6 +114,39 @@ All transports share a single `MIDIHandler` event queue and the same send API. M
 
 ---
 
+### MIDI 2.0 — ESP32 × ESP32
+
+<p align="center">
+  <table bgcolor="#0d1117" cellpadding="20" align="center">
+  <tr><td align="center">
+  <img src="https://midi.org/wp-content/themes/yootheme/cache/49/MIDI_Association_Logo_TM_White-4937d558.webp" height="52" alt="MIDI Association" />
+  </td></tr>
+  </table>
+</p>
+
+**ESP32\_Host\_MIDI delivers a native MIDI 2.0 / UMP transport** — exchange Universal MIDI Packets between two ESP32 boards over WiFi UDP at full 32-bit resolution. Received packets are automatically scaled to MIDI 1.0 and forwarded to every other active transport: BLE, USB, DIN-5, ESP-NOW — no extra routing code.
+
+| Parameter | MIDI 1.0 | MIDI 2.0 (this library) |
+|-----------|----------|------------------------|
+| Note Velocity | 7-bit · 128 steps | **16-bit · 65 536 steps** |
+| Control Change | 7-bit · 128 steps | **32-bit · 4 294 967 295 steps** |
+| Pitch Bend | 14-bit · 16 384 steps | **32-bit · 4 294 967 295 steps** |
+| Protocol | Byte stream | Universal MIDI Packet (UMP) |
+
+```
+ESP32-A  ─────  WiFi UDP ("UMP2" + Word0 + Word1)  ─────►  ESP32-B
+(USB keyboard)        16-bit velocity · 32-bit CC                │
+                                                      auto-scale → MIDI 1.0
+                                                      ├─ BLE → iOS app
+                                                      ├─ DIN-5 → vintage synth
+                                                      ├─ USB Device → DAW
+                                                      └─ ESP-NOW → stage mesh
+```
+
+→ Full API: [MIDI 2.0 / UMP](#midi-20--ump) · Example: `T-Display-S3-MIDI2-UDP`
+
+---
+
 ### Quick Start
 
 ```cpp
@@ -831,6 +864,39 @@ void loop() {
 | OSC | Open Sound Control | UDP WiFi | 5–15 ms | Qualquer ESP32 com WiFi |
 | UART / DIN-5 | Serial MIDI 1.0 | Conector DIN-5 | < 1 ms | Qualquer ESP32 |
 | MIDI 2.0 / UMP | UMP via UDP | UDP WiFi | 5–20 ms | Qualquer ESP32 com WiFi |
+
+---
+
+### MIDI 2.0 — ESP32 × ESP32
+
+<p align="center">
+  <table bgcolor="#0d1117" cellpadding="20" align="center">
+  <tr><td align="center">
+  <img src="https://midi.org/wp-content/themes/yootheme/cache/49/MIDI_Association_Logo_TM_White-4937d558.webp" height="52" alt="MIDI Association" />
+  </td></tr>
+  </table>
+</p>
+
+**ESP32\_Host\_MIDI inclui um transporte MIDI 2.0 / UMP nativo** — troca Universal MIDI Packets entre dois ESP32 via WiFi UDP com resolução total de 32 bits. Os pacotes recebidos são automaticamente escalados para MIDI 1.0 e encaminhados para todos os demais transportes ativos: BLE, USB, DIN-5, ESP-NOW — nenhum código extra de roteamento.
+
+| Parâmetro | MIDI 1.0 | MIDI 2.0 (esta biblioteca) |
+|-----------|----------|---------------------------|
+| Velocity da nota | 7 bits · 128 passos | **16 bits · 65 536 passos** |
+| Control Change | 7 bits · 128 passos | **32 bits · 4 294 967 295 passos** |
+| Pitch Bend | 14 bits · 16 384 passos | **32 bits · 4 294 967 295 passos** |
+| Protocolo | Fluxo de bytes | Universal MIDI Packet (UMP) |
+
+```
+ESP32-A  ─────  WiFi UDP ("UMP2" + Word0 + Word1)  ─────►  ESP32-B
+(Teclado USB)        velocity 16-bit · CC 32-bit              │
+                                                   escala → MIDI 1.0
+                                                   ├─ BLE → app iOS
+                                                   ├─ DIN-5 → sintetizador
+                                                   ├─ USB Device → DAW
+                                                   └─ ESP-NOW → palco
+```
+
+→ Detalhes: [MIDI 2.0 / UMP](#midi-20--ump) · Exemplo: `T-Display-S3-MIDI2-UDP`
 
 ---
 
