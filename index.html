@@ -1920,11 +1920,10 @@
 <p>ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o seu DAW pelo WiFi com RTP-MIDI, controle o Max/MSP via OSC, alcance sintetizadores vintage por um cabo DIN-5 e troque pacotes MIDI 2.0 com resolução de 16 bits — <strong>tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.</strong></p>
 <hr />
 <h2 id="visao-geral-da-arquitetura">Visão Geral da Arquitetura<a class="headerlink" href="#visao-geral-da-arquitetura" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#1A237E', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#3949AB', 'lineColor': '#90CAF9', 'secondaryColor': '#3F51B5', 'tertiaryColor': '#006064', 'edgeLabelBackground': '#1A237E'}}}%%
-flowchart TD
-    classDef transport fill:#1A237E,color:#fff,stroke:#3949AB,font-weight:bold
-    classDef handler  fill:#283593,color:#fff,stroke:#5C6BC0,font-weight:bold
-    classDef output   fill:#004D40,color:#fff,stroke:#00897B,font-weight:bold
+<pre class="mermaid"><code>flowchart TD
+    classDef transport fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
+    classDef handler   fill:#E8EAF6,color:#283593,stroke:#3F51B5,stroke-width:3px
+    classDef output    fill:#B2DFDB,color:#004D40,stroke:#00796B,stroke-width:2px
 
     USB["🔌 USB Host"]:::transport
     BLE["📱 BLE MIDI"]:::transport

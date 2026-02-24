@@ -1,29 +1,9 @@
 /* ── Mermaid diagrams ─────────────────────────────────────────────────────
-   Force dark background + white text on all Mermaid diagrams so they look
-   the same in both light and dark page themes.
+   Light cosmetic styling only — diagrams use light fills + dark text so
+   they render correctly in both light and dark page themes.
    ───────────────────────────────────────────────────────────────────────── */
 .mermaid {
-    background: #0d1117;
-    border-radius: 10px;
-    padding: 1.25em 1em;
-    margin: 1.5em 0;
-}
-
-/* Ensure SVG background is also dark (Mermaid sets its own rect) */
-.mermaid svg {
-    background: #0d1117;
-}
-
-/* Force all SVG text to be white — overrides Material light-theme injection */
-.mermaid svg text,
-.mermaid svg .label,
-.mermaid svg .nodeLabel,
-.mermaid svg .edgeLabel {
-    fill: #ffffff !important;
-    color: #ffffff !important;
-}
-
-/* Edge labels sit on a background rect — keep it dark */
-.mermaid svg .edgeLabel rect {
-    fill: #1a1a2e !important;
+    border-radius: 8px;
+    padding: 0.5em 0;
+    margin: 1em 0;
 }
