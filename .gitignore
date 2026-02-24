@@ -20,5 +20,5 @@ CLAUDE.md
 /ESP32_PCM5102A_MIDI.cpp
 /src/src.ino
 
-# Internal research docs
-docs/
+# Build output
+site/
