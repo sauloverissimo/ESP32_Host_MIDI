@@ -9,50 +9,33 @@ ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. 
 ## Visão Geral da Arquitetura
 
 ```mermaid
-flowchart LR
-    subgraph ENTRADAS["📥 Entradas"]
-        USB["🔌 USB Host\n(teclado, pad...)"]
-        BLE["📱 BLE MIDI\n(iOS, macOS)"]
-        USBDEV["💻 USB Device\n(DAW via USB)"]
-        UART["🎹 UART / DIN-5\n(sintetizador vintage)"]
-        RTP["🌐 RTP-MIDI\n(WiFi / AppleMIDI)"]
-        ETH["🔗 Ethernet\n(W5500 / P4)"]
-        OSC["🎨 OSC\n(Max/MSP, PD)"]
-        ESPNOW["📡 ESP-NOW\n(mesh sem fio)"]
-        MIDI2["🚀 MIDI 2.0\n(UDP / UMP)"]
-    end
+flowchart TD
+    classDef transport fill:#1A237E,color:#fff,stroke:#3949AB
+    classDef handler  fill:#3F51B5,color:#fff,stroke:#283593
+    classDef output   fill:#006064,color:#fff,stroke:#00838F
 
-    subgraph HANDLER["⚙️ MIDIHandler"]
-        QUEUE["Fila de Eventos\n(thread-safe)"]
-        CHORD["Detecção\nde Acordes"]
-        ACTIVE["Notas\nAtivas"]
-    end
+    USB["🔌 USB Host"]:::transport
+    BLE["📱 BLE MIDI"]:::transport
+    DEV["💻 USB Device"]:::transport
+    UART["🎹 UART / DIN-5"]:::transport
+    RTP["🌐 RTP-MIDI"]:::transport
+    ETH["🔗 Ethernet"]:::transport
+    OSC["🎨 OSC"]:::transport
+    NOW["📡 ESP-NOW"]:::transport
+    M2["🚀 MIDI 2.0"]:::transport
 
-    subgraph SAIDAS["📤 Saídas"]
-        API["getQueue()\ngetActiveNotes()\nlastChord()"]
-        SEND["sendNoteOn()\nsendNoteOff()\nsendCC()"]
-    end
+    HANDLER["⚙️ MIDIHandler\nFila thread-safe · Detecção de Acordes · Notas Ativas"]:::handler
 
-    USB --> HANDLER
-    BLE --> HANDLER
-    USBDEV --> HANDLER
-    UART --> HANDLER
-    RTP --> HANDLER
-    ETH --> HANDLER
-    OSC --> HANDLER
-    ESPNOW --> HANDLER
-    MIDI2 --> HANDLER
+    GET["📤 getQueue() · getActiveNotes() · lastChord()"]:::output
+    SEND["📨 sendNoteOn() · sendCC() · sendPitchBend()"]:::output
 
-    HANDLER --> API
+    USB  & BLE  & DEV  --> HANDLER
+    UART & RTP  & ETH  --> HANDLER
+    OSC  & NOW  & M2   --> HANDLER
+
+    HANDLER --> GET
     HANDLER --> SEND
-    SEND --> USB
-    SEND --> BLE
-    SEND --> UART
-    SEND --> RTP
-
-    style HANDLER fill:#3F51B5,color:#fff,stroke:#283593
-    style ENTRADAS fill:#1A237E,color:#fff,stroke:#0D47A1
-    style SAIDAS fill:#006064,color:#fff,stroke:#004D40
+    SEND -.->|auto-forward| USB & BLE & UART & RTP
 ```
 
 ---

@@ -9,24 +9,30 @@ Estado atual e direção futura da biblioteca ESP32_Host_MIDI.
 A versão 5.0.0 é uma biblioteca madura e estável. O núcleo — **9 transportes, uma API** — está completo e funcional.
 
 ```mermaid
-graph LR
-    subgraph DONE["✅ Completo"]
-        USB["USB Host\n(OTG)"]
-        BLE["BLE MIDI\n1.0"]
-        USBDEV["USB Device\n(TinyUSB)"]
-        ESPNOW["ESP-NOW\nMIDI"]
-        RTP["RTP-MIDI\n(AppleMIDI)"]
-        ETH["Ethernet\nMIDI"]
-        OSC["OSC\nBridge"]
-        UART["UART\nDIN-5"]
-        MIDI2["MIDI 2.0\nUDP/UMP"]
-        CHORD["Chord\nDetection"]
-        ACTIVE["Active\nNotes"]
-        HIST["PSRAM\nHistory"]
-        GINGO["Gingo\nAdapter"]
+graph TD
+    classDef done fill:#1B5E20,color:#fff,stroke:#2E7D32
+    classDef feat fill:#1A237E,color:#fff,stroke:#283593
+
+    subgraph T["📡 Transportes"]
+        direction LR
+        USB["🔌 USB Host"]:::done
+        BLE["📱 BLE MIDI"]:::done
+        USBDEV["💻 USB Device"]:::done
+        ESPNOW["📡 ESP-NOW"]:::done
+        RTP["🌐 RTP-MIDI"]:::done
+        ETH["🔗 Ethernet"]:::done
+        OSC["🎨 OSC"]:::done
+        UART["🎹 UART/DIN-5"]:::done
+        MIDI2["🚀 MIDI 2.0"]:::done
     end
 
-    style DONE fill:#1B5E20,color:#fff,stroke:#2E7D32
+    subgraph F["⚙️ Funcionalidades"]
+        direction LR
+        CHORD["Chord Detection"]:::done
+        ACTIVE["Active Notes"]:::done
+        HIST["PSRAM History"]:::done
+        GINGO["Gingo Adapter"]:::done
+    end
 ```
 
 ---
