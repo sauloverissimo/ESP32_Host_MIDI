@@ -1918,50 +1918,33 @@
 <p>ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o seu DAW pelo WiFi com RTP-MIDI, controle o Max/MSP via OSC, alcance sintetizadores vintage por um cabo DIN-5 e troque pacotes MIDI 2.0 com resolução de 16 bits — <strong>tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.</strong></p>
 <hr />
 <h2 id="visao-geral-da-arquitetura">Visão Geral da Arquitetura<a class="headerlink" href="#visao-geral-da-arquitetura" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>flowchart LR
-    subgraph ENTRADAS["📥 Entradas"]
-        USB["🔌 USB Host\n(teclado, pad...)"]
-        BLE["📱 BLE MIDI\n(iOS, macOS)"]
-        USBDEV["💻 USB Device\n(DAW via USB)"]
-        UART["🎹 UART / DIN-5\n(sintetizador vintage)"]
-        RTP["🌐 RTP-MIDI\n(WiFi / AppleMIDI)"]
-        ETH["🔗 Ethernet\n(W5500 / P4)"]
-        OSC["🎨 OSC\n(Max/MSP, PD)"]
-        ESPNOW["📡 ESP-NOW\n(mesh sem fio)"]
-        MIDI2["🚀 MIDI 2.0\n(UDP / UMP)"]
-    end
+<pre class="mermaid"><code>flowchart TD
+    classDef transport fill:#1A237E,color:#fff,stroke:#3949AB
+    classDef handler  fill:#3F51B5,color:#fff,stroke:#283593
+    classDef output   fill:#006064,color:#fff,stroke:#00838F
 
-    subgraph HANDLER["⚙️ MIDIHandler"]
-        QUEUE["Fila de Eventos\n(thread-safe)"]
-        CHORD["Detecção\nde Acordes"]
-        ACTIVE["Notas\nAtivas"]
-    end
+    USB["🔌 USB Host"]:::transport
+    BLE["📱 BLE MIDI"]:::transport
+    DEV["💻 USB Device"]:::transport
+    UART["🎹 UART / DIN-5"]:::transport
+    RTP["🌐 RTP-MIDI"]:::transport
+    ETH["🔗 Ethernet"]:::transport
+    OSC["🎨 OSC"]:::transport
+    NOW["📡 ESP-NOW"]:::transport
+    M2["🚀 MIDI 2.0"]:::transport
 
-    subgraph SAIDAS["📤 Saídas"]
-        API["getQueue()\ngetActiveNotes()\nlastChord()"]
-        SEND["sendNoteOn()\nsendNoteOff()\nsendCC()"]
-    end
+    HANDLER["⚙️ MIDIHandler\nFila thread-safe · Detecção de Acordes · Notas Ativas"]:::handler
 
-    USB --&gt; HANDLER
-    BLE --&gt; HANDLER
-    USBDEV --&gt; HANDLER
-    UART --&gt; HANDLER
-    RTP --&gt; HANDLER
-    ETH --&gt; HANDLER
-    OSC --&gt; HANDLER
-    ESPNOW --&gt; HANDLER
-    MIDI2 --&gt; HANDLER
+    GET["📤 getQueue() · getActiveNotes() · lastChord()"]:::output
+    SEND["📨 sendNoteOn() · sendCC() · sendPitchBend()"]:::output
 
-    HANDLER --&gt; API
+    USB  &amp; BLE  &amp; DEV  --&gt; HANDLER
+    UART &amp; RTP  &amp; ETH  --&gt; HANDLER
+    OSC  &amp; NOW  &amp; M2   --&gt; HANDLER
+
+    HANDLER --&gt; GET
     HANDLER --&gt; SEND
-    SEND --&gt; USB
-    SEND --&gt; BLE
-    SEND --&gt; UART
-    SEND --&gt; RTP
-
-    style HANDLER fill:#3F51B5,color:#fff,stroke:#283593
-    style ENTRADAS fill:#1A237E,color:#fff,stroke:#0D47A1
-    style SAIDAS fill:#006064,color:#fff,stroke:#004D40</code></pre>
+    SEND -.-&gt;|auto-forward| USB &amp; BLE &amp; UART &amp; RTP</code></pre>
 <hr />
 <h2 id="inicio-rapido">Início Rápido<a class="headerlink" href="#inicio-rapido" title="Permanent link">&para;</a></h2>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ESP32_Host_MIDI.h&gt;</span>

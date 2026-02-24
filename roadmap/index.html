@@ -2086,24 +2086,30 @@
 <hr />
 <h2 id="estado-atual-v500">Estado Atual — v5.0.0<a class="headerlink" href="#estado-atual-v500" title="Permanent link">&para;</a></h2>
 <p>A versão 5.0.0 é uma biblioteca madura e estável. O núcleo — <strong>9 transportes, uma API</strong> — está completo e funcional.</p>
-<pre class="mermaid"><code>graph LR
-    subgraph DONE["✅ Completo"]
-        USB["USB Host\n(OTG)"]
-        BLE["BLE MIDI\n1.0"]
-        USBDEV["USB Device\n(TinyUSB)"]
-        ESPNOW["ESP-NOW\nMIDI"]
-        RTP["RTP-MIDI\n(AppleMIDI)"]
-        ETH["Ethernet\nMIDI"]
-        OSC["OSC\nBridge"]
-        UART["UART\nDIN-5"]
-        MIDI2["MIDI 2.0\nUDP/UMP"]
-        CHORD["Chord\nDetection"]
-        ACTIVE["Active\nNotes"]
-        HIST["PSRAM\nHistory"]
-        GINGO["Gingo\nAdapter"]
+<pre class="mermaid"><code>graph TD
+    classDef done fill:#1B5E20,color:#fff,stroke:#2E7D32
+    classDef feat fill:#1A237E,color:#fff,stroke:#283593
+
+    subgraph T["📡 Transportes"]
+        direction LR
+        USB["🔌 USB Host"]:::done
+        BLE["📱 BLE MIDI"]:::done
+        USBDEV["💻 USB Device"]:::done
+        ESPNOW["📡 ESP-NOW"]:::done
+        RTP["🌐 RTP-MIDI"]:::done
+        ETH["🔗 Ethernet"]:::done
+        OSC["🎨 OSC"]:::done
+        UART["🎹 UART/DIN-5"]:::done
+        MIDI2["🚀 MIDI 2.0"]:::done
     end
 
-    style DONE fill:#1B5E20,color:#fff,stroke:#2E7D32</code></pre>
+    subgraph F["⚙️ Funcionalidades"]
+        direction LR
+        CHORD["Chord Detection"]:::done
+        ACTIVE["Active Notes"]:::done
+        HIST["PSRAM History"]:::done
+        GINGO["Gingo Adapter"]:::done
+    end</code></pre>
 <hr />
 <h2 id="em-desenvolvimento">Em Desenvolvimento<a class="headerlink" href="#em-desenvolvimento" title="Permanent link">&para;</a></h2>
 <h3 id="midi-ci-capability-inquiry">🔄 MIDI-CI (Capability Inquiry)<a class="headerlink" href="#midi-ci-capability-inquiry" title="Permanent link">&para;</a></h3>
