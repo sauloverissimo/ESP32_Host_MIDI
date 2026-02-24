@@ -9,11 +9,10 @@ ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. 
 ## Visão Geral da Arquitetura
 
 ```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#1A237E', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#3949AB', 'lineColor': '#90CAF9', 'secondaryColor': '#3F51B5', 'tertiaryColor': '#006064', 'edgeLabelBackground': '#1A237E'}}}%%
 flowchart TD
-    classDef transport fill:#1A237E,color:#fff,stroke:#3949AB,font-weight:bold
-    classDef handler  fill:#283593,color:#fff,stroke:#5C6BC0,font-weight:bold
-    classDef output   fill:#004D40,color:#fff,stroke:#00897B,font-weight:bold
+    classDef transport fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
+    classDef handler   fill:#E8EAF6,color:#283593,stroke:#3F51B5,stroke-width:3px
+    classDef output    fill:#B2DFDB,color:#004D40,stroke:#00796B,stroke-width:2px
 
     USB["🔌 USB Host"]:::transport
     BLE["📱 BLE MIDI"]:::transport

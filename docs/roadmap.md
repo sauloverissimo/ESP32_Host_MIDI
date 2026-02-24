@@ -9,10 +9,9 @@ Estado atual e direção futura da biblioteca ESP32_Host_MIDI.
 A versão 5.0.0 é uma biblioteca madura e estável. O núcleo — **9 transportes, uma API** — está completo e funcional.
 
 ```mermaid
-%%{init: {'theme': 'dark'}}%%
 graph TD
-    classDef done fill:#1B5E20,color:#fff,stroke:#2E7D32,font-weight:bold
-    classDef feat fill:#1A237E,color:#fff,stroke:#283593,font-weight:bold
+    classDef done fill:#C8E6C9,color:#1B5E20,stroke:#388E3C,stroke-width:2px
+    classDef feat fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
 
     subgraph T["📡 Transportes"]
         direction LR
