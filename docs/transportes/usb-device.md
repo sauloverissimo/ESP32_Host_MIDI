@@ -165,6 +165,9 @@ USBDeviceConnection usbMIDI("Meu Controlador"); // Windows: "Meu Controlador"
 | Pro Tools | macOS / Windows | ✅ Com driver CoreMIDI |
 | Cubase | Windows / macOS | ✅ Plug & Play |
 
+!!! warning "Windows + CDC habilitado"
+    Com "USB CDC on Boot" ativado, o ESP32 cria um **composite USB device** (Serial + MIDI). O Windows pode não carregar o driver MIDI automaticamente nessa configuração. Se o DAW não listar a porta MIDI, veja [Troubleshooting → USB Device](../avancado/troubleshooting.md#usb-device).
+
 ---
 
 ## Exemplos

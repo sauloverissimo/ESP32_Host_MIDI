@@ -57,6 +57,40 @@ Soluções para os problemas mais comuns ao usar ESP32_Host_MIDI.
 
 ---
 
+## USB Device
+
+### ❌ Windows: dispositivo aparece no Device Manager mas não no DAW
+
+**Sintomas:** O ESP32 aparece como "TinyUSB MIDI" no Device Manager e Serial funciona, mas DAWs e softwares MIDI (MIDI-OX, etc.) não listam a porta MIDI.
+
+**Causa:** Quando CDC (Serial over USB) e MIDI estão ativos simultaneamente, o Windows cria um composite device. O driver CDC (`usbser.sys`) é carregado corretamente, mas o driver MIDI (`usbaudio.sys`) pode não ser associado automaticamente à interface MIDI.
+
+**Soluções:**
+
+1. **Teste rápido — desabilitar CDC:**
+   ```
+   Arduino IDE → Tools → USB CDC on Boot → Disabled
+   ```
+   Re-flashe (pode precisar segurar BOOT + RST para entrar em bootloader).
+   Se a porta MIDI aparecer no DAW → confirma que é o composite device.
+
+2. **Para desenvolvimento com Serial + MIDI:**
+   - Use UART em pinos separados para debug serial (ex: GPIO43/TX, GPIO44/RX com adaptador USB-UART)
+   - Mantenha USB nativo apenas para MIDI
+
+3. **Fix no Windows (sem re-flash):**
+   - Device Manager → clique direito em "TinyUSB MIDI" → Update Driver → Browse → "Let me pick from a list" → selecione "USB Audio Device"
+   - Se não aparecer na lista: desinstale o dispositivo, desconecte o USB, reconecte
+
+4. **Cache de driver do Windows:**
+   - Após mudar de CDC habilitado para desabilitado (ou vice-versa), desinstale o dispositivo no Device Manager antes de reconectar
+   - O Windows cacheia drivers por VID/PID e pode manter a configuração antiga
+
+!!! note "macOS e Linux"
+    Este problema é exclusivo do Windows. macOS e Linux carregam o driver class-compliant corretamente mesmo com composite devices (CDC + MIDI).
+
+---
+
 ## BLE MIDI
 
 ### ❌ Dispositivo BLE não aparece no iOS/macOS

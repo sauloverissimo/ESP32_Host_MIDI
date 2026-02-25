@@ -19,6 +19,11 @@
 //   Tools > USB Mode     → USB-OTG (TinyUSB)          ← mandatory
 //   Tools > USB CDC on Boot → Enabled (optional, for Serial over USB)
 //
+// Windows note:
+//   With CDC + MIDI active (composite USB device), Windows may not load
+//   the MIDI class driver automatically. If your DAW doesn't see the
+//   MIDI port, disable "USB CDC on Boot" or see docs/avancado/troubleshooting.md
+//
 // PlatformIO setup:
 //   board_build.arduino.usb_mode = USBMODE_USB_OTG
 //
