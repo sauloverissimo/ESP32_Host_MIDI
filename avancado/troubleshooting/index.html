@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -1720,6 +1720,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#usb-device" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB Device
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="USB Device">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows-dispositivo-aparece-no-device-manager-mas-nao-no-daw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Windows: dispositivo aparece no Device Manager mas não no DAW
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ble-midi" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2033,6 +2061,34 @@
     <span class="md-ellipsis">
       
         ❌ Upload falha após selecionar "USB Host"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usb-device" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB Device
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="USB Device">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows-dispositivo-aparece-no-device-manager-mas-nao-no-daw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Windows: dispositivo aparece no Device Manager mas não no DAW
       
     </span>
   </a>
@@ -2369,6 +2425,44 @@
 <li>Após o upload, desconecte/reconecte ou pressione RST</li>
 </ol>
 <hr />
+<h2 id="usb-device">USB Device<a class="headerlink" href="#usb-device" title="Permanent link">&para;</a></h2>
+<h3 id="windows-dispositivo-aparece-no-device-manager-mas-nao-no-daw">❌ Windows: dispositivo aparece no Device Manager mas não no DAW<a class="headerlink" href="#windows-dispositivo-aparece-no-device-manager-mas-nao-no-daw" title="Permanent link">&para;</a></h3>
+<p><strong>Sintomas:</strong> O ESP32 aparece como "TinyUSB MIDI" no Device Manager e Serial funciona, mas DAWs e softwares MIDI (MIDI-OX, etc.) não listam a porta MIDI.</p>
+<p><strong>Causa:</strong> Quando CDC (Serial over USB) e MIDI estão ativos simultaneamente, o Windows cria um composite device. O driver CDC (<code>usbser.sys</code>) é carregado corretamente, mas o driver MIDI (<code>usbaudio.sys</code>) pode não ser associado automaticamente à interface MIDI.</p>
+<p><strong>Soluções:</strong></p>
+<ol>
+<li>
+<p><strong>Teste rápido — desabilitar CDC:</strong>
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Arduino IDE → Tools → USB CDC on Boot → Disabled
+</span></code></pre></div>
+   Re-flashe (pode precisar segurar BOOT + RST para entrar em bootloader).
+   Se a porta MIDI aparecer no DAW → confirma que é o composite device.</p>
+</li>
+<li>
+<p><strong>Para desenvolvimento com Serial + MIDI:</strong></p>
+</li>
+<li>Use UART em pinos separados para debug serial (ex: GPIO43/TX, GPIO44/RX com adaptador USB-UART)</li>
+<li>
+<p>Mantenha USB nativo apenas para MIDI</p>
+</li>
+<li>
+<p><strong>Fix no Windows (sem re-flash):</strong></p>
+</li>
+<li>Device Manager → clique direito em "TinyUSB MIDI" → Update Driver → Browse → "Let me pick from a list" → selecione "USB Audio Device"</li>
+<li>
+<p>Se não aparecer na lista: desinstale o dispositivo, desconecte o USB, reconecte</p>
+</li>
+<li>
+<p><strong>Cache de driver do Windows:</strong></p>
+</li>
+<li>Após mudar de CDC habilitado para desabilitado (ou vice-versa), desinstale o dispositivo no Device Manager antes de reconectar</li>
+<li>O Windows cacheia drivers por VID/PID e pode manter a configuração antiga</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">macOS e Linux</p>
+<p>Este problema é exclusivo do Windows. macOS e Linux carregam o driver class-compliant corretamente mesmo com composite devices (CDC + MIDI).</p>
+</div>
+<hr />
 <h2 id="ble-midi">BLE MIDI<a class="headerlink" href="#ble-midi" title="Permanent link">&para;</a></h2>
 <h3 id="dispositivo-ble-nao-aparece-no-iosmacos">❌ Dispositivo BLE não aparece no iOS/macOS<a class="headerlink" href="#dispositivo-ble-nao-aparece-no-iosmacos" title="Permanent link">&para;</a></h3>
 <p><strong>Sintomas:</strong> O nome configurado não aparece na lista de dispositivos Bluetooth.</p>
@@ -2376,7 +2470,7 @@
 <ol>
 <li>
 <p><strong>Bluetooth habilitado no sdkconfig?</strong>
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Arduino IDE → Tools → Partition Scheme → &quot;Default 4MB with spiffs&quot;
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Arduino IDE → Tools → Partition Scheme → &quot;Default 4MB with spiffs&quot;
 </span></code></pre></div>
    Certifique-se de usar uma partition scheme que inclua BLE (&gt;1.5 MB de app).</p>
 </li>
@@ -2386,19 +2480,19 @@
 </li>
 <li>
 <p><strong>Verificar a macro:</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="cp">#if ESP32_HOST_MIDI_HAS_BLE</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE disponível&quot;</span><span class="p">);</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="cp">#else</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE NÃO disponível neste chip&quot;</span><span class="p">);</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="cp">#endif</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp">#if ESP32_HOST_MIDI_HAS_BLE</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE disponível&quot;</span><span class="p">);</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="cp">#else</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE NÃO disponível neste chip&quot;</span><span class="p">);</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="cp">#endif</span>
 </span></code></pre></div></p>
 </li>
 <li>
 <p><strong>Advertising iniciado?</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1">// O BLE começa a anunciar automaticamente após begin()</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE advertising...&quot;</span><span class="p">);</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1">// O BLE começa a anunciar automaticamente após begin()</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;BLE advertising...&quot;</span><span class="p">);</span>
 </span></code></pre></div></p>
 </li>
 <li>
@@ -2428,7 +2522,7 @@
 <ol>
 <li>
 <p><strong>ESP32 e Mac na mesma rede WiFi?</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;IP: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">WiFi</span><span class="p">.</span><span class="n">localIP</span><span class="p">().</span><span class="n">toString</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;IP: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">WiFi</span><span class="p">.</span><span class="n">localIP</span><span class="p">().</span><span class="n">toString</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
 </span></code></pre></div>
    Confirme que o IP é da mesma sub-rede (ex: 192.168.1.x / 192.168.1.x).</p>
 </li>
@@ -2438,14 +2532,14 @@
 </li>
 <li>
 <p><strong>AppleMIDI-Library v3.x instalada?</strong>
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Manage Libraries → &quot;AppleMIDI&quot; → versão ≥ 3.0.0
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Manage Libraries → &quot;AppleMIDI&quot; → versão ≥ 3.0.0
 </span></code></pre></div></p>
 </li>
 <li>
 <p><strong>WiFi conectado ANTES de rtpMIDI.begin()?</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">WiFi</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">ssid</span><span class="p">,</span><span class="w"> </span><span class="n">pass</span><span class="p">);</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">WiFi</span><span class="p">.</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">WL_CONNECTED</span><span class="p">)</span><span class="w"> </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w">  </span><span class="c1">// ← Esperar!</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">rtpMIDI</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Meu ESP32&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// ← Só depois</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">WiFi</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">ssid</span><span class="p">,</span><span class="w"> </span><span class="n">pass</span><span class="p">);</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">WiFi</span><span class="p">.</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">WL_CONNECTED</span><span class="p">)</span><span class="w"> </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w">  </span><span class="c1">// ← Esperar!</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">rtpMIDI</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Meu ESP32&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// ← Só depois</span>
 </span></code></pre></div></p>
 </li>
 <li>
@@ -2466,9 +2560,9 @@
 <ol>
 <li>
 <p><strong>Pinos RX/TX corretos?</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">uartMIDI</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">Serial1</span><span class="p">,</span><span class="w"> </span><span class="cm">/*RX=*/</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="cm">/*TX=*/</span><span class="mi">17</span><span class="p">);</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1">// Confirme que o cabo MIDI está em MIDI IN do instrumento</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1">// e conectado ao pino RX do ESP32</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">uartMIDI</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">Serial1</span><span class="p">,</span><span class="w"> </span><span class="cm">/*RX=*/</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="cm">/*TX=*/</span><span class="mi">17</span><span class="p">);</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1">// Confirme que o cabo MIDI está em MIDI IN do instrumento</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1">// e conectado ao pino RX do ESP32</span>
 </span></code></pre></div></p>
 </li>
 <li>
@@ -2496,25 +2590,25 @@
 <ol>
 <li>
 <p><strong>PSRAM habilitada no Arduino IDE?</strong>
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Tools → PSRAM → &quot;OPI PSRAM&quot; (T-Display-S3)
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>             ou &quot;Quad PSRAM&quot; (outros S3)
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Tools → PSRAM → &quot;OPI PSRAM&quot; (T-Display-S3)
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>             ou &quot;Quad PSRAM&quot; (outros S3)
 </span></code></pre></div></p>
 </li>
 <li>
 <p><strong>Verificar disponibilidade:</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;PSRAM: %u bytes</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ESP</span><span class="p">.</span><span class="n">getPsramSize</span><span class="p">());</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ESP</span><span class="p">.</span><span class="n">getPsramSize</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM não detectada!&quot;</span><span class="p">);</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;PSRAM: %u bytes</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ESP</span><span class="p">.</span><span class="n">getPsramSize</span><span class="p">());</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ESP</span><span class="p">.</span><span class="n">getPsramSize</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM não detectada!&quot;</span><span class="p">);</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">}</span>
 </span></code></pre></div></p>
 </li>
 <li>
 <p><strong>Macro correta:</strong>
-   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="cp">#if ESP32_HOST_MIDI_HAS_PSRAM</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM disponível&quot;</span><span class="p">);</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="cp">#else</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM NÃO disponível&quot;</span><span class="p">);</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="cp">#endif</span>
+   <div class="language-cpp highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="cp">#if ESP32_HOST_MIDI_HAS_PSRAM</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM disponível&quot;</span><span class="p">);</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="cp">#else</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;PSRAM NÃO disponível&quot;</span><span class="p">);</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="cp">#endif</span>
 </span></code></pre></div></p>
 </li>
 </ol>
@@ -2523,7 +2617,7 @@
 <h3 id="error-map-was-not-declared">❌ "error: 'map' was not declared"<a class="headerlink" href="#error-map-was-not-declared" title="Permanent link">&para;</a></h3>
 <p><strong>Causa:</strong> <code>#include &lt;map&gt;</code> faltando em algum header.</p>
 <p><strong>Solução:</strong> Este bug foi corrigido em versões recentes. Atualize a biblioteca:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Manage Libraries → ESP32_Host_MIDI → Update
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Manage Libraries → ESP32_Host_MIDI → Update
 </span></code></pre></div></p>
 <hr />
 <h3 id="addtransport-limit-exceeded">❌ "addTransport() limit exceeded"<a class="headerlink" href="#addtransport-limit-exceeded" title="Permanent link">&para;</a></h3>
@@ -2533,19 +2627,19 @@ Combine transportes ou reduza o número de transportes externos.</p>
 <hr />
 <h2 id="debug-callback-raw-midi">Debug — Callback Raw MIDI<a class="headerlink" href="#debug-callback-raw-midi" title="Permanent link">&para;</a></h2>
 <p>Para inspecionar bytes brutos antes do parsing:</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">onRaw</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">raw</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">midi3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;RAW [%d bytes]: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">len</span><span class="p">);</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%02X &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">raw</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;| MIDI: %02X %02X %02X</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">        </span><span class="n">midi3</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">midi3</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">midi3</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="p">}</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">setRawMidiCallback</span><span class="p">(</span><span class="n">onRaw</span><span class="p">);</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">}</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">onRaw</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">raw</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">midi3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;RAW [%d bytes]: &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">len</span><span class="p">);</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%02X &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">raw</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;| MIDI: %02X %02X %02X</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">        </span><span class="n">midi3</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">midi3</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">midi3</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="p">}</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">setRawMidiCallback</span><span class="p">(</span><span class="n">onRaw</span><span class="p">);</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="p">}</span>
 </span></code></pre></div>
 <hr />
 <h2 id="abrir-uma-issue">Abrir uma Issue<a class="headerlink" href="#abrir-uma-issue" title="Permanent link">&para;</a></h2>

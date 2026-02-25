@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -2228,6 +2228,10 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition warning">
+<p class="admonition-title">Windows + CDC habilitado</p>
+<p>Com "USB CDC on Boot" ativado, o ESP32 cria um <strong>composite USB device</strong> (Serial + MIDI). O Windows pode não carregar o driver MIDI automaticamente nessa configuração. Se o DAW não listar a porta MIDI, veja <a href="../../avancado/troubleshooting/#usb-device">Troubleshooting → USB Device</a>.</p>
+</div>
 <hr />
 <h2 id="exemplos">Exemplos<a class="headerlink" href="#exemplos" title="Permanent link">&para;</a></h2>
 <table>
