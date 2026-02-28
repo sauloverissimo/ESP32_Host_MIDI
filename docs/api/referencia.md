@@ -62,6 +62,13 @@ struct MIDIHandlerConfig {
     // Capacidade do buffer histórico circular (em PSRAM se disponível).
     // 0 = desabilitado.
 
+    int maxSysExSize = 512;
+    // Tamanho máximo de uma mensagem SysEx (bytes, incluindo F0 e F7).
+    // Mensagens maiores são truncadas. 0 = desabilita SysEx.
+
+    int maxSysExEvents = 8;
+    // Capacidade da fila de SysEx. Mensagens mais antigas são descartadas.
+
     const char* bleName = "ESP32 MIDI BLE";
     // Nome anunciado pelo periférico BLE MIDI.
 };
@@ -165,6 +172,38 @@ std::vector<std::string> getAnswer(
 // Atalho para lastChord + getChord com múltiplos campos.
 ```
 
+### Recepção — SysEx
+
+```cpp
+const std::deque<MIDISysExEvent>& getSysExQueue() const;
+// Retorna a fila de SysEx. Separada da fila de eventos normais.
+// Cada MIDISysExEvent contém: index, timestamp, data (vector<uint8_t>).
+
+void clearSysExQueue();
+// Esvazia a fila de SysEx.
+
+bool sendSysEx(const uint8_t* data, size_t length);
+// Envia SysEx para todos os transportes. Deve começar com 0xF0 e terminar com 0xF7.
+// Retorna false se a mensagem for inválida.
+
+typedef void (*SysExCallback)(const uint8_t* data, size_t length);
+void setSysExCallback(SysExCallback cb);
+// Callback opcional chamado imediatamente ao receber uma mensagem SysEx completa.
+// Use nullptr para desabilitar.
+```
+
+### MIDISysExEvent
+
+```cpp
+struct MIDISysExEvent {
+    int index;                      // Contador global crescente
+    unsigned long timestamp;        // millis() no momento da recepção
+    std::vector<uint8_t> data;      // Mensagem completa (F0 ... F7)
+};
+```
+
+---
+
 ### Envio de MIDI
 
 Todos os métodos de envio transmitem para **todos os transportes** que suportam envio:
@@ -235,6 +274,7 @@ public:
 
     // Registro de callbacks (chamado pelo MIDIHandler):
     void setMidiCallback(MidiDataCallback cb, void* ctx);
+    void setSysExCallback(SysExDataCallback cb, void* ctx);
     void setConnectionCallbacks(ConnectionCallback onConnected,
                                 ConnectionCallback onDisconnected,
                                 void* ctx);
@@ -242,6 +282,7 @@ public:
 protected:
     // Chamar nas subclasses para injetar dados no MIDIHandler:
     void dispatchMidiData(const uint8_t* data, size_t len);
+    void dispatchSysExData(const uint8_t* data, size_t len);
     void dispatchConnected();
     void dispatchDisconnected();
 };

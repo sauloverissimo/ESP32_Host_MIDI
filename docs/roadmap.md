@@ -4,9 +4,9 @@ Estado atual e direção futura da biblioteca ESP32_Host_MIDI.
 
 ---
 
-## Estado Atual — v5.0.0
+## Estado Atual — v5.1.0
 
-A versão 5.0.0 é uma biblioteca madura e estável. O núcleo — **9 transportes, uma API** — está completo e funcional.
+A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — **9 transportes, uma API** — está completo e funcional, agora com suporte a SysEx em todos os transportes.
 
 ```mermaid
 graph TD
@@ -30,6 +30,7 @@ graph TD
         direction LR
         CHORD["Chord Detection"]:::done
         ACTIVE["Active Notes"]:::done
+        SYSEX["SysEx"]:::done
         HIST["PSRAM History"]:::done
         GINGO["Gingo Adapter"]:::done
     end
@@ -75,7 +76,7 @@ graph TD
 |---------|-----------|-------|
 | USB MIDI 2.0 Host | Alta | Quando TinyUSB suportar MIDI 2.0 |
 | Multi-device USB Hub | Média | ESP32-P4 HS já suporta — integração pendente |
-| SysEx handler | Média | Atualmente ignorado |
+| ~~SysEx handler~~ | ~~Média~~ | ✅ Implementado em v5.1.0 |
 | Running Status TX | Baixa | Otimização de largura de banda DIN-5 |
 | BLE MIDI Central (Scanner) | Alta | Conectar ao invés de ser conectado |
 | MIDI Clock generator | Média | BPM preciso via timer FreeRTOS |
@@ -119,6 +120,20 @@ public:
 ---
 
 ## Changelog
+
+### v5.1.0
+- SysEx send/receive em todos os transportes (USB Host, USB Device, UART)
+- Remontagem de pacotes USB MIDI (CIN 0x04-0x07) e buffer UART (F0-F7)
+- Fila separada `getSysExQueue()` + callback `setSysExCallback()`
+- `sendSysEx()` para envio validado
+- Buffer configurável: `maxSysExSize`, `maxSysExEvents`
+- Exemplo: T-Display-S3-SysEx (monitor com Identity Request)
+- Exemplo: T-Display-S3-AMoled-MIDI2-UMP
+- Fix: `ESP32_HOST_MIDI_NO_USB_HOST` para USB Device mode
+- Fix: EthernetMIDI session naming
+- Fix: OSCConnection WiFiUdp.h case sensitivity
+- Fix: UART SysEx (era descartado, agora é bufferizado)
+- Docs: troubleshooting Windows CDC+MIDI
 
 ### v5.0.0
 - 9 transportes simultâneos (USB, BLE, USB Device, ESP-NOW, RTP-MIDI, Ethernet, OSC, UART, MIDI 2.0 UDP)

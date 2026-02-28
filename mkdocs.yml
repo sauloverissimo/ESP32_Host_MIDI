@@ -89,12 +89,14 @@ nav:
   - 🧩 Funcionalidades:
     - Detecção de Acordes: funcionalidades/deteccao-acordes.md
     - Notas Ativas: funcionalidades/notas-ativas.md
+    - SysEx: funcionalidades/sysex.md
     - Histórico (PSRAM): funcionalidades/historico-psram.md
     - GingoAdapter: funcionalidades/gingo-adapter.md
   - 📚 API:
     - Referência Completa: api/referencia.md
   - 💡 Exemplos:
     - T-Display-S3 Piano: exemplos/t-display-s3.md
+    - T-Display-S3 SysEx: exemplos/sysex-monitor.md
     - UART Básico: exemplos/uart-basico.md
     - RTP-MIDI WiFi: exemplos/rtp-midi-wifi.md
     - OSC Bridge: exemplos/osc-bridge.md
