@@ -1086,6 +1086,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../funcionalidades/sysex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SysEx
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../funcionalidades/historico-psram/" class="md-nav__link">
         
   
@@ -1300,6 +1328,34 @@
     
   
     T-Display-S3 Piano
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exemplos/sysex-monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Display-S3 SysEx
   
 
     
@@ -1700,10 +1756,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#estado-atual-v500" class="md-nav__link">
+  <a href="#estado-atual-v510" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estado Atual — v5.0.0
+        Estado Atual — v5.1.0
       
     </span>
   </a>
@@ -1810,6 +1866,17 @@
   
     <nav class="md-nav" aria-label="Changelog">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v510" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.1.0
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#v500" class="md-nav__link">
@@ -1895,10 +1962,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#estado-atual-v500" class="md-nav__link">
+  <a href="#estado-atual-v510" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estado Atual — v5.0.0
+        Estado Atual — v5.1.0
       
     </span>
   </a>
@@ -2007,6 +2074,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#v510" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.1.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#v500" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2086,8 +2164,8 @@
 <h1 id="roadmap">🗺️ Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h1>
 <p>Estado atual e direção futura da biblioteca ESP32_Host_MIDI.</p>
 <hr />
-<h2 id="estado-atual-v500">Estado Atual — v5.0.0<a class="headerlink" href="#estado-atual-v500" title="Permanent link">&para;</a></h2>
-<p>A versão 5.0.0 é uma biblioteca madura e estável. O núcleo — <strong>9 transportes, uma API</strong> — está completo e funcional.</p>
+<h2 id="estado-atual-v510">Estado Atual — v5.1.0<a class="headerlink" href="#estado-atual-v510" title="Permanent link">&para;</a></h2>
+<p>A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — <strong>9 transportes, uma API</strong> — está completo e funcional, agora com suporte a SysEx em todos os transportes.</p>
 <pre class="mermaid"><code>graph TD
     classDef done fill:#C8E6C9,color:#1B5E20,stroke:#388E3C,stroke-width:2px
     classDef feat fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
@@ -2109,6 +2187,7 @@
         direction LR
         CHORD["Chord Detection"]:::done
         ACTIVE["Active Notes"]:::done
+        SYSEX["SysEx"]:::done
         HIST["PSRAM History"]:::done
         GINGO["Gingo Adapter"]:::done
     end</code></pre>
@@ -2150,9 +2229,9 @@
 <td>ESP32-P4 HS já suporta — integração pendente</td>
 </tr>
 <tr>
-<td>SysEx handler</td>
-<td>Média</td>
-<td>Atualmente ignorado</td>
+<td>~~SysEx handler~~</td>
+<td>~~Média~~</td>
+<td>✅ Implementado em v5.1.0</td>
 </tr>
 <tr>
 <td>Running Status TX</td>
@@ -2207,6 +2286,21 @@
 </span></code></pre></div>
 <hr />
 <h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
+<h3 id="v510">v5.1.0<a class="headerlink" href="#v510" title="Permanent link">&para;</a></h3>
+<ul>
+<li>SysEx send/receive em todos os transportes (USB Host, USB Device, UART)</li>
+<li>Remontagem de pacotes USB MIDI (CIN 0x04-0x07) e buffer UART (F0-F7)</li>
+<li>Fila separada <code>getSysExQueue()</code> + callback <code>setSysExCallback()</code></li>
+<li><code>sendSysEx()</code> para envio validado</li>
+<li>Buffer configurável: <code>maxSysExSize</code>, <code>maxSysExEvents</code></li>
+<li>Exemplo: T-Display-S3-SysEx (monitor com Identity Request)</li>
+<li>Exemplo: T-Display-S3-AMoled-MIDI2-UMP</li>
+<li>Fix: <code>ESP32_HOST_MIDI_NO_USB_HOST</code> para USB Device mode</li>
+<li>Fix: EthernetMIDI session naming</li>
+<li>Fix: OSCConnection WiFiUdp.h case sensitivity</li>
+<li>Fix: UART SysEx (era descartado, agora é bufferizado)</li>
+<li>Docs: troubleshooting Windows CDC+MIDI</li>
+</ul>
 <h3 id="v500">v5.0.0<a class="headerlink" href="#v500" title="Permanent link">&para;</a></h3>
 <ul>
 <li>9 transportes simultâneos (USB, BLE, USB Device, ESP-NOW, RTP-MIDI, Ethernet, OSC, UART, MIDI 2.0 UDP)</li>

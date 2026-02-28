@@ -12,13 +12,13 @@
         <meta name="author" content="Saulo Verissimo">
       
       
-        <link rel="canonical" href="https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/osc-bridge/">
+        <link rel="canonical" href="https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/sysex-monitor/">
       
       
-        <link rel="prev" href="../rtp-midi-wifi/">
+        <link rel="prev" href="../t-display-s3/">
       
       
-        <link rel="next" href="../esp-now-jam/">
+        <link rel="next" href="../uart-basico/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>OSC Bridge - 🎛️ ESP32 Host MIDI</title>
+        <title>T-Display-S3 SysEx - 🎛️ ESP32 Host MIDI</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#osc-bridge" class="md-skip">
+        <a href="#t-display-s3-sysex-monitor" class="md-skip">
           Pular para conteúdo
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OSC Bridge
+              T-Display-S3 SysEx
             
           </span>
         </div>
@@ -1350,10 +1350,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../sysex-monitor/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Display-S3 SysEx
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1369,6 +1396,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-necessario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware Necessário
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#o-que-o-exemplo-faz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O Que o Exemplo Faz
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuracao-arduino-ide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuração Arduino IDE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codigo-fonte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Código-Fonte
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resultado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resultado
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1434,37 +1547,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OSC Bridge
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../osc-bridge/" class="md-nav__link">
         
   
   
@@ -1480,114 +1566,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#hardware-necessario" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hardware Necessário
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pre-requisito" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pré-requisito
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#codigo-completo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Código Completo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enderecos-osc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Endereços OSC
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-maxmsp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Patch Max/MSP
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-pure-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Patch Pure Data
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#touchosc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TouchOSC
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Próximos Passos
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1894,10 +1872,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pre-requisito" class="md-nav__link">
+  <a href="#o-que-o-exemplo-faz" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pré-requisito
+        O Que o Exemplo Faz
       
     </span>
   </a>
@@ -1905,10 +1883,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#codigo-completo" class="md-nav__link">
+  <a href="#controles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Código Completo
+        Controles
       
     </span>
   </a>
@@ -1916,10 +1894,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enderecos-osc" class="md-nav__link">
+  <a href="#configuracao-arduino-ide" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Endereços OSC
+        Configuração Arduino IDE
       
     </span>
   </a>
@@ -1927,10 +1905,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#patch-maxmsp" class="md-nav__link">
+  <a href="#codigo-fonte" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Patch Max/MSP
+        Código-Fonte
       
     </span>
   </a>
@@ -1938,32 +1916,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#patch-pure-data" class="md-nav__link">
+  <a href="#resultado" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Patch Pure Data
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#touchosc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TouchOSC
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Próximos Passos
+        Resultado
       
     </span>
   </a>
@@ -2038,15 +1994,15 @@
   
 
 
-<h1 id="osc-bridge">🎨 OSC Bridge<a class="headerlink" href="#osc-bridge" title="Permanent link">&para;</a></h1>
-<p>O exemplo <code>T-Display-S3-OSC</code> implementa uma bridge bidirecional OSC ↔ MIDI: eventos do teclado USB são enviados como mensagens OSC para o computador, e mensagens OSC do computador são convertidas em MIDI e exibidas no display.</p>
+<h1 id="t-display-s3-sysex-monitor">🔧 T-Display-S3 SysEx Monitor<a class="headerlink" href="#t-display-s3-sysex-monitor" title="Permanent link">&para;</a></h1>
+<p>O exemplo <code>T-Display-S3-SysEx</code> transforma a LilyGO T-Display-S3 em um monitor SysEx com envio de Identity Request e visualização de eventos MIDI em tempo real.</p>
 <hr />
 <h2 id="hardware-necessario">Hardware Necessário<a class="headerlink" href="#hardware-necessario" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Componente</th>
-<th>Detalhe</th>
+<th>Modelo</th>
 </tr>
 </thead>
 <tbody>
@@ -2055,172 +2011,79 @@
 <td>LilyGO T-Display-S3</td>
 </tr>
 <tr>
-<td>Teclado</td>
+<td>Display</td>
+<td>ST7789 1.9" 170×320 (embutido)</td>
+</tr>
+<tr>
+<td>Teclado/Controller</td>
 <td>Qualquer USB MIDI class-compliant</td>
 </tr>
 <tr>
 <td>Cabo</td>
-<td>USB-OTG</td>
-</tr>
-<tr>
-<td>Rede</td>
-<td>WiFi (mesma rede que o computador)</td>
+<td>USB-OTG (micro para USB-A fêmea)</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="pre-requisito">Pré-requisito<a class="headerlink" href="#pre-requisito" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Manage Libraries → &quot;OSC&quot; → OSC by Adrian Freed, Yotam Mann (CNMAT)
-</span></code></pre></div>
+<h2 id="o-que-o-exemplo-faz">O Que o Exemplo Faz<a class="headerlink" href="#o-que-o-exemplo-faz" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Monitor SysEx</strong>: exibe mensagens SysEx recebidas com identificação do tipo (Identity Request/Reply, Universal RT/NRT, Manufacturer-specific)</li>
+<li><strong>Visualização hex</strong>: mostra os bytes da mensagem em hexadecimal, com truncamento inteligente para mensagens longas</li>
+<li><strong>Envio de Identity Request</strong>: BTN1 (GPIO0) envia <code>F0 7E 7F 06 01 F7</code> para identificar o dispositivo conectado</li>
+<li><strong>Log de eventos MIDI</strong>: mostra os últimos eventos de canal (NoteOn, NoteOff, CC, etc.)</li>
+<li><strong>Contadores</strong>: SysEx na fila, eventos MIDI, notas ativas</li>
+</ul>
 <hr />
-<h2 id="codigo-completo">Código Completo<a class="headerlink" href="#codigo-completo" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;WiFi.h&gt;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ESP32_Host_MIDI.h&gt;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/OSCConnection.h&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1">// Tools &gt; USB Mode → &quot;USB Host&quot;</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">WIFI_SSID</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;SeuSSID&quot;</span><span class="p">;</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">WIFI_PASSWORD</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;SuaSenha&quot;</span><span class="p">;</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">IPAddress</span><span class="w">   </span><span class="n">REMOTE_IP</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">IPAddress</span><span class="p">(</span><span class="mi">192</span><span class="p">,</span><span class="w"> </span><span class="mi">168</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">);</span><span class="w">  </span><span class="c1">// IP do computador (Max/MSP)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w">   </span><span class="n">LOCAL_OSC_PORT</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">8000</span><span class="p">;</span><span class="w">   </span><span class="c1">// ESP32 escuta aqui</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w">   </span><span class="n">REMOTE_OSC_PORT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9000</span><span class="p">;</span><span class="w">   </span><span class="c1">// Max/MSP escuta aqui</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">OSCConnection</span><span class="w"> </span><span class="n">oscMIDI</span><span class="p">;</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="mi">115200</span><span class="p">);</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;Conectando WiFi...&quot;</span><span class="p">);</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="n">WiFi</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">WIFI_SSID</span><span class="p">,</span><span class="w"> </span><span class="n">WIFI_PASSWORD</span><span class="p">);</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">WiFi</span><span class="p">.</span><span class="n">status</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">WL_CONNECTED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">        </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">);</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">IP: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">WiFi</span><span class="p">.</span><span class="n">localIP</span><span class="p">().</span><span class="n">toString</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Enviando OSC para: %s:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">        </span><span class="n">REMOTE_IP</span><span class="p">.</span><span class="n">toString</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">REMOTE_OSC_PORT</span><span class="p">);</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Recebendo OSC em: :%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">LOCAL_OSC_PORT</span><span class="p">);</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">    </span><span class="n">oscMIDI</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">LOCAL_OSC_PORT</span><span class="p">,</span><span class="w"> </span><span class="n">REMOTE_IP</span><span class="p">,</span><span class="w"> </span><span class="n">REMOTE_OSC_PORT</span><span class="p">);</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">addTransport</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oscMIDI</span><span class="p">);</span>
-</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
-</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
-</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Bridge OSC ↔ MIDI pronta!&quot;</span><span class="p">);</span>
-</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="p">}</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="kt">void</span><span class="w"> </span><span class="nf">loop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">task</span><span class="p">();</span>
-</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>
-</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">    </span><span class="c1">// Eventos MIDI (de USB ou OSC recebido do computador)</span>
-</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">getQueue</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[MIDI] %s %s ch=%d vel=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
-</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>
-</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="w">        </span><span class="c1">// USB → OSC é automático (oscMIDI.sendMidiMessage() é chamado internamente)</span>
-</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="p">}</span>
-</span></code></pre></div>
-<hr />
-<h2 id="enderecos-osc">Endereços OSC<a class="headerlink" href="#enderecos-osc" title="Permanent link">&para;</a></h2>
+<h2 id="controles">Controles<a class="headerlink" href="#controles" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Direção</th>
-<th>Endereço OSC</th>
-<th>Argumentos</th>
+<th>Botão</th>
+<th>GPIO</th>
+<th>Função</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>ESP32 → Computador</td>
-<td><code>/midi/noteon</code></td>
-<td><code>int channel, int note, int velocity</code></td>
+<td>BTN1</td>
+<td>0</td>
+<td>Enviar Identity Request</td>
 </tr>
 <tr>
-<td>ESP32 → Computador</td>
-<td><code>/midi/noteoff</code></td>
-<td><code>int channel, int note, int velocity</code></td>
-</tr>
-<tr>
-<td>ESP32 → Computador</td>
-<td><code>/midi/cc</code></td>
-<td><code>int channel, int controller, int value</code></td>
-</tr>
-<tr>
-<td>ESP32 → Computador</td>
-<td><code>/midi/pitchbend</code></td>
-<td><code>int channel, int bend</code></td>
-</tr>
-<tr>
-<td>Computador → ESP32</td>
-<td><code>/midi/noteon</code></td>
-<td><code>int channel, int note, int velocity</code></td>
-</tr>
-<tr>
-<td>Computador → ESP32</td>
-<td>(todos os acima)</td>
-<td>—</td>
+<td>BTN2</td>
+<td>14</td>
+<td>Limpar filas (SysEx + MIDI)</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="patch-maxmsp">Patch Max/MSP<a class="headerlink" href="#patch-maxmsp" title="Permanent link">&para;</a></h2>
-<p>Para receber MIDI do ESP32 no Max/MSP:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>[udpreceive 9000]
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      |
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  [oscparse]
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      |
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  [route /midi/noteon /midi/noteoff /midi/cc]
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  |              |              |
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>[unpack i i i] [unpack i i i] [unpack i i i]
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  |    |   |
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a> ch  note vel
-</span></code></pre></div>
-<p>Para enviar MIDI do Max/MSP para o ESP32:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[pack i i i]       ← channel note velocity
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>      |
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>[oscformat /midi/noteon]
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>      |
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>[udpsend]
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>[connect 192.168.1.X 8000]   ← IP do ESP32
+<h2 id="configuracao-arduino-ide">Configuração Arduino IDE<a class="headerlink" href="#configuracao-arduino-ide" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Board:           ESP32S3 Dev Module
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>USB Mode:        USB Host (USB-OTG)
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>USB CDC on Boot: Enabled
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>PSRAM:           OPI PSRAM
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Flash Size:      16MB (ou o tamanho da sua board)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>Partition:       Huge APP (3MB)
 </span></code></pre></div>
 <hr />
-<h2 id="patch-pure-data">Patch Pure Data<a class="headerlink" href="#patch-pure-data" title="Permanent link">&para;</a></h2>
-<p><strong>Receber:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[udpreceive 9000]
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>      |
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  [import osc]
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  [oscparse]
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>      |
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  [route /midi/noteon]
-</span></code></pre></div></p>
-<p><strong>Enviar:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[pack f f f]
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>      |
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>[oscformat /midi/noteon]
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>      |
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>[udpsend 192.168.1.X 8000]
-</span></code></pre></div></p>
+<h2 id="codigo-fonte">Código-Fonte<a class="headerlink" href="#codigo-fonte" title="Permanent link">&para;</a></h2>
+<p>O exemplo completo está em <a href="https://github.com/sauloverissimo/ESP32_Host_MIDI/tree/main/examples/T-Display-S3-SysEx"><code>examples/T-Display-S3-SysEx/</code></a></p>
+<p>O ponto central é a configuração do SysEx:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">MIDIHandlerConfig</span><span class="w"> </span><span class="n">config</span><span class="p">;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">config</span><span class="p">.</span><span class="n">maxSysExSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span><span class="w">    </span><span class="c1">// máximo de bytes por mensagem</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">config</span><span class="p">.</span><span class="n">maxSysExEvents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span><span class="w">    </span><span class="c1">// quantas mensagens na fila</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">config</span><span class="p">);</span>
+</span></code></pre></div>
+<p>E a leitura da fila no loop:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">sysexQueue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">getSysExQueue</span><span class="p">();</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysexQueue</span><span class="p">.</span><span class="n">rbegin</span><span class="p">();</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">sysexQueue</span><span class="p">.</span><span class="n">rend</span><span class="p">();</span><span class="w"> </span><span class="o">++</span><span class="n">it</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="c1">// it-&gt;index, it-&gt;timestamp, it-&gt;data</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span>
+</span></code></pre></div>
 <hr />
-<h2 id="touchosc">TouchOSC<a class="headerlink" href="#touchosc" title="Permanent link">&para;</a></h2>
-<p>Configure o TouchOSC (iOS/Android):</p>
-<ol>
-<li>Em <strong>Connections → OSC</strong>:</li>
-<li>Host: IP do ESP32</li>
-<li>Port (outgoing): 8000</li>
-<li>Port (incoming): 9000</li>
-<li>Crie botões com endereços <code>/midi/noteon</code> e argumentos: canal, nota, velocidade</li>
-</ol>
-<hr />
-<h2 id="proximos-passos">Próximos Passos<a class="headerlink" href="#proximos-passos" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../transportes/osc/">OSC →</a> — detalhes do transporte OSC</li>
-<li><a href="../rtp-midi-wifi/">RTP-MIDI →</a> — alternativa para DAWs com AppleMIDI</li>
-<li><a href="../midi2-udp/">MIDI 2.0 →</a> — protocolo UDP customizado com alta resolução</li>
-</ul>
+<h2 id="resultado">Resultado<a class="headerlink" href="#resultado" title="Permanent link">&para;</a></h2>
+<p><img alt="T-Display-S3 SysEx Monitor" src="https://github.com/sauloverissimo/ESP32_Host_MIDI/raw/main/examples/T-Display-S3-SysEx/images/sysex.jpeg" /></p>
+<p>O display mostra o header com contadores (SysEx, MIDI, notas ativas), seguido das mensagens SysEx mais recentes com identificação do tipo, e os últimos eventos MIDI de canal no final.</p>
 
 
 

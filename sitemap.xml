@@ -2,130 +2,138 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/MIDI2_Research/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/roadmap/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/api/referencia/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/avancado/hardware/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/avancado/midi2-ump/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/avancado/troubleshooting/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/esp-now-jam/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/ethernet-midi/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/midi2-udp/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/osc-bridge/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/rtp-midi-wifi/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/sysex-monitor/</loc>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/t-display-s3/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/exemplos/uart-basico/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/funcionalidades/deteccao-acordes/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/funcionalidades/gingo-adapter/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/funcionalidades/historico-psram/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/funcionalidades/notas-ativas/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/funcionalidades/sysex/</loc>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/guia/configuracao/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/guia/instalacao/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/guia/introducao/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/guia/primeiros-passos/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/ble-midi/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/esp-now/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/ethernet-midi/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/midi2-udp/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/osc/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/rtp-midi/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/uart-din5/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/usb-device/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/usb-host/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/visao-geral/</loc>
-         <lastmod>2026-02-25</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
 </urlset>
