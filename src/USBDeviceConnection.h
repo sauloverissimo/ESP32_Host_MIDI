@@ -49,6 +49,7 @@
 #endif
 
 #include <Arduino.h>
+#include <vector>
 #include <USB.h>
 #include <USBMIDI.h>
 #include "MIDITransport.h"
@@ -131,6 +132,10 @@ private:
     USBMIDI _midi;
     bool    _initialized;
 
+    // SysEx reassembly state
+    bool _sysexActive = false;
+    std::vector<uint8_t> _sysexBuf;
+
     void _processPacket(const midiEventPacket_t& pkt) {
         // CIN (Code Index Number) — USB MIDI spec 1.0, Table 4-1
         uint8_t cin  = pkt.header & 0x0F;
@@ -138,18 +143,61 @@ private:
         uint8_t msg2[2] = { pkt.byte1, pkt.byte2 };
 
         switch (cin) {
+            case 0x04:  // SysEx start or continue (3 data bytes)
+                if (!_sysexActive) {
+                    _sysexBuf.clear();
+                    _sysexActive = true;
+                }
+                _sysexBuf.push_back(pkt.byte1);
+                _sysexBuf.push_back(pkt.byte2);
+                _sysexBuf.push_back(pkt.byte3);
+                break;
+
+            case 0x05:  // SysEx end — 1 data byte
+                if (_sysexActive) {
+                    _sysexBuf.push_back(pkt.byte1);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
+            case 0x06:  // SysEx end — 2 data bytes
+                if (_sysexActive) {
+                    _sysexBuf.push_back(pkt.byte1);
+                    _sysexBuf.push_back(pkt.byte2);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
+            case 0x07:  // SysEx end — 3 data bytes
+                if (_sysexActive) {
+                    _sysexBuf.push_back(pkt.byte1);
+                    _sysexBuf.push_back(pkt.byte2);
+                    _sysexBuf.push_back(pkt.byte3);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
             case 0x08:  // Note Off
             case 0x09:  // Note On
             case 0x0A:  // Poly Key Pressure
             case 0x0B:  // Control Change
             case 0x0E:  // Pitch Bend
+                if (_sysexActive) { _sysexActive = false; _sysexBuf.clear(); }
                 dispatchMidiData(msg3, 3);
                 break;
             case 0x0C:  // Program Change
             case 0x0D:  // Channel Pressure
+                if (_sysexActive) { _sysexActive = false; _sysexBuf.clear(); }
                 dispatchMidiData(msg2, 2);
                 break;
             default:
+                if (_sysexActive) { _sysexActive = false; _sysexBuf.clear(); }
                 break;
         }
     }

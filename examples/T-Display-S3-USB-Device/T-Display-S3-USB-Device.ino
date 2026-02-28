@@ -21,8 +21,8 @@
 // mapping.h via USB_MIDI_DEVICE_NAME.
 
 #include <Arduino.h>
+#define ESP32_HOST_MIDI_NO_USB_HOST  // Use USB Device mode, not Host
 #include <ESP32_Host_MIDI.h>
-#include "../../src/BLEConnection.h"
 #include "../../src/USBDeviceConnection.h"
 #include "mapping.h"
 #include "ST7789_Handler.h"
@@ -78,9 +78,8 @@ void setup() {
 
     display.init();
 
-    // Register transports — USB Device first, then BLE.
+    // Register USB Device transport (BLE is registered automatically by begin()).
     midiHandler.addTransport(&usbMIDI);
-    midiHandler.addTransport(&bleConnection);
 
     // Start USB stack (enumerates on the host as a MIDI device).
     usbMIDI.begin();
@@ -89,7 +88,6 @@ void setup() {
     cfg.maxEvents = 40;
     midiHandler.begin(cfg);
 
-    // BLE scanning starts automatically via midiHandler.begin().
     display.setBLE(false);
     display.setUSB(false);
 }
@@ -101,7 +99,7 @@ void loop() {
     if (millis() - lastStatusCheck >= 2000) {
         lastStatusCheck = millis();
 
-        bool ble = bleConnection.isConnected();
+        bool ble = midiHandler.isBleConnected();
         if (ble != lastBLE) {
             lastBLE = ble;
             display.setBLE(ble);

@@ -45,7 +45,7 @@
   #endif
 #endif
 
-#if ESP32_HOST_MIDI_HAS_USB
+#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
   #include "USBConnection.h"
 #endif
 
@@ -67,6 +67,14 @@ struct MIDIEventData {
   int velocity;             // Velocity (or CC value, program number, or pressure value)
   int chordIndex;           // Chord grouping index (simultaneous notes share the same index)
   int pitchBend;            // Pitch Bend value (14-bit, 0-16383, center = 8192). 0 for other types.
+};
+
+// Structure representing a complete SysEx message (0xF0 ... payload ... 0xF7).
+// Stored in a separate queue from MIDIEventData to avoid breaking existing API.
+struct MIDISysExEvent {
+  int index;                      // Global SysEx counter
+  unsigned long timestamp;        // Timestamp in milliseconds (millis())
+  std::vector<uint8_t> data;      // Complete message including 0xF0 and 0xF7
 };
 
 class MIDIHandler {
@@ -114,6 +122,14 @@ public:
   bool sendRaw(const uint8_t* data, size_t length);
   bool sendBleRaw(const uint8_t* data, size_t length);  // backward compat alias
 
+  // SysEx API — opt-in, does not affect existing event queue.
+  const std::deque<MIDISysExEvent>& getSysExQueue() const;
+  void clearSysExQueue();
+  bool sendSysEx(const uint8_t* data, size_t length);
+
+  typedef void (*SysExCallback)(const uint8_t* data, size_t length);
+  void setSysExCallback(SysExCallback cb) { sysExCb = cb; }
+
 #if ESP32_HOST_MIDI_HAS_BLE
   bool isBleConnected() const;
 #endif
@@ -160,9 +176,16 @@ private:
   void registerTransport(MIDITransport* t);
   static void _onTransportMidiData(void* ctx, const uint8_t* data, size_t len);
   static void _onTransportDisconnected(void* ctx);
+  static void _onTransportSysExData(void* ctx, const uint8_t* data, size_t len);
+
+  // SysEx
+  std::deque<MIDISysExEvent> sysexQueue;
+  int sysexGlobalIndex = 0;
+  SysExCallback sysExCb = nullptr;
+  void handleSysExMessage(const uint8_t* data, size_t length);
 
   // Built-in transports (owned by MIDIHandler, registered automatically in begin())
-#if ESP32_HOST_MIDI_HAS_USB
+#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
   USBConnection usbTransport;
 #endif
 #if ESP32_HOST_MIDI_HAS_BLE

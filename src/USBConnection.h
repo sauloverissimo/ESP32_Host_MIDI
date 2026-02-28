@@ -2,6 +2,7 @@
 #define USB_CONNECTION_H
 
 #include <Arduino.h>
+#include <vector>
 #include <usb/usb_host.h>
 #include <freertos/portmacro.h>
 #include <freertos/FreeRTOS.h>
@@ -63,6 +64,10 @@ protected:
     bool enqueueMidiMessage(const uint8_t* data, size_t length);
     bool dequeueMidiMessage(RawUsbMessage &msg);
     void processQueue();
+
+    // SysEx reassembly state
+    bool _sysexActive = false;
+    std::vector<uint8_t> _sysexBuf;
 
     // Dedicated FreeRTOS task for USB event handling (core 0)
     TaskHandle_t usbTaskHandle;
