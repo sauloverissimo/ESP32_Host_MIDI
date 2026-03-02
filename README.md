@@ -25,7 +25,7 @@
   <img src="https://img.shields.io/badge/ESP--NOW-Mesh%20Radio-E7352C?style=flat-square&logo=espressif&logoColor=white" />
   <br/>
   <!-- Meta -->
-  <img src="https://img.shields.io/github/license/sauloverissimo/ESP32_Host_MIDI?style=flat-square" />
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
   <img src="https://img.shields.io/github/v/release/sauloverissimo/ESP32_Host_MIDI?style=flat-square" />
 </p>
 
