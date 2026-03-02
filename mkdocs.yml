@@ -1,6 +1,6 @@
 site_name: 🎛️ ESP32 Host MIDI
 site_url: https://sauloverissimo.github.io/ESP32_Host_MIDI
-site_description: Hub MIDI universal para ESP32 — 9 transportes, uma API
+site_description: Hub MIDI universal para ESP32 — 8 transportes, uma API
 site_author: Saulo Verissimo
 repo_url: https://github.com/sauloverissimo/ESP32_Host_MIDI
 repo_name: sauloverissimo/ESP32_Host_MIDI
@@ -63,6 +63,12 @@ markdown_extensions:
 
 extra_css:
   - stylesheets/extra.css
+
+exclude_docs: |
+  transportes/midi2-udp.md
+  avancado/midi2-ump.md
+  exemplos/midi2-udp.md
+  MIDI2_Research.md
 
 plugins:
   - search:
