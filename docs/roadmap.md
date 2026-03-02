@@ -39,33 +39,13 @@ graph TD
 
 ## Em Desenvolvimento
 
-### 🔄 MIDI-CI (Capability Inquiry)
+### 🔄 BLE MIDI Central (Scanner)
 
-**O que é:** Mecanismo de negociação do MIDI 2.0 — dispositivos se descobrem mutuamente e negociam o conjunto de funcionalidades suportadas.
+**O que é:** Modo central que permite ao ESP32 escanear e conectar a dispositivos BLE MIDI existentes (teclados, controladores).
 
-**Por que importa:** Necessário para comunicação MIDI 2.0 "oficial" entre dispositivos certificados.
+**Por que importa:** Atualmente o ESP32 funciona apenas como periférico (aceita conexões). O modo central permite conectar a Controllers BLE existentes.
 
-**Status:** Pesquisa e design.
-
----
-
-### 🔄 Profile Negotiation
-
-**O que é:** Perfis MIDI 2.0 definem comportamentos padronizados (ex: "Piano Profile", "Drawbar Organ Profile").
-
-**Por que importa:** Permite que dispositivos MIDI 2.0 interoperem sem configuração manual.
-
-**Status:** Aguarda MIDI-CI.
-
----
-
-### 🔄 Property Exchange
-
-**O que é:** Metadados em JSON trocados entre dispositivos MIDI 2.0 (nome, fabricante, versão, capabilities).
-
-**Por que importa:** Permite que DAWs reconheçam e configurem dispositivos MIDI 2.0 automaticamente.
-
-**Status:** Futuro.
+**Status:** Em implementação.
 
 ---
 
@@ -73,7 +53,6 @@ graph TD
 
 | Feature | Prioridade | Notas |
 |---------|-----------|-------|
-| USB MIDI 2.0 Host | Alta | Quando TinyUSB suportar MIDI 2.0 |
 | Multi-device USB Hub | Média | ESP32-P4 HS já suporta — integração pendente |
 | ~~SysEx handler~~ | ~~Média~~ | ✅ Implementado em v5.1.0 |
 | Running Status TX | Baixa | Otimização de largura de banda DIN-5 |

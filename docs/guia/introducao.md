@@ -61,10 +61,6 @@ mindmap
       Qualquer ESP32
       Sintetizadores vintage
       Latência < 1 ms
-    MIDI 2.0 UDP
-      UMP over UDP
-      16-bit velocity
-      Latência 5-20 ms
 ```
 
 ---
@@ -142,9 +138,8 @@ sequenceDiagram
 | Processador central | `MIDIHandler.h/.cpp` | Fila, accordes, notas ativas, envio |
 | Configuração | `MIDIHandlerConfig.h` | Struct de configuração do handler |
 | Transportes built-in | `USBConnection`, `BLEConnection`, `ESPNowConnection` | Registrados automaticamente |
-| Transportes externos | `UART`, `RTP-MIDI`, `Ethernet`, `OSC`, `MIDI2`, `USBDevice` | Incluídos manualmente no sketch |
+| Transportes externos | `UART`, `RTP-MIDI`, `Ethernet`, `OSC`, `USBDevice` | Incluídos manualmente no sketch |
 | Integração teoria | `GingoAdapter.h` | Bridge com Gingoduino |
-| MIDI 2.0 | `MIDI2Support.h` | Parser, builder e scaler UMP |
 
 ---
 
@@ -166,14 +161,6 @@ ESP-NOW (pedais) ─────────────────────
 macOS (RTP-MIDI via WiFi) ────────────────────────────┐
 Sintetizador DIN-5 ───────────────────────────────────┤──► MIDIHandler ──► USB Device → DAW
 iPad (BLE MIDI) ──────────────────────────────────────┘              ──► DIN-5 (THRU) → Outros synths
-```
-
-### Experimento MIDI 2.0
-
-```
-ESP32-A (teclado USB) ──────────► MIDIHandler ──► MIDI2UDPConnection ──► UDP →
-── UDP → MIDI2UDPConnection ──► MIDIHandler ──► ESP32-B (display, síntese)
-                                               (16-bit velocity, 32-bit CC)
 ```
 
 ---

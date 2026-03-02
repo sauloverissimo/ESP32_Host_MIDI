@@ -1,8 +1,8 @@
 # 🎛️ ESP32 Host MIDI
 
-**O hub MIDI universal para ESP32 — 9 transportes, uma API.**
+**O hub MIDI universal para ESP32 — 8 transportes, uma API.**
 
-ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o seu DAW pelo WiFi com RTP-MIDI, controle o Max/MSP via OSC, alcance sintetizadores vintage por um cabo DIN-5 e troque pacotes MIDI 2.0 com resolução de 16 bits — **tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.**
+ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o seu DAW pelo WiFi com RTP-MIDI, controle o Max/MSP via OSC, alcance sintetizadores vintage por um cabo DIN-5 — **tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.**
 
 ---
 
@@ -22,7 +22,6 @@ flowchart TD
     ETH["🔗 Ethernet"]:::transport
     OSC["🎨 OSC"]:::transport
     NOW["📡 ESP-NOW"]:::transport
-    M2["🚀 MIDI 2.0"]:::transport
 
     HANDLER["⚙️ MIDIHandler\nFila thread-safe · Detecção de Acordes · Notas Ativas"]:::handler
 
@@ -31,7 +30,7 @@ flowchart TD
 
     USB  & BLE  & DEV  --> HANDLER
     UART & RTP  & ETH  --> HANDLER
-    OSC  & NOW  & M2   --> HANDLER
+    OSC  & NOW        --> HANDLER
 
     HANDLER --> GET
     HANDLER --> SEND
@@ -79,7 +78,6 @@ void loop() {
     - **Interface USB sem fio** — teclado USB → ESP32 → WiFi → macOS Logic Pro
     - **Adaptador DIN-5 para DAW** — sintetizador vintage → ESP32 → USB Device
     - **Mesh de palco** — ESP-NOW entre performers → saída USB única para FOH
-    - **MIDI 2.0** — dois ESP32 trocam velocidade de 16 bits por UDP
 
 === "🎨 Software Criativo"
     - **OSC ↔ MIDI** — Max/MSP, Pure Data, SuperCollider via WiFi UDP
@@ -103,10 +101,6 @@ void loop() {
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="230" alt="Gingoduino" style="border-radius:8px"/>
     <figcaption><em>Detecção de acordes (Gingoduino)</em></figcaption>
-  </figure>
-  <figure style="margin:0; text-align:center">
-    <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-MIDI2-UDP/images/MIDI2.jpeg" width="230" alt="MIDI 2.0" style="border-radius:8px"/>
-    <figcaption><em>MIDI 2.0 UDP — velocidade 16-bit</em></figcaption>
   </figure>
 </div>
 
@@ -143,7 +137,7 @@ void loop() {
 
     ---
 
-    9 protocolos documentados: USB, BLE, WiFi, Ethernet, DIN-5, ESP-NOW, OSC, MIDI 2.0.
+    8 protocolos documentados: USB, BLE, WiFi, Ethernet, DIN-5, ESP-NOW, OSC.
 
     [:octicons-arrow-right-24: Ver Transportes](transportes/visao-geral.md)
 
@@ -167,7 +161,7 @@ void loop() {
 
     ---
 
-    Sketches prontos para usar: piano roll, OSC bridge, ESP-NOW Jam, MIDI 2.0 e mais.
+    Sketches prontos para usar: piano roll, OSC bridge, ESP-NOW Jam e mais.
 
     [:octicons-arrow-right-24: Ver Exemplos](exemplos/t-display-s3.md)
 
@@ -175,7 +169,7 @@ void loop() {
 
     ---
 
-    Compatibilidade de hardware, MIDI 2.0 / UMP e troubleshooting.
+    Compatibilidade de hardware e troubleshooting.
 
     [:octicons-arrow-right-24: Ver Avançado](avancado/hardware.md)
 
@@ -195,7 +189,6 @@ void loop() {
 | 🔗 Ethernet | AppleMIDI / RFC 6295 | Cabeado | 2–10 ms | W5500 SPI ou ESP32-P4 |
 | 🎨 OSC | Open Sound Control | WiFi UDP | 5–15 ms | Qualquer ESP32 com WiFi |
 | 🎹 UART / DIN-5 | Serial MIDI 1.0 | DIN-5 | **< 1 ms** | Qualquer ESP32 |
-| 🚀 MIDI 2.0 / UMP | UMP sobre UDP | WiFi UDP | 5–20 ms | Qualquer ESP32 com WiFi |
 
 ---
 

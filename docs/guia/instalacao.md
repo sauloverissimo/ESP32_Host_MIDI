@@ -43,7 +43,6 @@ Instale apenas as que você vai usar:
 | USB Host / BLE / ESP-NOW | Já incluído no arduino-esp32 |
 | USB Device | Já incluído no arduino-esp32 (TinyUSB) |
 | UART / DIN-5 | Sem dependências extras |
-| MIDI 2.0 UDP | Sem dependências extras |
 
 ```
 Sketch → Include Library → Manage Libraries...

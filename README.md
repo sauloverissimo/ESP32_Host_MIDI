@@ -108,8 +108,6 @@ void loop() {
 
 All transports share a single `MIDIHandler` event queue and the same send API. Mix and match at will.
 
-> **MIDI 2.0** — Official MIDI 2.0 / UMP integration is under active development, following the [AM_MIDI2.0Lib](https://github.com/midi2-dev/AM_MIDI2.0Lib) standard endorsed by the MIDI Association. Stay tuned.
-
 ---
 
 ### Quick Start

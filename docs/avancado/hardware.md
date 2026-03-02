@@ -188,6 +188,5 @@ CS   → GPIO (qualquer disponível)
 
 ## Próximos Passos
 
-- [MIDI 2.0 / UMP →](midi2-ump.md) — recursos específicos do P4
 - [Troubleshooting →](troubleshooting.md) — problemas comuns de hardware
 - [Transportes →](../transportes/visao-geral.md) — qual transporte usar em cada chip

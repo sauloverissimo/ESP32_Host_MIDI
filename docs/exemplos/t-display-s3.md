@@ -138,7 +138,6 @@ void loop() {
 | `T-Display-S3-BLE-Receiver` | BLE | Receptor BLE |
 | `T-Display-S3-OSC` | OSC + WiFi | Bridge OSC |
 | `T-Display-S3-USB-Device` | BLE + USB Device | Bridge duplo |
-| `T-Display-S3-MIDI2-UDP` | MIDI 2.0 UDP | Vel. 16-bit |
 | `T-Display-S3-ESP-NOW-Jam` | ESP-NOW | Jam colaborativo |
 
 ---
