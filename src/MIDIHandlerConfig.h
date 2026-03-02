@@ -45,6 +45,15 @@ struct MIDIHandlerConfig {
     // Set to a positive value to enable history on begin().
     int historyCapacity = 0;
 
+    // --- SysEx Configuration ---
+
+    // Maximum size of a single SysEx message (bytes, including 0xF0 and 0xF7).
+    // Messages larger than this are truncated. Set to 0 to disable SysEx.
+    int maxSysExSize = 512;
+
+    // Maximum number of SysEx messages in the queue.
+    int maxSysExEvents = 8;
+
     // --- BLE Configuration ---
 
     // BLE device name used when advertising.

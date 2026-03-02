@@ -100,7 +100,59 @@ bool USBConnection::dequeueMidiMessage(RawUsbMessage &msg) {
 void USBConnection::processQueue() {
     RawUsbMessage msg;
     while (dequeueMidiMessage(msg)) {
-        dispatchMidiData(msg.data, msg.length);
+        if (msg.length < 4) {
+            dispatchMidiData(msg.data, msg.length);
+            continue;
+        }
+        uint8_t cin = msg.data[0] & 0x0F;
+
+        switch (cin) {
+            case 0x04:  // SysEx start or continue (3 data bytes)
+                if (!_sysexActive) {
+                    _sysexBuf.clear();
+                    _sysexActive = true;
+                }
+                _sysexBuf.push_back(msg.data[1]);
+                _sysexBuf.push_back(msg.data[2]);
+                _sysexBuf.push_back(msg.data[3]);
+                break;
+
+            case 0x05:  // SysEx end — 1 data byte
+                if (_sysexActive) {
+                    _sysexBuf.push_back(msg.data[1]);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
+            case 0x06:  // SysEx end — 2 data bytes
+                if (_sysexActive) {
+                    _sysexBuf.push_back(msg.data[1]);
+                    _sysexBuf.push_back(msg.data[2]);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
+            case 0x07:  // SysEx end — 3 data bytes
+                if (_sysexActive) {
+                    _sysexBuf.push_back(msg.data[1]);
+                    _sysexBuf.push_back(msg.data[2]);
+                    _sysexBuf.push_back(msg.data[3]);
+                    dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+                    _sysexActive = false;
+                    _sysexBuf.clear();
+                }
+                break;
+
+            default:
+                // Non-SysEx message — abort any incomplete SysEx and dispatch normally
+                if (_sysexActive) { _sysexActive = false; _sysexBuf.clear(); }
+                dispatchMidiData(msg.data, msg.length);
+                break;
+        }
     }
 }
 

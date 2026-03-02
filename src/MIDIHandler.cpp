@@ -47,7 +47,7 @@ void MIDIHandler::begin(const MIDIHandlerConfig& cfg) {
   this->config = cfg;
   this->maxEvents = cfg.maxEvents;
 
-#if ESP32_HOST_MIDI_HAS_USB
+#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
   registerTransport(&usbTransport);
   usbTransport.begin();
 #endif
@@ -81,6 +81,7 @@ void MIDIHandler::_onTransportDisconnected(void* ctx) {
 void MIDIHandler::registerTransport(MIDITransport* t) {
   if (transportCount >= MAX_TRANSPORTS) return;
   t->setMidiCallback(_onTransportMidiData, this);
+  t->setSysExCallback(_onTransportSysExData, this);
   t->setConnectionCallbacks(nullptr, _onTransportDisconnected, this);
   transports[transportCount++] = t;
 }
@@ -665,6 +666,50 @@ bool MIDIHandler::sendRaw(const uint8_t* data, size_t length) {
 
 bool MIDIHandler::sendBleRaw(const uint8_t* data, size_t length) {
   return sendRaw(data, length);
+}
+
+// --- SysEx ---
+
+void MIDIHandler::_onTransportSysExData(void* ctx, const uint8_t* data, size_t len) {
+  static_cast<MIDIHandler*>(ctx)->handleSysExMessage(data, len);
+}
+
+void MIDIHandler::handleSysExMessage(const uint8_t* data, size_t length) {
+  if (length < 2) return;
+  if (config.maxSysExSize == 0) return;
+
+  size_t truncLen = length;
+  if (truncLen > static_cast<size_t>(config.maxSysExSize)) {
+    truncLen = config.maxSysExSize;
+  }
+
+  if (sysExCb) sysExCb(data, truncLen);
+
+  MIDISysExEvent event;
+  event.index = ++sysexGlobalIndex;
+  event.timestamp = millis();
+  event.data.assign(data, data + truncLen);
+  sysexQueue.push_back(std::move(event));
+
+  while (sysexQueue.size() > static_cast<size_t>(config.maxSysExEvents)) {
+    sysexQueue.pop_front();
+  }
+}
+
+const std::deque<MIDISysExEvent>& MIDIHandler::getSysExQueue() const {
+  return sysexQueue;
+}
+
+void MIDIHandler::clearSysExQueue() {
+  sysexQueue.clear();
+}
+
+bool MIDIHandler::sendSysEx(const uint8_t* data, size_t length) {
+  if (length < 2 || data[0] != 0xF0 || data[length - 1] != 0xF7) return false;
+  for (int i = 0; i < transportCount; i++) {
+    transports[i]->sendMidiMessage(data, length);
+  }
+  return true;
 }
 
 #if ESP32_HOST_MIDI_HAS_BLE

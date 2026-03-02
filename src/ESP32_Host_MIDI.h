@@ -42,7 +42,10 @@
 
 #include "MIDITransport.h"
 
-#if ESP32_HOST_MIDI_HAS_USB
+// USB Host is included by default on S2/S3/P4.
+// Define ESP32_HOST_MIDI_NO_USB_HOST before including this header
+// to exclude it (e.g. when using USBDeviceConnection instead).
+#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
   #include "USBConnection.h"
 #endif
 

@@ -31,7 +31,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiUDP.h>
+#include <WiFiUdp.h>
 #include <OSCMessage.h>
 #include "MIDITransport.h"
 

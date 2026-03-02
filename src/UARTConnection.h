@@ -2,6 +2,7 @@
 #define UART_CONNECTION_H
 
 #include <Arduino.h>
+#include <vector>
 #include <HardwareSerial.h>
 #include "MIDITransport.h"
 
@@ -50,7 +51,8 @@ private:
     uint8_t _bufLen;        // Bytes accumulated so far
     uint8_t _expectedLen;   // Total bytes expected for current message
     uint8_t _runningStatus; // Last channel status byte (running status)
-    bool _inSysex;          // True while inside a SysEx message (ignored)
+    bool _inSysex;          // True while inside a SysEx message
+    std::vector<uint8_t> _sysexBuf;  // SysEx reassembly buffer
 
     // Returns the total byte count for a given MIDI status byte.
     uint8_t _midiMsgLength(uint8_t statusByte);

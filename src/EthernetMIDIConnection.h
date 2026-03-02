@@ -42,10 +42,11 @@
 #endif
 
 // AppleMIDI session and MIDI interface — scoped to avoid symbol conflicts.
-// Same rationale as RTPMIDIConnection: APPLEMIDI_CREATE_INSTANCE always names
-// the MIDI interface 'MIDI', so we scope it inside a private namespace.
+// APPLEMIDI_CREATE_INSTANCE(Type, Name, ...) creates:
+//   Apple<Name>  → AppleMIDISession  (session management)
+//   <Name>       → MidiInterface     (MIDI I/O)
 namespace _ethMidiInternal {
-    APPLEMIDI_CREATE_INSTANCE(EthernetUDP, session, ETH_MIDI_DEVICE_NAME, ETH_MIDI_PORT);
+    APPLEMIDI_CREATE_INSTANCE(EthernetUDP, MIDI, ETH_MIDI_DEVICE_NAME, ETH_MIDI_PORT);
 }
 
 // File-scope session callbacks — declared before the class uses them.
@@ -81,8 +82,8 @@ public:
             Ethernet.begin(const_cast<uint8_t*>(mac), ip);
         }
 
-        _ethMidiInternal::session.setHandleConnected(_ethOnConnected);
-        _ethMidiInternal::session.setHandleDisconnected(_ethOnDisconnected);
+        _ethMidiInternal::AppleMIDI.setHandleConnected(_ethOnConnected);
+        _ethMidiInternal::AppleMIDI.setHandleDisconnected(_ethOnDisconnected);
 
         _ethMidiInternal::MIDI.setHandleNoteOn(_onNoteOn);
         _ethMidiInternal::MIDI.setHandleNoteOff(_onNoteOff);

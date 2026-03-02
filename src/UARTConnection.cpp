@@ -77,17 +77,24 @@ void UARTConnection::_processByte(uint8_t byte) {
             return;
         }
 
-        // SysEx start: ignore everything until End of SysEx (0xF7).
+        // SysEx start: buffer bytes until End of SysEx (0xF7).
         if (byte == 0xF0) {
             _inSysex = true;
+            _sysexBuf.clear();
+            _sysexBuf.push_back(0xF0);
             _bufLen = 0;
             _expectedLen = 0;
             return;
         }
 
-        // End of SysEx.
+        // End of SysEx — dispatch complete message.
         if (byte == 0xF7) {
+            if (_inSysex) {
+                _sysexBuf.push_back(0xF7);
+                dispatchSysExData(_sysexBuf.data(), _sysexBuf.size());
+            }
             _inSysex = false;
+            _sysexBuf.clear();
             _bufLen = 0;
             _expectedLen = 0;
             return;
@@ -96,6 +103,7 @@ void UARTConnection::_processByte(uint8_t byte) {
         // Any other status byte while inside SysEx aborts it (protocol error
         // recovery — treat the new status as the start of a fresh message).
         _inSysex = false;
+        _sysexBuf.clear();
 
         // Start accumulating the new message.
         _buf[0]      = byte;
@@ -118,7 +126,10 @@ void UARTConnection::_processByte(uint8_t byte) {
 
     } else {
         // --- Data byte ---
-        if (_inSysex) return;
+        if (_inSysex) {
+            _sysexBuf.push_back(byte);
+            return;
+        }
 
         if (_bufLen == 0) {
             // No active status — apply running status if available.
