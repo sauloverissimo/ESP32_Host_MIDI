@@ -23,3 +23,5 @@ CLAUDE.md
 # Build output
 site/
 experimental/
+extras/tests/test_native
+extras/tests/test_integration
