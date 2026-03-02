@@ -686,17 +686,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#experimento-midi-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Experimento MIDI 2.0
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1949,17 +1938,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#experimento-midi-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Experimento MIDI 2.0
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2095,11 +2073,7 @@
     UART / DIN-5
       Qualquer ESP32
       Sintetizadores vintage
-      Latência &lt; 1 ms
-    MIDI 2.0 UDP
-      UMP over UDP
-      16-bit velocity
-      Latência 5-20 ms</code></pre>
+      Latência &lt; 1 ms</code></pre>
 <hr />
 <h2 id="arquitetura-de-software">Arquitetura de Software<a class="headerlink" href="#arquitetura-de-software" title="Permanent link">&para;</a></h2>
 <h3 id="separacao-por-cores-do-freertos">Separação por Cores do FreeRTOS<a class="headerlink" href="#separacao-por-cores-do-freertos" title="Permanent link">&para;</a></h3>
@@ -2191,18 +2165,13 @@
 </tr>
 <tr>
 <td>Transportes externos</td>
-<td><code>UART</code>, <code>RTP-MIDI</code>, <code>Ethernet</code>, <code>OSC</code>, <code>MIDI2</code>, <code>USBDevice</code></td>
+<td><code>UART</code>, <code>RTP-MIDI</code>, <code>Ethernet</code>, <code>OSC</code>, <code>USBDevice</code></td>
 <td>Incluídos manualmente no sketch</td>
 </tr>
 <tr>
 <td>Integração teoria</td>
 <td><code>GingoAdapter.h</code></td>
 <td>Bridge com Gingoduino</td>
-</tr>
-<tr>
-<td>MIDI 2.0</td>
-<td><code>MIDI2Support.h</code></td>
-<td>Parser, builder e scaler UMP</td>
 </tr>
 </tbody>
 </table>
@@ -2219,11 +2188,6 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>macOS (RTP-MIDI via WiFi) ────────────────────────────┐
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Sintetizador DIN-5 ───────────────────────────────────┤──► MIDIHandler ──► USB Device → DAW
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>iPad (BLE MIDI) ──────────────────────────────────────┘              ──► DIN-5 (THRU) → Outros synths
-</span></code></pre></div>
-<h3 id="experimento-midi-20">Experimento MIDI 2.0<a class="headerlink" href="#experimento-midi-20" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ESP32-A (teclado USB) ──────────► MIDIHandler ──► MIDI2UDPConnection ──► UDP →
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>── UDP → MIDI2UDPConnection ──► MIDIHandler ──► ESP32-B (display, síntese)
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                                               (16-bit velocity, 32-bit CC)
 </span></code></pre></div>
 <hr />
 <h2 id="proximos-passos">Próximos Passos<a class="headerlink" href="#proximos-passos" title="Permanent link">&para;</a></h2>

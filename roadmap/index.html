@@ -1695,32 +1695,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#midi-ci-capability-inquiry" class="md-nav__link">
+  <a href="#ble-midi-central-scanner" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔄 MIDI-CI (Capability Inquiry)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#profile-negotiation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔄 Profile Negotiation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#property-exchange" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔄 Property Exchange
+        🔄 BLE MIDI Central (Scanner)
       
     </span>
   </a>
@@ -1901,32 +1879,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#midi-ci-capability-inquiry" class="md-nav__link">
+  <a href="#ble-midi-central-scanner" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔄 MIDI-CI (Capability Inquiry)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#profile-negotiation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔄 Profile Negotiation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#property-exchange" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔄 Property Exchange
+        🔄 BLE MIDI Central (Scanner)
       
     </span>
   </a>
@@ -2108,20 +2064,10 @@
     end</code></pre>
 <hr />
 <h2 id="em-desenvolvimento">Em Desenvolvimento<a class="headerlink" href="#em-desenvolvimento" title="Permanent link">&para;</a></h2>
-<h3 id="midi-ci-capability-inquiry">🔄 MIDI-CI (Capability Inquiry)<a class="headerlink" href="#midi-ci-capability-inquiry" title="Permanent link">&para;</a></h3>
-<p><strong>O que é:</strong> Mecanismo de negociação do MIDI 2.0 — dispositivos se descobrem mutuamente e negociam o conjunto de funcionalidades suportadas.</p>
-<p><strong>Por que importa:</strong> Necessário para comunicação MIDI 2.0 "oficial" entre dispositivos certificados.</p>
-<p><strong>Status:</strong> Pesquisa e design.</p>
-<hr />
-<h3 id="profile-negotiation">🔄 Profile Negotiation<a class="headerlink" href="#profile-negotiation" title="Permanent link">&para;</a></h3>
-<p><strong>O que é:</strong> Perfis MIDI 2.0 definem comportamentos padronizados (ex: "Piano Profile", "Drawbar Organ Profile").</p>
-<p><strong>Por que importa:</strong> Permite que dispositivos MIDI 2.0 interoperem sem configuração manual.</p>
-<p><strong>Status:</strong> Aguarda MIDI-CI.</p>
-<hr />
-<h3 id="property-exchange">🔄 Property Exchange<a class="headerlink" href="#property-exchange" title="Permanent link">&para;</a></h3>
-<p><strong>O que é:</strong> Metadados em JSON trocados entre dispositivos MIDI 2.0 (nome, fabricante, versão, capabilities).</p>
-<p><strong>Por que importa:</strong> Permite que DAWs reconheçam e configurem dispositivos MIDI 2.0 automaticamente.</p>
-<p><strong>Status:</strong> Futuro.</p>
+<h3 id="ble-midi-central-scanner">🔄 BLE MIDI Central (Scanner)<a class="headerlink" href="#ble-midi-central-scanner" title="Permanent link">&para;</a></h3>
+<p><strong>O que é:</strong> Modo central que permite ao ESP32 escanear e conectar a dispositivos BLE MIDI existentes (teclados, controladores).</p>
+<p><strong>Por que importa:</strong> Atualmente o ESP32 funciona apenas como periférico (aceita conexões). O modo central permite conectar a Controllers BLE existentes.</p>
+<p><strong>Status:</strong> Em implementação.</p>
 <hr />
 <h2 id="considerado-para-o-futuro">Considerado para o Futuro<a class="headerlink" href="#considerado-para-o-futuro" title="Permanent link">&para;</a></h2>
 <table>
@@ -2133,11 +2079,6 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>USB MIDI 2.0 Host</td>
-<td>Alta</td>
-<td>Quando TinyUSB suportar MIDI 2.0</td>
-</tr>
 <tr>
 <td>Multi-device USB Hub</td>
 <td>Média</td>
