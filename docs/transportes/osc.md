@@ -208,5 +208,4 @@ void loop() { midiHandler.task(); }
 ## Próximos Passos
 
 - [RTP-MIDI →](rtp-midi.md) — alternativa para DAWs com suporte AppleMIDI
-- [MIDI 2.0 UDP →](midi2-udp.md) — protocolo UDP customizado com alta resolução
 - [Exemplos OSC →](../exemplos/osc-bridge.md) — sketch completo com display

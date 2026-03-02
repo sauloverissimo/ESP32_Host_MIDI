@@ -31,9 +31,19 @@ enum UMPMessageType : uint8_t {
     UMP_MT_UTILITY          = 0x0,  // Utility messages (clock, etc.)
     UMP_MT_SYSTEM           = 0x1,  // System Real-Time / System Common
     UMP_MT_MIDI1_VOICE      = 0x2,  // MIDI 1.0 Channel Voice (32-bit)
-    UMP_MT_DATA_64          = 0x3,  // SysEx / Data (64-bit)
+    UMP_MT_DATA_64          = 0x3,  // SysEx7 / Data (64-bit)
     UMP_MT_MIDI2_VOICE      = 0x4,  // MIDI 2.0 Channel Voice (64-bit)  ← main type
     UMP_MT_DATA_128         = 0x5,  // SysEx8 / Mixed Data (128-bit)
+};
+
+// ---- SysEx7 packet status (Type 3, MT=0x3) ------------------------------
+// Status nibble in word0[23:20]. A SysEx payload with ≤6 bytes fits in a
+// single Complete packet. Larger payloads split into Start→Continue…→End.
+enum SysEx7Status : uint8_t {
+    SYSEX7_COMPLETE = 0x0,  // Complete single-packet SysEx (≤6 payload bytes)
+    SYSEX7_START    = 0x1,  // First packet of a multi-packet SysEx
+    SYSEX7_CONTINUE = 0x2,  // Middle packet(s)
+    SYSEX7_END      = 0x3,  // Last packet
 };
 
 // ---- MIDI 2.0 Channel Voice opcodes (Type 4) ---------------------------
@@ -233,6 +243,43 @@ public:
                       ((uint32_t)(MIDI2_OP_PITCH_BEND & 0x0F) << 20) |
                       ((uint32_t)(channel & 0x0F) << 16);
         return UMPWord64(w0, value);
+    }
+
+    // Build a SysEx7 UMP packet (Type 3, MT=0x3, 64-bit).
+    //
+    // status   : SYSEX7_COMPLETE, SYSEX7_START, SYSEX7_CONTINUE, or SYSEX7_END.
+    // data     : pointer to payload bytes (NOT including 0xF0 / 0xF7 markers).
+    // numBytes : number of payload bytes in this packet (0-6).
+    //
+    // UMP wire format (64-bit):
+    //   word0 [31:28] MT     = 0x3
+    //   word0 [27:24] Group
+    //   word0 [23:20] Status (Complete/Start/Continue/End)
+    //   word0 [19:16] Byte count (0-6 for this packet)
+    //   word0 [15: 8] Payload byte 0
+    //   word0 [ 7: 0] Payload byte 1
+    //   word1 [31:24] Payload byte 2
+    //   word1 [23:16] Payload byte 3
+    //   word1 [15: 8] Payload byte 4
+    //   word1 [ 7: 0] Payload byte 5
+    //
+    // For complete messages with ≤6 payload bytes, use SYSEX7_COMPLETE and
+    // pass the full payload. For larger messages, call this repeatedly with
+    // START, CONTINUE, and END status values — or use feedSysEx1() in MIDI2Adapter.
+    static UMPWord64 sysEx7(uint8_t group, uint8_t status,
+                             const uint8_t* data, uint8_t numBytes) {
+        uint8_t n = (numBytes > 6) ? 6 : numBytes;
+        uint8_t d[6] = {};
+        if (data) memcpy(d, data, n);
+        uint32_t w0 = ((uint32_t)UMP_MT_DATA_64 << 28) |
+                      ((uint32_t)(group  & 0x0F) << 24) |
+                      ((uint32_t)(status & 0x0F) << 20) |
+                      ((uint32_t)(n      & 0x0F) << 16) |
+                      ((uint32_t)d[0]    <<  8)  |
+                       (uint32_t)d[1];
+        uint32_t w1 = ((uint32_t)d[2] << 24) | ((uint32_t)d[3] << 16) |
+                      ((uint32_t)d[4] <<  8) |   (uint32_t)d[5];
+        return UMPWord64(w0, w1);
     }
 };
 

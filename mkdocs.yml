@@ -85,24 +85,23 @@ nav:
     - Ethernet MIDI: transportes/ethernet-midi.md
     - ESP-NOW: transportes/esp-now.md
     - OSC: transportes/osc.md
-    - MIDI 2.0 / UMP: transportes/midi2-udp.md
   - 🧩 Funcionalidades:
     - Detecção de Acordes: funcionalidades/deteccao-acordes.md
     - Notas Ativas: funcionalidades/notas-ativas.md
+    - SysEx: funcionalidades/sysex.md
     - Histórico (PSRAM): funcionalidades/historico-psram.md
     - GingoAdapter: funcionalidades/gingo-adapter.md
   - 📚 API:
     - Referência Completa: api/referencia.md
   - 💡 Exemplos:
     - T-Display-S3 Piano: exemplos/t-display-s3.md
+    - T-Display-S3 SysEx: exemplos/sysex-monitor.md
     - UART Básico: exemplos/uart-basico.md
     - RTP-MIDI WiFi: exemplos/rtp-midi-wifi.md
     - OSC Bridge: exemplos/osc-bridge.md
     - ESP-NOW Jam: exemplos/esp-now-jam.md
-    - MIDI 2.0 UDP: exemplos/midi2-udp.md
     - Ethernet MIDI: exemplos/ethernet-midi.md
   - 🔧 Avançado:
     - Hardware Suportado: avancado/hardware.md
-    - MIDI 2.0 / UMP: avancado/midi2-ump.md
     - Troubleshooting: avancado/troubleshooting.md
   - 🗺️ Roadmap: roadmap.md

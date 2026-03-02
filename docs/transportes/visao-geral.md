@@ -1,6 +1,6 @@
 # 📡 Transportes — Visão Geral
 
-A biblioteca suporta **9 transportes MIDI simultâneos**. Cada um implementa a mesma interface abstrata `MIDITransport`, garantindo que o `MIDIHandler` os trate de forma uniforme.
+A biblioteca suporta **8 transportes MIDI simultâneos**. Cada um implementa a mesma interface abstrata `MIDITransport`, garantindo que o `MIDIHandler` os trate de forma uniforme.
 
 ---
 
@@ -16,7 +16,6 @@ A biblioteca suporta **9 transportes MIDI simultâneos**. Cada um implementa a m
 | [🔗 Ethernet](ethernet-midi.md) | AppleMIDI / RFC 6295 | Cabeado Ethernet | 2–10 ms | W5500 SPI ou P4 | AppleMIDI-Library + Ethernet |
 | [🎨 OSC](osc.md) | Open Sound Control | WiFi UDP | 5–15 ms | Qualquer com WiFi | CNMAT/OSC |
 | [🎹 UART / DIN-5](uart-din5.md) | Serial MIDI 1.0 (31250 baud) | Conector DIN-5 | **< 1 ms** | Qualquer ESP32 | Nenhuma |
-| [🚀 MIDI 2.0](midi2-udp.md) | UMP over UDP | WiFi UDP | 5–20 ms | Qualquer com WiFi | Nenhuma |
 
 ---
 
@@ -35,7 +34,6 @@ graph LR
         RTP["🌐 RTPMIDIConnection"]
         ETH["🔗 EthernetMIDIConnection"]
         OSC["🎨 OSCConnection"]
-        MIDI2["🚀 MIDI2UDPConnection"]
         USBDEV["💻 USBDeviceConnection"]
     end
 
@@ -218,4 +216,3 @@ Explore cada transporte em detalhe:
 - [🔗 Ethernet](ethernet-midi.md) — Ethernet cabeada para estúdio
 - [📡 ESP-NOW](esp-now.md) — mesh sem fio entre ESP32
 - [🎨 OSC](osc.md) — Max/MSP, Pure Data, SuperCollider
-- [🚀 MIDI 2.0](midi2-udp.md) — alta resolução com UMP

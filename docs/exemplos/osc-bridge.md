@@ -159,4 +159,3 @@ Configure o TouchOSC (iOS/Android):
 
 - [OSC →](../transportes/osc.md) — detalhes do transporte OSC
 - [RTP-MIDI →](rtp-midi-wifi.md) — alternativa para DAWs com AppleMIDI
-- [MIDI 2.0 →](midi2-udp.md) — protocolo UDP customizado com alta resolução

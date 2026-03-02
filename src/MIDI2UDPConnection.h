@@ -1,12 +1,22 @@
 #ifndef MIDI2_UDP_CONNECTION_H
 #define MIDI2_UDP_CONNECTION_H
 
-// MIDI2UDPConnection — UMP over UDP transport for ESP32
+// MIDI2UDPConnection — INTERNAL / EXPERIMENTAL — DO NOT USE IN PRODUCTION
 //
-// Enables bidirectional MIDI 2.0 (Universal MIDI Packet) between two ESP32
-// devices over WiFi UDP. Uses a custom 12-byte protocol specific to
-// ESP32_Host_MIDI — NOT compatible with RTP-MIDI, standard MIDI, or any
-// other protocol.
+// ⚠  This transport uses a PROPRIETARY protocol ("UMP2" magic bytes over
+//    raw UDP) that is NOT compatible with Network MIDI 2.0, RTP-MIDI 2.0,
+//    or any other standard. It works ONLY between two ESP32 boards running
+//    this same library.
+//
+//    A conformant Network MIDI 2.0 transport (RTP + UMP payload + MIDI-CI)
+//    is planned for a future release. This file is kept for internal
+//    testing and will be replaced when the standard transport is available.
+//
+// --- original documentation below ---
+//
+// Enables bidirectional UMP exchange between two ESP32 devices over WiFi
+// UDP. Uses a custom 12-byte protocol specific to ESP32_Host_MIDI — NOT
+// compatible with RTP-MIDI, standard MIDI, or any other protocol.
 //
 // Protocol: 12-byte UDP datagram
 //   Bytes  0-3:  Magic 0x55 0x4D 0x50 0x32 ("UMP2")
