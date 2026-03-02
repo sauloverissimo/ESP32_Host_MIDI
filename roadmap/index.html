@@ -934,34 +934,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../transportes/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1488,34 +1460,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../exemplos/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 UDP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../exemplos/ethernet-midi/" class="md-nav__link">
         
   
@@ -1613,34 +1557,6 @@
     
   
     Hardware Suportado
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../avancado/midi2-ump/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
   
 
     
@@ -2165,7 +2081,7 @@
 <p>Estado atual e direção futura da biblioteca ESP32_Host_MIDI.</p>
 <hr />
 <h2 id="estado-atual-v510">Estado Atual — v5.1.0<a class="headerlink" href="#estado-atual-v510" title="Permanent link">&para;</a></h2>
-<p>A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — <strong>9 transportes, uma API</strong> — está completo e funcional, agora com suporte a SysEx em todos os transportes.</p>
+<p>A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — <strong>8 transportes, uma API</strong> — está completo e funcional, agora com suporte a SysEx em todos os transportes.</p>
 <pre class="mermaid"><code>graph TD
     classDef done fill:#C8E6C9,color:#1B5E20,stroke:#388E3C,stroke-width:2px
     classDef feat fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
@@ -2180,7 +2096,6 @@
         ETH["🔗 Ethernet"]:::done
         OSC["🎨 OSC"]:::done
         UART["🎹 UART/DIN-5"]:::done
-        MIDI2["🚀 MIDI 2.0"]:::done
     end
 
     subgraph F["⚙️ Funcionalidades"]
@@ -2294,7 +2209,6 @@
 <li><code>sendSysEx()</code> para envio validado</li>
 <li>Buffer configurável: <code>maxSysExSize</code>, <code>maxSysExEvents</code></li>
 <li>Exemplo: T-Display-S3-SysEx (monitor com Identity Request)</li>
-<li>Exemplo: T-Display-S3-AMoled-MIDI2-UMP</li>
 <li>Fix: <code>ESP32_HOST_MIDI_NO_USB_HOST</code> para USB Device mode</li>
 <li>Fix: EthernetMIDI session naming</li>
 <li>Fix: OSCConnection WiFiUdp.h case sensitivity</li>
@@ -2303,11 +2217,9 @@
 </ul>
 <h3 id="v500">v5.0.0<a class="headerlink" href="#v500" title="Permanent link">&para;</a></h3>
 <ul>
-<li>9 transportes simultâneos (USB, BLE, USB Device, ESP-NOW, RTP-MIDI, Ethernet, OSC, UART, MIDI 2.0 UDP)</li>
+<li>8 transportes simultâneos (USB, BLE, USB Device, ESP-NOW, RTP-MIDI, Ethernet, OSC, UART)</li>
 <li>Camada de abstração <code>MIDITransport</code> (interface unificada)</li>
 <li><code>addTransport()</code> para transportes externos</li>
-<li>MIDI 2.0 / UMP: builder, parser, scaler (16/32-bit)</li>
-<li><code>MIDI2UDPConnection</code> — protocolo customizado ESP32↔ESP32</li>
 <li><code>USBDeviceConnection</code> — USB MIDI class-compliant (TinyUSB)</li>
 <li><code>OSCConnection</code> — bridge bidirecional OSC ↔ MIDI</li>
 <li><code>EthernetMIDIConnection</code> — AppleMIDI sobre W5500 SPI</li>

@@ -936,34 +936,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../transportes/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1561,17 +1533,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#midi2udpconnection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MIDI2UDPConnection
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#midi2support-tipos-e-utilitarios" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1860,34 +1821,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 UDP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../exemplos/ethernet-midi/" class="md-nav__link">
         
   
@@ -1985,34 +1918,6 @@
     
   
     Hardware Suportado
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../avancado/midi2-ump/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
   
 
     
@@ -2373,17 +2278,6 @@
     <span class="md-ellipsis">
       
         USBDeviceConnection
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#midi2udpconnection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MIDI2UDPConnection
       
     </span>
   </a>
@@ -2857,93 +2751,74 @@
 </span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="c1">// isConnected() retorna true quando o host USB estiver conectado</span>
 </span></code></pre></div>
 <hr />
-<h2 id="midi2udpconnection">MIDI2UDPConnection<a class="headerlink" href="#midi2udpconnection" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/MIDI2UDPConnection.h&quot;</span><span class="c1">  // Inclui MIDI2Support.h</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">MIDI2UDPConnection</span><span class="w"> </span><span class="n">midi2udp</span><span class="p">;</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">midi2udp</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">localPort</span><span class="p">,</span><span class="w">    </span><span class="c1">// Porta UDP local (ex: 5006)</span>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">    </span><span class="n">IPAddress</span><span class="w"> </span><span class="n">peerIP</span><span class="p">,</span><span class="w"> </span><span class="c1">// IP do ESP32 parceiro</span>
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">peerPort</span><span class="w">      </span><span class="c1">// Porta UDP do parceiro (ex: 5006)</span>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="p">);</span>
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="k">const</span><span class="w"> </span><span class="n">UMPResult</span><span class="o">&amp;</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">midi2udp</span><span class="p">.</span><span class="n">lastResult</span><span class="p">();</span>
-</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="c1">// r.valid       → pacote válido?</span>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="c1">// r.isMIDI2     → é MIDI 2.0 (64-bit)?</span>
-</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="c1">// r.note        → nota MIDI (0-127)</span>
-</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="c1">// r.velocity16  → velocidade 16-bit</span>
-</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="c1">// r.value       → valor 32-bit (CC, PB)</span>
-</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="c1">// r.midi1[3]    → bytes MIDI 1.0 equivalentes</span>
-</span></code></pre></div>
-<hr />
 <h2 id="midi2support-tipos-e-utilitarios">MIDI2Support — Tipos e Utilitários<a class="headerlink" href="#midi2support-tipos-e-utilitarios" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/MIDI2Support.h&quot;</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="c1">// Escalamento</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="kt">uint16_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale7to16</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">v7</span><span class="p">);</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale7to32</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">v7</span><span class="p">);</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale14to32</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">v14</span><span class="p">);</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="kt">uint8_t</span><span class="w">  </span><span class="nf">MIDI2Scaler::scale16to7</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">v16</span><span class="p">);</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="kt">uint8_t</span><span class="w">  </span><span class="nf">MIDI2Scaler::scale32to7</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">v32</span><span class="p">);</span>
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="kt">uint16_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale32to14</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">v32</span><span class="p">);</span>
-</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="c1">// Builder UMP</span>
-</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::noteOn</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">                              </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">velocity16</span><span class="p">);</span>
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::noteOff</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="w">                               </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">velocity16</span><span class="p">);</span>
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::controlChange</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="w">                                     </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">value32</span><span class="p">);</span>
-</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::pitchBend</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="w">                                 </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">value32</span><span class="p">);</span>
-</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>
-</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a><span class="c1">// Parser UMP</span>
-</span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a><span class="n">UMPResult</span><span class="w"> </span><span class="nf">UMPParser::parseMIDI2</span><span class="p">(</span><span class="n">UMPWord64</span><span class="w"> </span><span class="n">pkt</span><span class="p">);</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/MIDI2Support.h&quot;</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="c1">// Escalamento</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="kt">uint16_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale7to16</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">v7</span><span class="p">);</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale7to32</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">v7</span><span class="p">);</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale14to32</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">v14</span><span class="p">);</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="kt">uint8_t</span><span class="w">  </span><span class="nf">MIDI2Scaler::scale16to7</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">v16</span><span class="p">);</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="kt">uint8_t</span><span class="w">  </span><span class="nf">MIDI2Scaler::scale32to7</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">v32</span><span class="p">);</span>
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="kt">uint16_t</span><span class="w"> </span><span class="nf">MIDI2Scaler::scale32to14</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">v32</span><span class="p">);</span>
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="c1">// Builder UMP</span>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::noteOn</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
+</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="w">                              </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">velocity16</span><span class="p">);</span>
+</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::noteOff</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
+</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="w">                               </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">velocity16</span><span class="p">);</span>
+</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::controlChange</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
+</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a><span class="w">                                     </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">value32</span><span class="p">);</span>
+</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="n">UMPWord64</span><span class="w"> </span><span class="nf">UMPBuilder::pitchBend</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span>
+</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="w">                                 </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">value32</span><span class="p">);</span>
+</span><span id="__span-22-20"><a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>
+</span><span id="__span-22-21"><a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a><span class="c1">// Parser UMP</span>
+</span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a><span class="n">UMPResult</span><span class="w"> </span><span class="nf">UMPParser::parseMIDI2</span><span class="p">(</span><span class="n">UMPWord64</span><span class="w"> </span><span class="n">pkt</span><span class="p">);</span>
 </span></code></pre></div>
 <hr />
 <h2 id="gingoadapter">GingoAdapter<a class="headerlink" href="#gingoadapter" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/GingoAdapter.h&quot;</span><span class="c1">  // Requer Gingoduino ≥ v0.2.2</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="c1">// Identificar nome do acorde mais recente</span>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">GingoAdapter::identifyLastChord</span><span class="p">(</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">    </span><span class="n">MIDIHandler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">    </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">outName</span><span class="p">,</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">nameSize</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="p">);</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="c1">// Converter notas MIDI para GingoNote</span>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">GingoAdapter::midiToGingoNotes</span><span class="p">(</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">midiNotes</span><span class="p">,</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">count</span><span class="p">,</span>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="w">    </span><span class="n">GingoNote</span><span class="o">*</span><span class="w"> </span><span class="n">outNotes</span>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="p">);</span>
-</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>
-</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a><span class="c1">// Campo harmônico (requer GINGODUINO_HAS_FIELD)</span>
-</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a><span class="cp">#if defined(GINGODUINO_HAS_FIELD)</span>
-</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">GingoAdapter::deduceFieldFromQueue</span><span class="p">(</span>
-</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="w">    </span><span class="n">MIDIHandler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span>
-</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="w">    </span><span class="n">FieldMatch</span><span class="o">*</span><span class="w"> </span><span class="n">outFields</span><span class="p">,</span>
-</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">maxFields</span>
-</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a><span class="p">);</span>
-</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a><span class="cp">#endif</span>
-</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>
-</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a><span class="c1">// Progressão (requer GINGODUINO_HAS_PROGRESSION)</span>
-</span><span id="__span-24-27"><a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a><span class="cp">#if defined(GINGODUINO_HAS_PROGRESSION)</span>
-</span><span id="__span-24-28"><a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">GingoAdapter::identifyProgression</span><span class="p">(</span>
-</span><span id="__span-24-29"><a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">root</span><span class="p">,</span>
-</span><span id="__span-24-30"><a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a><span class="w">    </span><span class="n">ScaleType</span><span class="w"> </span><span class="n">scale</span><span class="p">,</span>
-</span><span id="__span-24-31"><a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">branches</span><span class="p">,</span>
-</span><span id="__span-24-32"><a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">branchCount</span><span class="p">,</span>
-</span><span id="__span-24-33"><a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a><span class="w">    </span><span class="n">ProgressionMatch</span><span class="o">*</span><span class="w"> </span><span class="n">out</span>
-</span><span id="__span-24-34"><a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a><span class="p">);</span>
-</span><span id="__span-24-35"><a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a><span class="cp">#endif</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;src/GingoAdapter.h&quot;</span><span class="c1">  // Requer Gingoduino ≥ v0.2.2</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="c1">// Identificar nome do acorde mais recente</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">GingoAdapter::identifyLastChord</span><span class="p">(</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">    </span><span class="n">MIDIHandler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">    </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">outName</span><span class="p">,</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">nameSize</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="p">);</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="c1">// Converter notas MIDI para GingoNote</span>
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">GingoAdapter::midiToGingoNotes</span><span class="p">(</span>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">midiNotes</span><span class="p">,</span>
+</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">count</span><span class="p">,</span>
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="w">    </span><span class="n">GingoNote</span><span class="o">*</span><span class="w"> </span><span class="n">outNotes</span>
+</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="p">);</span>
+</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>
+</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="c1">// Campo harmônico (requer GINGODUINO_HAS_FIELD)</span>
+</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="cp">#if defined(GINGODUINO_HAS_FIELD)</span>
+</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="kt">uint8_t</span><span class="w"> </span><span class="nf">GingoAdapter::deduceFieldFromQueue</span><span class="p">(</span>
+</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">    </span><span class="n">MIDIHandler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span>
+</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a><span class="w">    </span><span class="n">FieldMatch</span><span class="o">*</span><span class="w"> </span><span class="n">outFields</span><span class="p">,</span>
+</span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">maxFields</span>
+</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a><span class="p">);</span>
+</span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a><span class="cp">#endif</span>
+</span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>
+</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a><span class="c1">// Progressão (requer GINGODUINO_HAS_PROGRESSION)</span>
+</span><span id="__span-23-27"><a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a><span class="cp">#if defined(GINGODUINO_HAS_PROGRESSION)</span>
+</span><span id="__span-23-28"><a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">GingoAdapter::identifyProgression</span><span class="p">(</span>
+</span><span id="__span-23-29"><a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">root</span><span class="p">,</span>
+</span><span id="__span-23-30"><a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a><span class="w">    </span><span class="n">ScaleType</span><span class="w"> </span><span class="n">scale</span><span class="p">,</span>
+</span><span id="__span-23-31"><a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">branches</span><span class="p">,</span>
+</span><span id="__span-23-32"><a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">branchCount</span><span class="p">,</span>
+</span><span id="__span-23-33"><a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a><span class="w">    </span><span class="n">ProgressionMatch</span><span class="o">*</span><span class="w"> </span><span class="n">out</span>
+</span><span id="__span-23-34"><a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a><span class="p">);</span>
+</span><span id="__span-23-35"><a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a><span class="cp">#endif</span>
 </span></code></pre></div>
 <hr />
 <h2 id="macros-de-feature-detection">Macros de Feature Detection<a class="headerlink" href="#macros-de-feature-detection" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">ESP32_HOST_MIDI_HAS_USB</span><span class="w">    </span><span class="c1">// 1 se chip suportar USB OTG (S2, S3, P4)</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">ESP32_HOST_MIDI_HAS_BLE</span><span class="w">    </span><span class="c1">// 1 se CONFIG_BT_ENABLED</span>
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">ESP32_HOST_MIDI_HAS_PSRAM</span><span class="w">  </span><span class="c1">// 1 se CONFIG_SPIRAM ou CONFIG_SPIRAM_SUPPORT</span>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="n">ESP32_HOST_MIDI_HAS_ETH_MAC</span><span class="w"> </span><span class="c1">// 1 se ESP32-P4 (MAC Ethernet nativo)</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">ESP32_HOST_MIDI_HAS_USB</span><span class="w">    </span><span class="c1">// 1 se chip suportar USB OTG (S2, S3, P4)</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">ESP32_HOST_MIDI_HAS_BLE</span><span class="w">    </span><span class="c1">// 1 se CONFIG_BT_ENABLED</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">ESP32_HOST_MIDI_HAS_PSRAM</span><span class="w">  </span><span class="c1">// 1 se CONFIG_SPIRAM ou CONFIG_SPIRAM_SUPPORT</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">ESP32_HOST_MIDI_HAS_ETH_MAC</span><span class="w"> </span><span class="c1">// 1 se ESP32-P4 (MAC Ethernet nativo)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="notas-de-uso">Notas de Uso<a class="headerlink" href="#notas-de-uso" title="Permanent link">&para;</a></h2>

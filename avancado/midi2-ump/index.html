@@ -15,10 +15,6 @@
         <link rel="canonical" href="https://sauloverissimo.github.io/ESP32_Host_MIDI/avancado/midi2-ump/">
       
       
-        <link rel="prev" href="../hardware/">
-      
-      
-        <link rel="next" href="../troubleshooting/">
       
       
         
@@ -29,7 +25,7 @@
     
     
       
-        <title>MIDI 2.0 / UMP - 🎛️ ESP32 Host MIDI</title>
+        <title>🚀 MIDI 2.0 / UMP — Deep Dive - 🎛️ ESP32 Host MIDI</title>
       
     
     
@@ -118,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              MIDI 2.0 / UMP
+              🚀 MIDI 2.0 / UMP — Deep Dive
             
           </span>
         </div>
@@ -342,12 +338,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../hardware/" class="md-tabs__link">
           
   
@@ -936,34 +930,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../transportes/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1490,34 +1456,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 UDP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../exemplos/ethernet-midi/" class="md-nav__link">
         
   
@@ -1550,31 +1488,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1592,7 +1527,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1626,225 +1561,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#o-que-e-midi-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        O Que é MIDI 2.0
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#universal-midi-packet-ump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Universal MIDI Packet (UMP)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tipos-de-mensagem-ump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tipos de Mensagem UMP
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#opcodes-midi-20-channel-voice-mt0x4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Opcodes MIDI 2.0 Channel Voice (MT=0x4)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#escalamento-midi-10-midi-20" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Escalamento MIDI 1.0 ↔ MIDI 2.0
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Escalamento MIDI 1.0 ↔ MIDI 2.0">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#formulas-de-escalamento" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fórmulas de Escalamento
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementacao-em-esp32_host_midi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementação em ESP32_Host_MIDI
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Implementação em ESP32_Host_MIDI">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#midi2supporth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MIDI2Support.h
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exemplo-completo-construir-e-parsear-ump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exemplo Completo — Construir e Parsear UMP
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#midi2udpconnection-protocolo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MIDI2UDPConnection — Protocolo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status-do-midi-20-na-biblioteca" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status do MIDI 2.0 na Biblioteca
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Próximos Passos
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2099,46 +1815,6 @@
 
   
 
-
-  <nav class="md-path" aria-label="Navegação" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    🏠 Início
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../hardware/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    🔧 Avançado
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
 
               
               <article class="md-content__inner md-typeset">

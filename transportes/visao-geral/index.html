@@ -1086,34 +1086,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1640,34 +1612,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/midi2-udp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 UDP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../exemplos/ethernet-midi/" class="md-nav__link">
         
   
@@ -1765,34 +1709,6 @@
     
   
     Hardware Suportado
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../avancado/midi2-ump/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MIDI 2.0 / UMP
   
 
     
@@ -2063,7 +1979,7 @@
 
 
 <h1 id="transportes-visao-geral">📡 Transportes — Visão Geral<a class="headerlink" href="#transportes-visao-geral" title="Permanent link">&para;</a></h1>
-<p>A biblioteca suporta <strong>9 transportes MIDI simultâneos</strong>. Cada um implementa a mesma interface abstrata <code>MIDITransport</code>, garantindo que o <code>MIDIHandler</code> os trate de forma uniforme.</p>
+<p>A biblioteca suporta <strong>8 transportes MIDI simultâneos</strong>. Cada um implementa a mesma interface abstrata <code>MIDITransport</code>, garantindo que o <code>MIDIHandler</code> os trate de forma uniforme.</p>
 <hr />
 <h2 id="comparacao-de-transportes">Comparação de Transportes<a class="headerlink" href="#comparacao-de-transportes" title="Permanent link">&para;</a></h2>
 <table>
@@ -2142,14 +2058,6 @@
 <td>Qualquer ESP32</td>
 <td>Nenhuma</td>
 </tr>
-<tr>
-<td><a href="../midi2-udp/">🚀 MIDI 2.0</a></td>
-<td>UMP over UDP</td>
-<td>WiFi UDP</td>
-<td>5–20 ms</td>
-<td>Qualquer com WiFi</td>
-<td>Nenhuma</td>
-</tr>
 </tbody>
 </table>
 <hr />
@@ -2166,7 +2074,6 @@
         RTP["🌐 RTPMIDIConnection"]
         ETH["🔗 EthernetMIDIConnection"]
         OSC["🎨 OSCConnection"]
-        MIDI2["🚀 MIDI2UDPConnection"]
         USBDEV["💻 USBDeviceConnection"]
     end
 
@@ -2325,7 +2232,6 @@
 <li><a href="../ethernet-midi/">🔗 Ethernet</a> — Ethernet cabeada para estúdio</li>
 <li><a href="../esp-now/">📡 ESP-NOW</a> — mesh sem fio entre ESP32</li>
 <li><a href="../osc/">🎨 OSC</a> — Max/MSP, Pure Data, SuperCollider</li>
-<li><a href="../midi2-udp/">🚀 MIDI 2.0</a> — alta resolução com UMP</li>
 </ul>
 
 
