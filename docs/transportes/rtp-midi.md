@@ -59,10 +59,11 @@ void loop() {
     midiHandler.task();
 
     for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("[RTP] %s %s vel=%d\n",
-            ev.status.c_str(),
-            ev.noteOctave.c_str(),
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.velocity7);
     }
 }
 ```

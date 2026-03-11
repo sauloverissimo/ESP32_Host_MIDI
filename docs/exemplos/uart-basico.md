@@ -63,25 +63,27 @@ void loop() {
 
     for (const auto& ev : midiHandler.getQueue()) {
         // Imprimir evento formatado
-        if (ev.status == "NoteOn" && ev.velocity > 0) {
+        if (ev.statusCode == MIDIHandler::NoteOn && ev.velocity7 > 0) {
+            char noteBuf[8];
             Serial.printf("[NoteOn]  %-5s  canal=%d  vel=%3d  t=%lu ms\n",
-                ev.noteOctave.c_str(), ev.channel, ev.velocity, ev.timestamp);
+                MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)), ev.channel0 + 1, ev.velocity7, ev.timestamp);
 
             // Teste de NoteOff automático após 100ms (TX)
             delay(100);
-            midiHandler.sendNoteOff(ev.channel, ev.note, 0);
+            midiHandler.sendNoteOff(ev.channel0 + 1, ev.noteNumber, 0);
 
-        } else if (ev.status == "NoteOff") {
+        } else if (ev.statusCode == MIDIHandler::NoteOff) {
+            char noteBuf[8];
             Serial.printf("[NoteOff] %-5s  canal=%d\n",
-                ev.noteOctave.c_str(), ev.channel);
+                MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)), ev.channel0 + 1);
 
-        } else if (ev.status == "ControlChange") {
+        } else if (ev.statusCode == MIDIHandler::ControlChange) {
             Serial.printf("[CC]      #%-3d = %3d  canal=%d\n",
-                ev.note, ev.velocity, ev.channel);
+                ev.noteNumber, ev.velocity7, ev.channel0 + 1);
 
-        } else if (ev.status == "PitchBend") {
+        } else if (ev.statusCode == MIDIHandler::PitchBend) {
             Serial.printf("[PitchBend] %d  canal=%d\n",
-                ev.pitchBend, ev.channel);
+                ev.pitchBend14, ev.channel0 + 1);
         }
     }
 }

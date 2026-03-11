@@ -193,11 +193,12 @@ O `chordIndex` é parte de cada `MIDIEventData`. Você pode usar diretamente na 
 
 ```cpp
 for (const auto& ev : midiHandler.getQueue()) {
-    if (ev.status == "NoteOn") {
+    if (ev.statusCode == MIDIHandler::NoteOn) {
+        char noteBuf[8];
         Serial.printf("Nota %s  acorde #%d  vel=%d\n",
-            ev.noteOctave.c_str(),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
             ev.chordIndex,
-            ev.velocity);
+            ev.velocity7);
     }
 }
 ```

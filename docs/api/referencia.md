@@ -4,6 +4,24 @@ Referência completa de todas as classes, estruturas e métodos da biblioteca ES
 
 ---
 
+## MIDIStatus
+
+Enum com os status bytes reais do protocolo MIDI:
+
+```cpp
+enum MIDIStatus : uint8_t {
+    MIDI_NOTE_OFF          = 0x80,
+    MIDI_NOTE_ON           = 0x90,
+    MIDI_POLY_PRESSURE     = 0xA0,
+    MIDI_CONTROL_CHANGE    = 0xB0,
+    MIDI_PROGRAM_CHANGE    = 0xC0,
+    MIDI_CHANNEL_PRESSURE  = 0xD0,
+    MIDI_PITCH_BEND        = 0xE0,
+};
+```
+
+---
+
 ## MIDIEventData
 
 Estrutura que representa um evento MIDI parseado. Retornada por `getQueue()`.
@@ -15,28 +33,37 @@ struct MIDIEventData {
     unsigned long timestamp;  // millis() no momento do evento
     unsigned long delay;      // Δt em ms desde o evento anterior
 
-    int channel;              // Canal MIDI: 1–16
-    std::string status;       // Tipo: "NoteOn" | "NoteOff" | "ControlChange" |
-                              //       "ProgramChange" | "PitchBend" | "ChannelPressure"
-    int note;                 // Número MIDI (0–127) ou número do controlador (CC)
-    std::string noteName;     // "C", "C#", "D" ... (vazio para não-notas)
-    std::string noteOctave;   // "C4", "D#5", "G3" ... (vazio para não-notas)
-    int velocity;             // Velocidade (0–127); também valor de CC, program, pressure
-    int chordIndex;           // Índice de agrupamento de acorde (simultâneas = mesmo índice)
-    int pitchBend;            // Valor raw 14-bit: 0–16383 (centro = 8192). 0 para outros tipos.
+    // v5.2+ — MIDI spec compliant
+    MIDIStatus statusCode;    // MIDI_NOTE_ON | MIDI_NOTE_OFF | MIDI_CONTROL_CHANGE | ...
+    uint8_t channel0;         // Canal MIDI: 0–15 (spec MIDI)
+    uint8_t noteNumber;       // Número MIDI (0–127)
+    uint16_t velocity16;      // Velocidade 16-bit (MIDI 2.0, escalado via MIDI2Scaler)
+    uint8_t velocity7;        // Velocidade 7-bit (original MIDI 1.0)
+    uint32_t pitchBend32;     // Pitch bend 32-bit (MIDI 2.0, centro = 0x80000000)
+    uint16_t pitchBend14;     // Pitch bend 14-bit (original, 0–16383, centro = 8192)
+    int chordIndex;           // Índice de agrupamento de acorde
+
+    // Deprecated (v5.2) — serão removidos na v6.0
+    int channel;              // 1–16 (use channel0)
+    std::string status;       // "NoteOn" etc (use statusCode)
+    int note;                 // 0–127 (use noteNumber)
+    std::string noteName;     // (use MIDIHandler::noteName())
+    std::string noteOctave;   // (use MIDIHandler::noteWithOctave())
+    int velocity;             // 0–127 (use velocity7 ou velocity16)
+    int pitchBend;            // 0–16383 (use pitchBend14 ou pitchBend32)
 };
 ```
 
 ### Mapeamento por tipo de mensagem
 
-| `status` | `note` | `velocity` | `pitchBend` |
+| `statusCode` | `noteNumber` | `velocity7` | `pitchBend14` |
 |---------|--------|-----------|------------|
-| `"NoteOn"` | Nota MIDI (0–127) | Velocidade (0–127) | 0 |
-| `"NoteOff"` | Nota MIDI (0–127) | Release velocity | 0 |
-| `"ControlChange"` | CC number (0–127) | CC value (0–127) | 0 |
-| `"ProgramChange"` | Program (0–127) | Program (0–127) | 0 |
-| `"PitchBend"` | 0 | 0 | 0–16383 (centro=8192) |
-| `"ChannelPressure"` | 0 | Pressure (0–127) | 0 |
+| `MIDI_NOTE_ON` | Nota MIDI (0–127) | Velocidade (0–127) | 0 |
+| `MIDI_NOTE_OFF` | Nota MIDI (0–127) | Release velocity | 0 |
+| `MIDI_CONTROL_CHANGE` | CC number (0–127) | CC value (0–127) | 0 |
+| `MIDI_PROGRAM_CHANGE` | Program (0–127) | 0 | 0 |
+| `MIDI_PITCH_BEND` | 0 | 0 | 0–16383 (centro=8192) |
+| `MIDI_CHANNEL_PRESSURE` | 0 | Pressure (0–127) | 0 |
 
 ---
 
@@ -172,6 +199,22 @@ std::vector<std::string> getAnswer(
 // Atalho para lastChord + getChord com múltiplos campos.
 ```
 
+### Helpers Estáticos
+
+```cpp
+static const char* MIDIHandler::noteName(uint8_t noteNumber);
+// Retorna nome da nota: "C", "C#", "D", ... (string literal, zero allocation)
+
+static int MIDIHandler::noteOctave(uint8_t noteNumber);
+// Retorna oitava: -1 a 9
+
+static const char* MIDIHandler::noteWithOctave(uint8_t noteNumber, char* buf, size_t bufLen);
+// Escreve "C4", "D#5" etc em buf (buffer do caller). Retorna buf.
+
+static const char* MIDIHandler::statusName(MIDIStatus code);
+// Retorna nome do status: "NoteOn", "NoteOff", "ControlChange", etc.
+```
+
 ### Recepção — SysEx
 
 ```cpp
@@ -205,6 +248,8 @@ struct MIDISysExEvent {
 ---
 
 ### Envio de MIDI
+
+> **Nota:** Na v5.2, a API de envio usa canal 1–16. Na v6.0, será migrada para 0–15 (MIDI spec).
 
 Todos os métodos de envio transmitem para **todos os transportes** que suportam envio:
 
@@ -279,10 +324,14 @@ public:
                                 ConnectionCallback onDisconnected,
                                 void* ctx);
 
+    // UMP (MIDI 2.0 nativo)
+    void setUMPCallback(UMPDataCallback cb, void* ctx);
+
 protected:
     // Chamar nas subclasses para injetar dados no MIDIHandler:
     void dispatchMidiData(const uint8_t* data, size_t len);
     void dispatchSysExData(const uint8_t* data, size_t len);
+    void dispatchUMPData(const uint32_t* words, uint8_t count);  // inject UMP words
     void dispatchConnected();
     void dispatchDisconnected();
 };
@@ -297,6 +346,31 @@ Transporte USB Host. Incluído automaticamente em chips S2/S3/P4.
 ```cpp
 // Uso interno — não instancie diretamente.
 // Configuração: Tools > USB Mode → "USB Host"
+```
+
+---
+
+## USBMIDI2Connection
+
+USB Host com suporte nativo a MIDI 2.0/UMP. Estende `USBConnection`.
+
+```cpp
+#include "src/USBMIDI2Connection.h"
+
+USBMIDI2Connection usb;
+
+// Callbacks
+usb.setUMPCallback(onUMP, nullptr);   // MIDI 2.0 nativo (UMP words)
+usb.setMidiCallback(onMidi, nullptr); // fallback MIDI 1.0
+
+// Consultar capacidades após negociação
+usb.isMIDI2();        // true se dispositivo negociou MIDI 2.0
+usb.isNegotiated();   // true se Protocol Negotiation completou
+usb.getEndpointInfo(); // UMP version, function blocks, protocol
+usb.getFunctionBlocks(); // Function Block Info array
+usb.getGTBlocks();       // Group Terminal Block array
+usb.getEndpointName();   // nome do endpoint (string do dispositivo)
+usb.sendUMPMessage(words, count); // enviar UMP words via OUT endpoint
 ```
 
 ---

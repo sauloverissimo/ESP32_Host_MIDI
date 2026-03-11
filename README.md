@@ -38,7 +38,7 @@
 
 ## English
 
-**The universal MIDI hub for ESP32 — 8 transports, one API.**
+**The universal MIDI hub for ESP32 — 9 transports, one API.**
 
 ESP32\_Host\_MIDI turns your ESP32 into a full-featured, multi-protocol MIDI hub. Connect a USB keyboard, receive notes from an iPhone via Bluetooth, bridge your DAW over WiFi with RTP-MIDI (Apple MIDI), control Max/MSP via OSC, reach 40-year-old synths through a DIN-5 serial cable, and link multiple ESP32 boards wirelessly with ESP-NOW — **all simultaneously, all through the same clean event API.**
 
@@ -49,10 +49,13 @@ void setup() { midiHandler.begin(); }
 
 void loop() {
     midiHandler.task();
-    for (const auto& ev : midiHandler.getQueue())
+    for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("%-12s %-4s ch=%d  vel=%d\n",
-            ev.status.c_str(), ev.noteOctave.c_str(),
-            ev.channel, ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.channel0 + 1, ev.velocity7);
+    }
 }
 ```
 
@@ -98,6 +101,7 @@ void loop() {
 | Transport | Protocol | Physical | Latency | Requires |
 |-----------|----------|----------|---------|----------|
 | [USB Host](#usb-host-otg) | USB MIDI 1.0 | USB-OTG cable | < 1 ms | ESP32-S3 / S2 / P4 |
+| [USB Host MIDI 2.0](#usb-host-midi-20) | USB MIDI 2.0 (UMP) | USB-OTG cable | < 1 ms | ESP32-S3 / S2 / P4 |
 | [BLE MIDI](#ble-midi) | BLE MIDI 1.0 | Bluetooth LE | 3–15 ms | Any ESP32 with BT |
 | [USB Device](#usb-device) | USB MIDI 1.0 | USB-OTG cable | < 1 ms | ESP32-S3 / S2 / P4 |
 | [ESP-NOW MIDI](#esp-now-midi) | ESP-NOW | 2.4 GHz radio | 1–5 ms | Any ESP32 |
@@ -123,8 +127,10 @@ void setup() {
 
 void loop() {
     midiHandler.task();
-    for (const auto& ev : midiHandler.getQueue())
-        Serial.println(ev.noteOctave.c_str());
+    for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
+        Serial.println(MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)));
+    }
 }
 ```
 
@@ -132,14 +138,20 @@ Access individual fields:
 
 ```cpp
 for (const auto& ev : midiHandler.getQueue()) {
-    ev.status;      // "NoteOn" | "NoteOff" | "ControlChange" | "PitchBend" …
-    ev.channel;     // 1–16
-    ev.note;        // MIDI note number (0–127)
-    ev.noteOctave;  // "C4", "D#5" …
-    ev.velocity;    // 0–127
-    ev.pitchBend;   // 0–16383 (center = 8192)
-    ev.chordIndex;  // groups simultaneous notes
-    ev.timestamp;   // millis() at arrival
+    ev.statusCode;   // MIDI_NOTE_ON | MIDI_NOTE_OFF | MIDI_CONTROL_CHANGE | ...
+    ev.channel0;     // 0–15 (MIDI spec)
+    ev.noteNumber;   // MIDI note number (0–127)
+    ev.velocity7;    // 0–127 (MIDI 1.0)
+    ev.velocity16;   // 0–65535 (MIDI 2.0, scaled)
+    ev.pitchBend14;  // 0–16383 (center = 8192)
+    ev.pitchBend32;  // 0–0xFFFFFFFF (MIDI 2.0, center = 0x80000000)
+    ev.chordIndex;   // groups simultaneous notes
+    ev.timestamp;    // millis() at arrival
+
+    // Static helpers (zero allocation):
+    MIDIHandler::noteName(ev.noteNumber);       // "C", "C#", "D" ...
+    MIDIHandler::noteOctave(ev.noteNumber);     // -1 to 9
+    MIDIHandler::statusName(ev.statusCode);     // "NoteOn", "ControlChange" ...
 }
 ```
 
@@ -178,6 +190,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 ║  INPUTS                          MIDIHandler             OUTPUTS    ║
 ║                                                                      ║
 ║  USB keyboard ──[USBConnection]────►  ┌──────────────┐              ║
+║  USB MIDI 2.0 ──[USBMIDI2Conn]────►  │              │              ║
 ║  iPhone BLE   ──[BLEConnection]────►  │              │              ║
 ║  macOS WiFi   ──[RTPMIDIConn.]─────►  │  Event Queue │──► getQueue()║
 ║  DAW USB out  ──[USBDeviceConn]────►  │  (ring buf,  │              ║
@@ -215,6 +228,8 @@ void setup() { midiHandler.begin(); }
 ```
 
 **Examples:** `T-Display-S3`, `T-Display-S3-Queue`, `T-Display-S3-Piano`, `T-Display-S3-Gingoduino`
+
+> **MIDI 2.0:** Use `USBMIDI2Connection` for native USB MIDI 2.0 with UMP. See the [MIDI 2.0 section](#usb-host-midi-20) below.
 
 ---
 
@@ -382,6 +397,43 @@ void setup() {
 ```
 
 **Examples:** `UART-MIDI-Basic`, `P4-Dual-UART-MIDI`
+
+---
+
+#### USB Host MIDI 2.0
+
+Native USB MIDI 2.0/UMP support with automatic protocol negotiation. `USBMIDI2Connection` extends `USBConnection` — scans the device's configuration descriptor for both Alt 0 (MIDI 1.0) and Alt 1 (MIDI 2.0), preferring MIDI 2.0 when available. Falls back to MIDI 1.0 transparently.
+
+After selecting MIDI 2.0, performs the mandatory UMP Endpoint Discovery and Protocol Negotiation sequence. Raw UMP words (32-bit) are delivered via callback — no conversion to MIDI 1.0.
+
+```cpp
+#include "src/USBMIDI2Connection.h"
+
+USBMIDI2Connection usb;
+
+void onUMP(void*, const uint32_t* words, uint8_t count) {
+    // Raw UMP words — MIDI 2.0 native resolution
+}
+
+void setup() {
+    usb.setUMPCallback(onUMP, nullptr);
+    usb.setMidiCallback(onMidi, nullptr);  // MIDI 1.0 fallback
+    midiHandler.addTransport(&usb);
+    midiHandler.begin();
+}
+```
+
+Query device capabilities after negotiation:
+
+```cpp
+if (usb.isMIDI2() && usb.isNegotiated()) {
+    auto& ep = usb.getEndpointInfo();
+    Serial.printf("UMP v%d.%d, %d function blocks\n",
+        ep.umpVersionMajor, ep.umpVersionMinor, ep.numFunctionBlocks);
+}
+```
+
+**Boards:** ESP32-S3, ESP32-S2, ESP32-P4 · **Examples:** `T-Display-S3-AMoled-MIDI2-UMP`
 
 ---
 
@@ -667,6 +719,8 @@ ESP32_Host_MIDI/
 │   ├── MIDITransport.h               ← abstract transport interface
 │   ├── MIDIHandlerConfig.h           ← config struct
 │   ├── USBConnection.h / .cpp        ← USB Host OTG
+│   ├── USBMIDI2Connection.h / .cpp   ← USB Host MIDI 2.0 (UMP negotiation)
+│   ├── MIDI2Support.h                ← UMP types, scaler, builder, parser
 │   ├── BLEConnection.h / .cpp        ← BLE MIDI
 │   ├── ESPNowConnection.h / .cpp     ← ESP-NOW MIDI
 │   ├── UARTConnection.h / .cpp       ← UART / DIN-5
@@ -675,6 +729,11 @@ ESP32_Host_MIDI/
 │   ├── EthernetMIDIConnection.h      ← AppleMIDI over Ethernet (header-only)
 │   ├── OSCConnection.h               ← OSC ↔ MIDI bridge (header-only)
 │   └── GingoAdapter.h                ← Gingoduino chord integration
+├── extras/
+│   └── tests/
+│       ├── test_native.cpp           ← MIDI2Support + MIDITransport tests (32)
+│       ├── test_handler.cpp          ← MIDIHandler tests (99)
+│       └── test_midi2_scan.cpp       ← USB MIDI 2.0 descriptor tests (120)
 └── examples/
     ├── T-Display-S3/                 T-Display-S3-Queue/
     ├── T-Display-S3-Piano/           T-Display-S3-Piano-Debug/

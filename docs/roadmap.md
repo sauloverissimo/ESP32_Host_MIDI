@@ -4,9 +4,9 @@ Estado atual e direção futura da biblioteca ESP32_Host_MIDI.
 
 ---
 
-## Estado Atual — v5.1.0
+## Estado Atual — v5.2.0
 
-A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — **8 transportes, uma API** — está completo e funcional, agora com suporte a SysEx em todos os transportes.
+A versão 5.2.0 é uma biblioteca madura e estável. O núcleo — **9 transportes, uma API** — está completo e funcional, com campos MIDI 2.0 spec-compliant, USB Host MIDI 2.0 nativo, e SysEx em todos os transportes.
 
 ```mermaid
 graph TD
@@ -16,6 +16,7 @@ graph TD
     subgraph T["📡 Transportes"]
         direction LR
         USB["🔌 USB Host"]:::done
+        USBM2["🎵 USB MIDI 2.0"]:::done
         BLE["📱 BLE MIDI"]:::done
         USBDEV["💻 USB Device"]:::done
         ESPNOW["📡 ESP-NOW"]:::done
@@ -32,6 +33,7 @@ graph TD
         SYSEX["SysEx"]:::done
         HIST["PSRAM History"]:::done
         GINGO["Gingo Adapter"]:::done
+        MIDI2["MIDI 2.0 Fields"]:::done
     end
 ```
 
@@ -55,6 +57,7 @@ graph TD
 |---------|-----------|-------|
 | Multi-device USB Hub | Média | ESP32-P4 HS já suporta — integração pendente |
 | ~~SysEx handler~~ | ~~Média~~ | ✅ Implementado em v5.1.0 |
+| ~~USB MIDI 2.0 Host~~ | ~~Alta~~ | ✅ Implementado em v5.2.0 |
 | Running Status TX | Baixa | Otimização de largura de banda DIN-5 |
 | BLE MIDI Central (Scanner) | Alta | Conectar ao invés de ser conectado |
 | MIDI Clock generator | Média | BPM preciso via timer FreeRTOS |
@@ -98,6 +101,17 @@ public:
 ---
 
 ## Changelog
+
+### v5.2.0
+- MIDIStatus enum com status bytes MIDI reais (0x80–0xE0)
+- Novos campos spec-compliant: statusCode, channel0 (0–15), noteNumber, velocity7, velocity16, pitchBend14, pitchBend32
+- Campos deprecated mantidos para compatibilidade (channel, status, note, velocity, pitchBend, noteName, noteOctave)
+- Helpers estáticos: noteName(), noteOctave(), noteWithOctave(), statusName() — zero allocation
+- USBMIDI2Connection: USB Host com MIDI 2.0/UMP nativo (Protocol Negotiation, Function Blocks, Group Terminal Blocks)
+- UMP callback path no MIDITransport (dispatchUMPData)
+- 9 exemplos migrados para nova API
+- 251 testes nativos (MIDIHandler + MIDI2Support + USB MIDI 2.0 scan)
+- Guia de migração: docs/migration-v6.md
 
 ### v5.1.0
 - SysEx send/receive em todos os transportes (USB Host, USB Device, UART)

@@ -28,11 +28,12 @@ void loop() {
     midiHandler.task();   // (2)
 
     for (const auto& ev : midiHandler.getQueue()) {  // (3)
+        char noteBuf[8];
         Serial.printf("%-12s %-5s ch=%d  vel=%d\n",
-            ev.status.c_str(),    // "NoteOn" | "NoteOff" | "ControlChange"...
-            ev.noteOctave.c_str(), // "C4", "D#5"...
-            ev.channel,
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),    // "NoteOn" | "NoteOff" | "ControlChange"...
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)), // "C4", "D#5"...
+            ev.channel0 + 1,
+            ev.velocity7);
     }
 }
 ```
@@ -57,21 +58,25 @@ for (const auto& ev : midiHandler.getQueue()) {
     ev.delay;        // Δt em ms desde o evento anterior
 
     // Tipo de mensagem
-    ev.status;       // "NoteOn" | "NoteOff" | "ControlChange" |
-                     // "ProgramChange" | "PitchBend" | "ChannelPressure"
-    ev.channel;      // Canal MIDI: 1–16
+    ev.statusCode;   // MIDIStatus enum: MIDI_NOTE_ON, MIDI_NOTE_OFF, MIDI_CONTROL_CHANGE...
+    ev.channel0;     // Canal MIDI: 0–15 (some +1 para exibir 1–16)
 
     // Nota (apenas NoteOn / NoteOff)
-    ev.note;         // Número MIDI: 0–127 (60 = C4 = Dó central)
-    ev.noteName;     // "C", "C#", "D"... (sem oitava)
-    ev.noteOctave;   // "C4", "D#5", "G3"... (com oitava)
-    ev.velocity;     // Velocidade: 0–127 (também: valor CC, program, pressure)
+    ev.noteNumber;   // Número MIDI: 0–127 (60 = C4 = Dó central)
+    ev.velocity7;    // Velocidade 7-bit: 0–127 (também: valor CC, program, pressure)
+    ev.velocity16;   // Velocidade 16-bit: 0–65535 (MIDI 2.0)
+
+    // Helpers estáticos (zero allocation)
+    // MIDIHandler::statusName(ev.statusCode)              → "NoteOn", "NoteOff"...
+    // MIDIHandler::noteName(ev.noteNumber)                → "C", "C#", "D"...
+    // MIDIHandler::noteWithOctave(ev.noteNumber, buf, sz) → "C4", "D#5"...
 
     // Agrupamento de acordes
     ev.chordIndex;   // Notas simultâneas compartilham o mesmo chordIndex
 
     // Pitch Bend (apenas PitchBend)
-    ev.pitchBend;    // 0–16383 (centro = 8192)
+    ev.pitchBend14;  // 0–16383 (centro = 8192), MIDI 1.0
+    ev.pitchBend32;  // 0–4294967295 (centro = 2147483648), MIDI 2.0
 }
 ```
 
@@ -79,11 +84,12 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ```cpp
 for (const auto& ev : midiHandler.getQueue()) {
-    if (ev.status == "NoteOn" && ev.velocity > 0) {
+    if (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 > 0) {
+        char noteBuf[8];
         Serial.printf("Nota: %s  Velocidade: %d  Canal: %d\n",
-            ev.noteOctave.c_str(),
-            ev.velocity,
-            ev.channel);
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.velocity7,
+            ev.channel0 + 1);
     }
 }
 ```
@@ -92,11 +98,11 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ```cpp
 for (const auto& ev : midiHandler.getQueue()) {
-    if (ev.status == "ControlChange") {
-        // ev.note = número do controlador (CC#)
-        // ev.velocity = valor do controlador (0–127)
+    if (ev.statusCode == MIDI_CONTROL_CHANGE) {
+        // ev.noteNumber = número do controlador (CC#)
+        // ev.velocity7 = valor do controlador (0–127)
         Serial.printf("CC #%d = %d  (canal %d)\n",
-            ev.note, ev.velocity, ev.channel);
+            ev.noteNumber, ev.velocity7, ev.channel0 + 1);
     }
 }
 ```
@@ -133,13 +139,13 @@ void loop() {
     midiHandler.task();
 
     for (const auto& ev : midiHandler.getQueue()) {
-        if (ev.status == "NoteOn") {
+        if (ev.statusCode == MIDI_NOTE_ON) {
             // Reenvia com velocidade dobrada (limitada a 127)
-            uint8_t vel = min(ev.velocity * 2, 127);
-            midiHandler.sendNoteOn(ev.channel, ev.note, vel);
+            uint8_t vel = min((int)(ev.velocity7 * 2), 127);
+            midiHandler.sendNoteOn(ev.channel0 + 1, ev.noteNumber, vel);
         }
-        if (ev.status == "NoteOff") {
-            midiHandler.sendNoteOff(ev.channel, ev.note, 0);
+        if (ev.statusCode == MIDI_NOTE_OFF) {
+            midiHandler.sendNoteOff(ev.channel0 + 1, ev.noteNumber, 0);
         }
     }
 }
@@ -192,22 +198,23 @@ void loop() {
     midiHandler.task();
 
     for (const auto& ev : midiHandler.getQueue()) {
-        if (ev.status == "NoteOn" && ev.velocity > 0) {
+        char noteBuf[8];
+        if (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 > 0) {
             Serial.printf("[NoteOn]  %s  vel=%3d  ch=%d  t=%lums\n",
-                ev.noteOctave.c_str(),
-                ev.velocity,
-                ev.channel,
+                MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+                ev.velocity7,
+                ev.channel0 + 1,
                 ev.timestamp);
-        } else if (ev.status == "NoteOff" || ev.velocity == 0) {
+        } else if (ev.statusCode == MIDI_NOTE_OFF || ev.velocity7 == 0) {
             Serial.printf("[NoteOff] %s             ch=%d\n",
-                ev.noteOctave.c_str(),
-                ev.channel);
-        } else if (ev.status == "ControlChange") {
+                MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+                ev.channel0 + 1);
+        } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
             Serial.printf("[CC]      #%3d = %3d    ch=%d\n",
-                ev.note, ev.velocity, ev.channel);
-        } else if (ev.status == "PitchBend") {
+                ev.noteNumber, ev.velocity7, ev.channel0 + 1);
+        } else if (ev.statusCode == MIDI_PITCH_BEND) {
             Serial.printf("[Pitch]   %d (centro=8192)  ch=%d\n",
-                ev.pitchBend, ev.channel);
+                ev.pitchBend14, ev.channel0 + 1);
         }
     }
 }

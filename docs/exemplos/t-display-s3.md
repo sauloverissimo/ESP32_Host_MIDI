@@ -101,7 +101,8 @@ void loop() {
 
     // Log de eventos
     for (const auto& ev : midiHandler.getQueue()) {
-        display.addEvent(ev.noteOctave.c_str(), ev.channel, ev.velocity);
+        char noteBuf[8];
+        display.addEvent(MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)), ev.channel0 + 1, ev.velocity7);
     }
 
     display.render();

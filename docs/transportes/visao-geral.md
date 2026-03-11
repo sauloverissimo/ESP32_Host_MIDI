@@ -1,6 +1,6 @@
 # 📡 Transportes — Visão Geral
 
-A biblioteca suporta **8 transportes MIDI simultâneos**. Cada um implementa a mesma interface abstrata `MIDITransport`, garantindo que o `MIDIHandler` os trate de forma uniforme.
+A biblioteca suporta **9 transportes MIDI simultâneos**. Cada um implementa a mesma interface abstrata `MIDITransport`, garantindo que o `MIDIHandler` os trate de forma uniforme.
 
 ---
 
@@ -9,6 +9,7 @@ A biblioteca suporta **8 transportes MIDI simultâneos**. Cada um implementa a m
 | Transporte | Protocolo | Física | Latência | Chips | Biblioteca extra |
 |-----------|----------|--------|---------|-------|-----------------|
 | [🔌 USB Host](usb-host.md) | USB MIDI 1.0 | Cabo USB-OTG | **< 1 ms** | S3 / S2 / P4 | Nenhuma |
+| [🎵 USB Host MIDI 2.0](usb-host.md#midi-20) | USB MIDI 2.0 / UMP | Cabo USB-OTG | **< 1 ms** | S3 / S2 / P4 | Nenhuma |
 | [📱 BLE MIDI](ble-midi.md) | BLE MIDI 1.0 | Bluetooth LE 5.0 | 3–15 ms | S3 / Classic / C3 / C6 | Nenhuma |
 | [💻 USB Device](usb-device.md) | USB MIDI 1.0 | Cabo USB-OTG | **< 1 ms** | S3 / S2 / P4 | Nenhuma (TinyUSB) |
 | [📡 ESP-NOW](esp-now.md) | ESP-NOW | Rádio 2,4 GHz | 1–5 ms | Qualquer ESP32 | Nenhuma |
@@ -208,7 +209,7 @@ void setup() {
 
 Explore cada transporte em detalhe:
 
-- [🔌 USB Host](usb-host.md) — teclados e pads USB class-compliant
+- [🔌 USB Host](usb-host.md) — teclados e pads USB class-compliant (MIDI 1.0 e 2.0)
 - [📱 BLE MIDI](ble-midi.md) — iOS, macOS e Android
 - [💻 USB Device](usb-device.md) — ESP32 como interface USB para DAW
 - [🎹 UART / DIN-5](uart-din5.md) — sintetizadores vintage

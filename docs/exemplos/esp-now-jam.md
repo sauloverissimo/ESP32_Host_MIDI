@@ -70,10 +70,11 @@ void loop() {
 
     for (const auto& ev : midiHandler.getQueue()) {
         // Exibir evento (local ou recebido via ESP-NOW de outro participante)
+        char noteBuf[8];
         Serial.printf("[JAM] %s %s vel=%d\n",
-            ev.status.c_str(),
-            ev.noteOctave.c_str(),
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.velocity7);
 
         // No display: mostrar nota + quem tocou
     }

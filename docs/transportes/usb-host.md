@@ -56,11 +56,12 @@ void loop() {
     midiHandler.task();
 
     for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("[USB] %s %s ch=%d vel=%d\n",
-            ev.status.c_str(),
-            ev.noteOctave.c_str(),
-            ev.channel,
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.channel0 + 1,
+            ev.velocity7);
     }
 }
 ```
@@ -86,7 +87,7 @@ sequenceDiagram
         HANDLER->>BUF: task() — lê mensagens
         BUF->>HANDLER: [0x09, 0x90, 0x3C, 0x64]
         HANDLER->>HANDLER: Parseia → MIDIEventData
-        Note right of HANDLER: status="NoteOn"<br/>note=60, noteName="C"<br/>noteOctave="C4"<br/>velocity=100
+        Note right of HANDLER: statusCode=MIDI_NOTE_ON<br/>noteNumber=60<br/>velocity7=100
     end
 ```
 
@@ -120,7 +121,7 @@ Qualquer dispositivo **USB MIDI 1.0 Class Compliant** funciona sem driver:
 ## Limitações
 
 - **Um dispositivo por vez** (sem hub, exceto no P4)
-- Apenas **USB MIDI 1.0** (não suporta USB Audio ou HID)
+- **USB MIDI 1.0 e 2.0 (via USBMIDI2Connection)** (não suporta USB Audio ou HID)
 - **Não pode coexistir com USB Device** — ambos usam o mesmo pino OTG
 
 ---
@@ -133,6 +134,8 @@ Qualquer dispositivo **USB MIDI 1.0 Class Compliant** funciona sem driver:
 | `T-Display-S3-Queue` | Fila de eventos completa com debug |
 | `T-Display-S3-Piano` | Piano roll de 25 teclas com rolagem |
 | `T-Display-S3-Gingoduino` | Detecção de acordes em tempo real |
+
+> **MIDI 2.0:** Para suporte nativo USB MIDI 2.0 com negociação UMP, use `USBMIDI2Connection`. Veja a [referência da API](../api/referencia.md#usbmidi2connection).
 
 ---
 

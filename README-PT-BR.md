@@ -11,10 +11,13 @@ void setup() { midiHandler.begin(); }
 
 void loop() {
     midiHandler.task();
-    for (const auto& ev : midiHandler.getQueue())
+    for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("%-12s %-4s ch=%d  vel=%d\n",
-            ev.status.c_str(), ev.noteOctave.c_str(),
-            ev.channel, ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.channel0 + 1, ev.velocity7);
+    }
 }
 ```
 
@@ -46,7 +49,7 @@ void loop() {
 
 - Sintetizador DIN-5 → ESP32 → USB Device → DAW moderno — adaptador sem driver
 - Rig de palco sem fio: mesh ESP-NOW de performers → saída USB única para o computador da FOH
-- Experimentos MIDI 2.0: dois ESP32 trocam velocidade de 16 bits via UDP
+- MIDI 2.0 nativo: USB Host com negociação UMP + ESP32 trocam velocidade de 16 bits via UDP
 
 ### Integração com software criativo
 
@@ -124,7 +127,8 @@ void setup() {
 void loop() {
     midiHandler.task();
     for (const auto& ev : midiHandler.getQueue())
-        Serial.println(ev.noteOctave.c_str());
+        char noteBuf[8];
+        Serial.println(MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)));
 }
 ```
 

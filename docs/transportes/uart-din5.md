@@ -117,11 +117,12 @@ void loop() {
     midiHandler.task();
 
     for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("[DIN-5] %s %s ch=%d vel=%d\n",
-            ev.status.c_str(),
-            ev.noteOctave.c_str(),
-            ev.channel,
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.channel0 + 1,
+            ev.velocity7);
     }
 }
 ```

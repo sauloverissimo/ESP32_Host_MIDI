@@ -10,13 +10,16 @@ A ideia central é simples: não importa de onde o MIDI vem — USB, Bluetooth, 
 
 ```cpp
 for (const auto& ev : midiHandler.getQueue()) {
-    ev.status;      // "NoteOn", "NoteOff", "ControlChange", "PitchBend"...
-    ev.channel;     // 1–16
-    ev.note;        // número MIDI (0–127)
-    ev.noteOctave;  // "C4", "D#5", "G3"...
-    ev.velocity;    // 0–127
+    ev.statusCode;  // MIDIStatus enum: MIDI_NOTE_ON, MIDI_NOTE_OFF, MIDI_CONTROL_CHANGE...
+    ev.channel0;    // 0–15 (some +1 para exibir 1–16)
+    ev.noteNumber;  // número MIDI (0–127)
+    ev.velocity7;   // 0–127
+    ev.velocity16;  // 0–65535 (MIDI 2.0)
+    ev.pitchBend14; // 0–16383 (MIDI 1.0, centro = 8192)
+    ev.pitchBend32; // 0–4294967295 (MIDI 2.0)
     ev.timestamp;   // millis() na chegada
     ev.chordIndex;  // agrupa notas simultâneas
+    // Helpers estáticos: MIDIHandler::statusName(), noteWithOctave(), noteName()
 }
 ```
 
@@ -33,6 +36,10 @@ mindmap
       ESP32-S3 / S2 / P4
       Teclados class-compliant
       Latência < 1 ms
+    USB MIDI 2.0
+      ESP32-S3 / S2 / P4
+      USBMIDI2Connection / UMP
+      Protocol Negotiation nativo
     BLE MIDI
       Qualquer ESP32 com BT
       iOS · macOS · Android
@@ -122,7 +129,7 @@ sequenceDiagram
         HANDLER->>BUF: Lê mensagens pendentes
         BUF->>HANDLER: [0x09, 0x90, 0x3C, 0x64]
         HANDLER->>HANDLER: Parseia → MIDIEventData
-        Note over HANDLER: status="NoteOn"<br/>note=60 (C4)<br/>velocity=100
+        Note over HANDLER: statusCode=MIDI_NOTE_ON<br/>noteNumber=60<br/>velocity7=100
         HANDLER->>USER: getQueue() retorna evento
     end
 ```

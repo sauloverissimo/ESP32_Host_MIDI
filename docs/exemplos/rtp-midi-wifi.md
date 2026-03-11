@@ -74,10 +74,11 @@ void loop() {
 
     // Receber MIDI do macOS (bidirecional)
     for (const auto& ev : midiHandler.getQueue()) {
+        char noteBuf[8];
         Serial.printf("[RTP IN] %s %s vel=%d\n",
-            ev.status.c_str(),
-            ev.noteOctave.c_str(),
-            ev.velocity);
+            MIDIHandler::statusName(ev.statusCode),
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)),
+            ev.velocity7);
     }
 
     // Sequenciador — tocar próximo step
