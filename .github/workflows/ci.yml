@@ -31,6 +31,29 @@ jobs:
       - name: Run native tests
         run: ./extras/tests/test_native
 
+      - name: Build MIDIHandler test binary
+        run: |
+          g++ -std=c++17 \
+              -Iextras/tests/stub \
+              -Isrc \
+              -Wall -Wextra -Wno-unused-parameter -Wno-comment \
+              -DESP32_HOST_MIDI_NO_USB_HOST \
+              -o extras/tests/test_handler extras/tests/test_handler.cpp src/MIDIHandler.cpp
+
+      - name: Run MIDIHandler tests
+        run: ./extras/tests/test_handler
+
+      - name: Build MIDI2 scan test binary
+        run: |
+          g++ -std=c++11 \
+              -Iextras/tests/stub \
+              -Isrc \
+              -Wall -Wextra -Wno-unused-parameter -Wno-comment \
+              -o extras/tests/test_midi2_scan extras/tests/test_midi2_scan.cpp
+
+      - name: Run MIDI2 scan tests
+        run: ./extras/tests/test_midi2_scan
+
   # ---------------------------------------------------------------------------
   # Job 2 — Arduino compile check (ESP32-S3)
   # Verifies the library compiles with the real ESP32 Arduino toolchain.

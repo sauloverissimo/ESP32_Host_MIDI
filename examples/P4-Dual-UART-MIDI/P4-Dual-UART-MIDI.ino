@@ -45,27 +45,31 @@ static int lastEventIndex = -1;
 
 // Prints one MIDI event to the debug serial.
 static void printEvent(const MIDIEventData& ev) {
-    // Tag the source port (index embedded via chordIndex or by transport — here we
-    // use the raw queue order and just label for clarity).
-    Serial.print("[MIDI] ");
-    Serial.print(ev.status.c_str());
+    char noteBuf[8];
 
-    if (ev.status == "NoteOn" || ev.status == "NoteOff") {
-        Serial.print("  ch=");   Serial.print(ev.channel);
-        Serial.print("  note="); Serial.print(ev.noteOctave.c_str());
-        Serial.print("  vel=");  Serial.println(ev.velocity);
-    } else if (ev.status == "ControlChange") {
-        Serial.print("  ch=");  Serial.print(ev.channel);
-        Serial.print("  cc=");  Serial.print(ev.note);
-        Serial.print("  val="); Serial.println(ev.velocity);
-    } else if (ev.status == "ProgramChange") {
-        Serial.print("  ch=");   Serial.print(ev.channel);
-        Serial.print("  prog="); Serial.println(ev.velocity);
-    } else if (ev.status == "PitchBend") {
-        Serial.print("  ch="); Serial.print(ev.channel);
-        Serial.print("  pb="); Serial.println(ev.pitchBend);
+    if (ev.statusCode == MIDI_NOTE_ON || ev.statusCode == MIDI_NOTE_OFF) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
+        Serial.print("[MIDI] ");
+        Serial.print(ev.statusCode == MIDI_NOTE_ON ? "NoteOn" : "NoteOff");
+        Serial.print("  ch=");   Serial.print(ev.channel0 + 1);
+        Serial.print("  note="); Serial.print(noteBuf);
+        Serial.print("  vel=");  Serial.println(ev.velocity7);
+    } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
+        Serial.print("[MIDI] ControlChange");
+        Serial.print("  ch=");  Serial.print(ev.channel0 + 1);
+        Serial.print("  cc=");  Serial.print(ev.noteNumber);
+        Serial.print("  val="); Serial.println(ev.velocity7);
+    } else if (ev.statusCode == MIDI_PROGRAM_CHANGE) {
+        Serial.print("[MIDI] ProgramChange");
+        Serial.print("  ch=");   Serial.print(ev.channel0 + 1);
+        Serial.print("  prog="); Serial.println(ev.noteNumber);
+    } else if (ev.statusCode == MIDI_PITCH_BEND) {
+        Serial.print("[MIDI] PitchBend");
+        Serial.print("  ch="); Serial.print(ev.channel0 + 1);
+        Serial.print("  pb="); Serial.println(ev.pitchBend14);
     } else {
-        Serial.println();
+        Serial.print("[MIDI] ");
+        Serial.println(MIDIHandler::statusName(ev.statusCode));
     }
 }
 

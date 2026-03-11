@@ -184,12 +184,12 @@ static void processReceivedNotes() {
         if (ev.index <= lastEventIndex) continue;
         lastEventIndex = ev.index;
 
-        if (ev.note < 0 || ev.note > 127) continue;
+        if (ev.noteNumber < 0 || ev.noteNumber > 127) continue;
 
-        if (ev.status == "NoteOn" && ev.velocity > 0) {
-            activeNotes[ev.note] = true;
-        } else if (ev.status == "NoteOff" || (ev.status == "NoteOn" && ev.velocity == 0)) {
-            activeNotes[ev.note] = false;
+        if (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 > 0) {
+            activeNotes[ev.noteNumber] = true;
+        } else if (ev.statusCode == MIDI_NOTE_OFF || (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 == 0)) {
+            activeNotes[ev.noteNumber] = false;
         }
     }
 }

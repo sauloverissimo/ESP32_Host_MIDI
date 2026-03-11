@@ -43,6 +43,13 @@ public:
         _sysExCb = cb; _sysExCtx = ctx;
     }
 
+    // UMP callback — delivers raw 32-bit UMP words (MIDI 2.0 native).
+    // Only fired when transport negotiated MIDI 2.0 (Alt 1 / UMP endpoint).
+    typedef void (*UMPDataCallback)(void* context, const uint32_t* words, uint8_t count);
+    void setUMPCallback(UMPDataCallback cb, void* ctx) {
+        _umpCb = cb; _umpCtx = ctx;
+    }
+
 protected:
     // Transport implementations call these to deliver data/events to the consumer.
     void dispatchMidiData(const uint8_t* data, size_t len) {
@@ -50,6 +57,9 @@ protected:
     }
     void dispatchSysExData(const uint8_t* data, size_t len) {
         if (_sysExCb) _sysExCb(_sysExCtx, data, len);
+    }
+    void dispatchUMPData(const uint32_t* words, uint8_t count) {
+        if (_umpCb) _umpCb(_umpCtx, words, count);
     }
     void dispatchConnected() { if (_onConnect) _onConnect(_connCtx); }
     void dispatchDisconnected() { if (_onDisconnect) _onDisconnect(_connCtx); }
@@ -59,6 +69,8 @@ private:
     void* _midiCtx = nullptr;
     SysExDataCallback _sysExCb = nullptr;
     void* _sysExCtx = nullptr;
+    UMPDataCallback _umpCb = nullptr;
+    void* _umpCtx = nullptr;
     ConnectionCallback _onConnect = nullptr;
     ConnectionCallback _onDisconnect = nullptr;
     void* _connCtx = nullptr;

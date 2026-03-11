@@ -211,6 +211,34 @@ std::string MIDIHandler::getNoteWithOctave(int note) const {
   return getNoteName(note) + std::to_string(octave);
 }
 
+// --- Static note helpers (zero-allocation, v5.2+) ---
+
+const char* MIDIHandler::noteName(uint8_t noteNumber) {
+  static const char* names[12] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+  return names[noteNumber % 12];
+}
+
+int MIDIHandler::noteOctave(uint8_t noteNumber) {
+  return static_cast<int>(noteNumber / 12) - 1;
+}
+
+const char* MIDIHandler::noteWithOctave(uint8_t noteNumber, char* buf, size_t bufLen) {
+  snprintf(buf, bufLen, "%s%d", noteName(noteNumber), noteOctave(noteNumber));
+  return buf;
+}
+
+const char* MIDIHandler::statusName(MIDIStatus code) {
+  switch (code) {
+    case MIDI_NOTE_OFF:         return "NoteOff";
+    case MIDI_NOTE_ON:          return "NoteOn";
+    case MIDI_POLY_PRESSURE:    return "PolyPressure";
+    case MIDI_CONTROL_CHANGE:   return "ControlChange";
+    case MIDI_PROGRAM_CHANGE:   return "ProgramChange";
+    case MIDI_CHANNEL_PRESSURE: return "ChannelPressure";
+    case MIDI_PITCH_BEND:       return "PitchBend";
+    default:                    return "Unknown";
+  }
+}
 
 std::string MIDIHandler::getActiveNotes() const {
   std::ostringstream oss;
@@ -458,6 +486,14 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.msgIndex = 0;
     event.timestamp = now;
     event.delay = diff;
+    event.statusCode = MIDI_CONTROL_CHANGE;
+    event.channel0 = midiData[0] & 0x0F;
+    event.noteNumber = midiData[1];
+    event.velocity7 = midiData[2];
+    event.velocity16 = MIDI2Scaler::scale7to16(midiData[2]);
+    event.pitchBend14 = 0;
+    event.pitchBend32 = 0x80000000;
+    // Deprecated fields
     event.channel = channel;
     event.status = "ControlChange";
     event.note = midiData[1];        // Controller number
@@ -476,6 +512,14 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.msgIndex = 0;
     event.timestamp = now;
     event.delay = diff;
+    event.statusCode = MIDI_PROGRAM_CHANGE;
+    event.channel0 = midiData[0] & 0x0F;
+    event.noteNumber = midiData[1];
+    event.velocity7 = 0;
+    event.velocity16 = 0;
+    event.pitchBend14 = 0;
+    event.pitchBend32 = 0x80000000;
+    // Deprecated fields
     event.channel = channel;
     event.status = "ProgramChange";
     event.note = midiData[1];  // Program number
@@ -494,6 +538,14 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.msgIndex = 0;
     event.timestamp = now;
     event.delay = diff;
+    event.statusCode = MIDI_CHANNEL_PRESSURE;
+    event.channel0 = midiData[0] & 0x0F;
+    event.noteNumber = 0;
+    event.velocity7 = midiData[1];
+    event.velocity16 = MIDI2Scaler::scale7to16(midiData[1]);
+    event.pitchBend14 = 0;
+    event.pitchBend32 = 0x80000000;
+    // Deprecated fields
     event.channel = channel;
     event.status = "ChannelPressure";
     event.note = 0;
@@ -513,6 +565,14 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.msgIndex = 0;
     event.timestamp = now;
     event.delay = diff;
+    event.statusCode = MIDI_PITCH_BEND;
+    event.channel0 = midiData[0] & 0x0F;
+    event.noteNumber = 0;
+    event.velocity7 = 0;
+    event.velocity16 = 0;
+    event.pitchBend14 = static_cast<uint16_t>(pitchValue);
+    event.pitchBend32 = MIDI2Scaler::scale14to32(pitchValue);
+    // Deprecated fields
     event.channel = channel;
     event.status = "PitchBend";
     event.note = 0;
@@ -594,6 +654,15 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   event.msgIndex = msgIndex;
   event.timestamp = now;
   event.delay = diff;
+  // New spec-compliant fields
+  event.statusCode = (midiStatus == 0x90 && velocity > 0) ? MIDI_NOTE_ON : MIDI_NOTE_OFF;
+  event.channel0 = midiData[0] & 0x0F;
+  event.noteNumber = static_cast<uint8_t>(note);
+  event.velocity7 = static_cast<uint8_t>(velocity);
+  event.velocity16 = MIDI2Scaler::scale7to16(velocity);
+  event.pitchBend14 = 0;
+  event.pitchBend32 = 0x80000000;
+  // Deprecated fields
   event.channel = channel;
   event.status = statusType;
   event.note = note;

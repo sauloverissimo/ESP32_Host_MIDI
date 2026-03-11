@@ -210,6 +210,7 @@ void USBConnection::_clientEventCallback(const usb_host_client_event_msg_t *even
             usbCon->dispatchConnected();
             break;
         case USB_HOST_CLIENT_EVENT_DEV_GONE:
+            usbCon->_onDeviceGone();
             if (usbCon->midiTransfer) {
                 usb_host_transfer_free(usbCon->midiTransfer);
                 usbCon->midiTransfer = nullptr;

@@ -117,25 +117,28 @@ static void processEvents() {
         if (ev.index <= lastEventIdx) continue;
         lastEventIdx = ev.index;
 
-        if (ev.status == "NoteOn" && ev.velocity > 0) {
-            manualNotes[ev.note] = true;
+        char noteBuf[8];
+        if (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 > 0) {
+            manualNotes[ev.noteNumber] = true;
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
             addLogC(COL_NOTEON, "ON  n=%d(%s) v=%d c=%d i=%d",
-                    ev.note, ev.noteOctave.c_str(),
-                    ev.velocity, ev.chordIndex, ev.index);
-        } else if (ev.status == "NoteOff" ||
-                  (ev.status == "NoteOn" && ev.velocity == 0)) {
-            manualNotes[ev.note] = false;
+                    ev.noteNumber, noteBuf,
+                    ev.velocity7, ev.chordIndex, ev.index);
+        } else if (ev.statusCode == MIDI_NOTE_OFF ||
+                  (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 == 0)) {
+            manualNotes[ev.noteNumber] = false;
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
             addLogC(COL_NOTEOFF, "OFF n=%d(%s) v=%d i=%d",
-                    ev.note, ev.noteOctave.c_str(), ev.velocity, ev.index);
-        } else if (ev.status == "ControlChange") {
+                    ev.noteNumber, noteBuf, ev.velocity7, ev.index);
+        } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
             addLogC(COL_CC, "CC  ctrl=%d val=%d ch=%d i=%d",
-                    ev.note, ev.velocity, ev.channel, ev.index);
-        } else if (ev.status == "PitchBend") {
+                    ev.noteNumber, ev.velocity7, ev.channel0 + 1, ev.index);
+        } else if (ev.statusCode == MIDI_PITCH_BEND) {
             addLogC(COL_CC, "PB  val=%d ch=%d i=%d",
-                    ev.pitchBend, ev.channel, ev.index);
+                    ev.pitchBend14, ev.channel0 + 1, ev.index);
         } else {
             addLogC(COL_INFO, "%-11s n=%d v=%d i=%d",
-                    ev.status.c_str(), ev.note, ev.velocity, ev.index);
+                    MIDIHandler::statusName(ev.statusCode), ev.noteNumber, ev.velocity7, ev.index);
         }
     }
 }

@@ -8,6 +8,7 @@
 #include <vector>
 #include "MIDIHandlerConfig.h"
 #include "MIDITransport.h"
+#include "MIDI2Support.h"
 
 // --- Feature detection macros ---
 // If ESP32_Host_MIDI.h was included first, these are already defined.
@@ -53,20 +54,43 @@
   #include "BLEConnection.h"
 #endif
 
+// MIDI status byte values — matches the upper nibble of MIDI 1.0 status bytes.
+// Use these with MIDIEventData::statusCode for type-safe, zero-cost comparisons.
+enum MIDIStatus : uint8_t {
+    MIDI_NOTE_OFF          = 0x80,
+    MIDI_NOTE_ON           = 0x90,
+    MIDI_POLY_PRESSURE     = 0xA0,
+    MIDI_CONTROL_CHANGE    = 0xB0,
+    MIDI_PROGRAM_CHANGE    = 0xC0,
+    MIDI_CHANNEL_PRESSURE  = 0xD0,
+    MIDI_PITCH_BEND        = 0xE0,
+};
+
 // Structure representing a parsed MIDI event using MIDI 1.0 terminology.
 struct MIDIEventData {
   int index;                // Global event counter
   int msgIndex;             // Index linking NoteOn/NoteOff pairs
   unsigned long timestamp;  // Timestamp in milliseconds (millis())
   unsigned long delay;      // Delta time (ms) since previous event
-  int channel;              // MIDI channel (1-16)
-  std::string status;       // Status type: "NoteOn", "NoteOff", "ControlChange", "ProgramChange", "PitchBend", "ChannelPressure"
-  int note;                 // MIDI note number (or controller number for ControlChange)
-  std::string noteName;     // Musical note name (e.g., "C", "D#") — empty for non-note messages
-  std::string noteOctave;   // Note with octave (e.g., "C4", "D#5") — empty for non-note messages
-  int velocity;             // Velocity (or CC value, program number, or pressure value)
   int chordIndex;           // Chord grouping index (simultaneous notes share the same index)
-  int pitchBend;            // Pitch Bend value (14-bit, 0-16383, center = 8192). 0 for other types.
+
+  // --- MIDI spec compliant fields (v5.2+) ---
+  MIDIStatus statusCode;    // Status as enum (MIDI_NOTE_ON, MIDI_CONTROL_CHANGE, etc.)
+  uint8_t channel0;         // MIDI channel 0-15 (MIDI spec convention)
+  uint8_t noteNumber;       // MIDI note number 0-127 (or controller number for CC)
+  uint16_t velocity16;      // 16-bit velocity (MIDI 2.0 resolution); MIDI 1.0 input scaled via MIDI2Scaler
+  uint8_t velocity7;        // 7-bit velocity (original MIDI 1.0 value)
+  uint32_t pitchBend32;     // 32-bit pitch bend (MIDI 2.0, center = 0x80000000)
+  uint16_t pitchBend14;     // 14-bit pitch bend (0-16383, center = 8192)
+
+  // --- Deprecated fields (kept for backward compatibility, will be removed in v6.0) ---
+  int channel;              // MIDI channel (1-16) — deprecated: use channel0 (0-15)
+  std::string status;       // "NoteOn", "NoteOff", etc. — deprecated: use statusCode
+  int note;                 // MIDI note number — deprecated: use noteNumber
+  std::string noteName;     // "C", "D#" — deprecated: use MIDIHandler::noteName()
+  std::string noteOctave;   // "C4", "D#5" — deprecated: use MIDIHandler::noteWithOctave()
+  int velocity;             // 7-bit velocity — deprecated: use velocity16 or velocity7
+  int pitchBend;            // 14-bit pitch bend — deprecated: use pitchBend32 or pitchBend14
 };
 
 // Structure representing a complete SysEx message (0xF0 ... payload ... 0xF7).
@@ -98,6 +122,12 @@ public:
   typedef void (*RawMidiCallback)(const uint8_t* raw, size_t rawLen,
                                    const uint8_t* midi3);
   void setRawMidiCallback(RawMidiCallback cb) { rawMidiCb = cb; }
+
+  // Static helpers (zero-allocation, v5.2+)
+  static const char* noteName(uint8_t noteNumber);
+  static int noteOctave(uint8_t noteNumber);
+  static const char* noteWithOctave(uint8_t noteNumber, char* buf, size_t bufLen);
+  static const char* statusName(MIDIStatus code);
 
   std::string getActiveNotesString() const;
   std::string getActiveNotes() const;

@@ -93,7 +93,7 @@ void loop() {
     // Count NoteOn events in the current chord
     int noteCount = 0;
     for (const auto& ev : queue) {
-        if (ev.chordIndex == currentChord && ev.status == "NoteOn") noteCount++;
+        if (ev.chordIndex == currentChord && ev.statusCode == MIDI_NOTE_ON) noteCount++;
     }
 
     // Only re-analyze when chord changes or new notes are added

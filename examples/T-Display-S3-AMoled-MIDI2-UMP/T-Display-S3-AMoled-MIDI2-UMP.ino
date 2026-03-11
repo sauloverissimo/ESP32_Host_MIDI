@@ -99,33 +99,36 @@ static void handleButton() {
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 static uint32_t eventColor(const MIDIEventData& ev) {
-    if (ev.status == "NoteOn")        return M2_COL_CYAN;
-    if (ev.status == "NoteOff")       return M2_COL_GRAY;
-    if (ev.status == "ControlChange") return M2_COL_YELLOW;
-    if (ev.status == "PitchBend")     return M2_COL_MAGENTA;
-    if (ev.status == "ProgramChange") return M2_COL_LIME;
+    if (ev.statusCode == MIDI_NOTE_ON)         return M2_COL_CYAN;
+    if (ev.statusCode == MIDI_NOTE_OFF)        return M2_COL_GRAY;
+    if (ev.statusCode == MIDI_CONTROL_CHANGE)  return M2_COL_YELLOW;
+    if (ev.statusCode == MIDI_PITCH_BEND)      return M2_COL_MAGENTA;
+    if (ev.statusCode == MIDI_PROGRAM_CHANGE)  return M2_COL_LIME;
     return M2_COL_WHITE;
 }
 
 // Landscape 536px wide — font-1 chars are 6px, margin 4px → ~88 chars/line
 static void formatEvent(const MIDIEventData& ev, const UMPResult& r,
                         char* buf, int len) {
-    if (ev.status == "NoteOn" && r.valid && r.isMIDI2) {
+    char noteBuf[8];
+    if (ev.statusCode == MIDI_NOTE_ON && r.valid && r.isMIDI2) {
         uint16_t v16 = (uint16_t)(r.value >> 16);
         uint8_t  pct = (uint8_t)((uint32_t)v16 * 100 / 65535);
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
         snprintf(buf, len, "+%-3s  %3d%%  vel=%-5u  (16-bit)",
-                 ev.noteOctave.c_str(), pct, v16);
-    } else if (ev.status == "NoteOff") {
-        snprintf(buf, len, "-%-3s", ev.noteOctave.c_str());
-    } else if (ev.status == "ControlChange" && r.valid && r.isMIDI2) {
-        snprintf(buf, len, "CC%-3d  val=%-10u  (32-bit)", ev.note, r.value);
-    } else if (ev.status == "PitchBend" && r.valid && r.isMIDI2) {
+                 noteBuf, pct, v16);
+    } else if (ev.statusCode == MIDI_NOTE_OFF) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
+        snprintf(buf, len, "-%-3s", noteBuf);
+    } else if (ev.statusCode == MIDI_CONTROL_CHANGE && r.valid && r.isMIDI2) {
+        snprintf(buf, len, "CC%-3d  val=%-10u  (32-bit)", ev.noteNumber, r.value);
+    } else if (ev.statusCode == MIDI_PITCH_BEND && r.valid && r.isMIDI2) {
         int32_t pb = (int32_t)(r.value - 0x80000000UL);
         snprintf(buf, len, "PitchBend  %+11ld  (32-bit)", (long)pb);
-    } else if (ev.status == "ProgramChange") {
-        snprintf(buf, len, "PC  prog=%-3d  ch%d", ev.velocity, ev.channel);
+    } else if (ev.statusCode == MIDI_PROGRAM_CHANGE) {
+        snprintf(buf, len, "PC  prog=%-3d  ch%d", ev.noteNumber, ev.channel0 + 1);
     } else {
-        snprintf(buf, len, "%-12s  ch%d", ev.status.c_str(), ev.channel);
+        snprintf(buf, len, "%-12s  ch%d", MIDIHandler::statusName(ev.statusCode), ev.channel0 + 1);
     }
 }
 
@@ -219,9 +222,11 @@ void loop() {
         if (!dotOn) { dotOn = true; display.pulseRxDot(true); }
 
         // Update LAST NOTE panel for note events
-        if (ev.status == "NoteOn" && r.valid && r.isMIDI2) {
+        if (ev.statusCode == MIDI_NOTE_ON && r.valid && r.isMIDI2) {
             uint16_t vel16 = (uint16_t)(r.value >> 16);
-            display.setLastNote(ev.noteOctave.c_str(), vel16);
+            char noteBuf[8];
+            MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
+            display.setLastNote(noteBuf, vel16);
         }
 
         // Push to event log
@@ -231,7 +236,7 @@ void loop() {
 
         // Serial mirror
         Serial.printf("[MIDI 1.0] %-12s ch%d note=%d vel=%d\n",
-                      ev.status.c_str(), ev.channel, ev.note, ev.velocity);
+                      MIDIHandler::statusName(ev.statusCode), ev.channel0 + 1, ev.noteNumber, ev.velocity7);
         if (r.valid && r.isMIDI2)
             Serial.printf("[MIDI 2.0] opcode=0x%X  val=%u  (32-bit)\n\n",
                           r.opcode, r.value);

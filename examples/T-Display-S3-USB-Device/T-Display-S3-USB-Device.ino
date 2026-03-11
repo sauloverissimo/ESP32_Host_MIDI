@@ -39,34 +39,37 @@ static unsigned long lastStatusCheck = 0;
 
 // ---- helpers -----------------------------------------------------------
 
-static uint32_t eventColor(const std::string& s) {
-    if (s == "NoteOn")        return USB_COL_CYAN;
-    if (s == "NoteOff")       return USB_COL_GRAY;
-    if (s == "ControlChange") return USB_COL_YELLOW;
-    if (s == "PitchBend")     return USB_COL_MAGENTA;
-    if (s == "ProgramChange") return USB_COL_LIME;
+static uint32_t eventColor(uint8_t code) {
+    if (code == MIDI_NOTE_ON)        return USB_COL_CYAN;
+    if (code == MIDI_NOTE_OFF)       return USB_COL_GRAY;
+    if (code == MIDI_CONTROL_CHANGE) return USB_COL_YELLOW;
+    if (code == MIDI_PITCH_BEND)     return USB_COL_MAGENTA;
+    if (code == MIDI_PROGRAM_CHANGE) return USB_COL_LIME;
     return USB_COL_WHITE;
 }
 
 static void formatEvent(const MIDIEventData& ev, char* buf, int len) {
-    if (ev.status == "NoteOn") {
+    char noteBuf[8];
+    if (ev.statusCode == MIDI_NOTE_ON) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
         snprintf(buf, len, "NOTE+  %-3s  v=%-3d  ch%d",
-                 ev.noteOctave.c_str(), ev.velocity, ev.channel);
-    } else if (ev.status == "NoteOff") {
+                 noteBuf, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_NOTE_OFF) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
         snprintf(buf, len, "NOTE-  %-3s  v=%-3d  ch%d",
-                 ev.noteOctave.c_str(), ev.velocity, ev.channel);
-    } else if (ev.status == "ControlChange") {
+                 noteBuf, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
         snprintf(buf, len, "CC#%-3d  v=%-3d        ch%d",
-                 ev.note, ev.velocity, ev.channel);
-    } else if (ev.status == "PitchBend") {
+                 ev.noteNumber, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_PITCH_BEND) {
         snprintf(buf, len, "PB  %+6d             ch%d",
-                 ev.pitchBend - 8192, ev.channel);
-    } else if (ev.status == "ProgramChange") {
+                 (int)ev.pitchBend14 - 8192, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_PROGRAM_CHANGE) {
         snprintf(buf, len, "PC   prog=%-3d          ch%d",
-                 ev.note, ev.channel);
+                 ev.noteNumber, ev.channel0 + 1);
     } else {
         snprintf(buf, len, "%-8s                ch%d",
-                 ev.status.c_str(), ev.channel);
+                 MIDIHandler::statusName(ev.statusCode), ev.channel0 + 1);
     }
 }
 
@@ -122,7 +125,7 @@ void loop() {
 
         char line[32];
         formatEvent(ev, line, sizeof(line));
-        display.pushEvent(eventColor(ev.status), line);
+        display.pushEvent(eventColor(ev.statusCode), line);
 
         // Forward every event received (from BLE or USB host) to the other side.
         // BLE → forward to USB; USB → forward to BLE (if connected).

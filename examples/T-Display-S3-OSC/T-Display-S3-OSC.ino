@@ -41,38 +41,41 @@ static unsigned long lastWifiCheck = 0;
 // ---- helpers -----------------------------------------------------------
 
 // Returns an event-type color for the display.
-static uint32_t eventColor(const std::string& status) {
-    if (status == "NoteOn")         return OSC_COL_CYAN;
-    if (status == "NoteOff")        return OSC_COL_GRAY;
-    if (status == "ControlChange")  return OSC_COL_YELLOW;
-    if (status == "PitchBend")      return OSC_COL_ORANGE;
-    if (status == "ProgramChange")  return OSC_COL_LIME;
+static uint32_t eventColor(uint8_t statusCode) {
+    if (statusCode == MIDI_NOTE_ON)         return OSC_COL_CYAN;
+    if (statusCode == MIDI_NOTE_OFF)        return OSC_COL_GRAY;
+    if (statusCode == MIDI_CONTROL_CHANGE)  return OSC_COL_YELLOW;
+    if (statusCode == MIDI_PITCH_BEND)      return OSC_COL_ORANGE;
+    if (statusCode == MIDI_PROGRAM_CHANGE)  return OSC_COL_LIME;
     return OSC_COL_WHITE;
 }
 
 // Formats a MIDIEventData into a compact one-line string (max ~27 chars).
 static void formatEvent(const MIDIEventData& ev, char* buf, int bufLen) {
-    if (ev.status == "NoteOn") {
+    char noteBuf[8];
+    if (ev.statusCode == MIDI_NOTE_ON) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
         snprintf(buf, bufLen, "NOTE+  %-3s  v=%-3d  ch%d",
-                 ev.noteOctave.c_str(), ev.velocity, ev.channel);
-    } else if (ev.status == "NoteOff") {
+                 noteBuf, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_NOTE_OFF) {
+        MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf));
         snprintf(buf, bufLen, "NOTE-  %-3s  v=%-3d  ch%d",
-                 ev.noteOctave.c_str(), ev.velocity, ev.channel);
-    } else if (ev.status == "ControlChange") {
+                 noteBuf, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
         snprintf(buf, bufLen, "CC#%-3d  v=%-3d       ch%d",
-                 ev.note, ev.velocity, ev.channel);
-    } else if (ev.status == "PitchBend") {
-        int bend = ev.pitchBend - 8192;  // center to ±8192
-        snprintf(buf, bufLen, "PB  %+6d            ch%d", bend, ev.channel);
-    } else if (ev.status == "ProgramChange") {
+                 ev.noteNumber, ev.velocity7, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_PITCH_BEND) {
+        int bend = ev.pitchBend14 - 8192;  // center to ±8192
+        snprintf(buf, bufLen, "PB  %+6d            ch%d", bend, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_PROGRAM_CHANGE) {
         snprintf(buf, bufLen, "PC   prog=%-3d         ch%d",
-                 ev.note, ev.channel);
-    } else if (ev.status == "AfterTouch") {
+                 ev.noteNumber, ev.channel0 + 1);
+    } else if (ev.statusCode == MIDI_CHANNEL_PRESSURE) {
         snprintf(buf, bufLen, "AT   pres=%-3d         ch%d",
-                 ev.velocity, ev.channel);
+                 ev.velocity7, ev.channel0 + 1);
     } else {
         snprintf(buf, bufLen, "%-8s                 ch%d",
-                 ev.status.c_str(), ev.channel);
+                 MIDIHandler::statusName(ev.statusCode), ev.channel0 + 1);
     }
 }
 
@@ -81,32 +84,32 @@ static bool forwardToOSC(const MIDIEventData& ev) {
     uint8_t data[3];
     int     len = 0;
 
-    if (ev.status == "NoteOn") {
-        data[0] = 0x90 | ((ev.channel - 1) & 0x0F);
-        data[1] = (uint8_t)ev.note;
-        data[2] = (uint8_t)ev.velocity;
+    if (ev.statusCode == MIDI_NOTE_ON) {
+        data[0] = 0x90 | (ev.channel0 & 0x0F);
+        data[1] = (uint8_t)ev.noteNumber;
+        data[2] = (uint8_t)ev.velocity7;
         len = 3;
-    } else if (ev.status == "NoteOff") {
-        data[0] = 0x80 | ((ev.channel - 1) & 0x0F);
-        data[1] = (uint8_t)ev.note;
-        data[2] = (uint8_t)ev.velocity;
+    } else if (ev.statusCode == MIDI_NOTE_OFF) {
+        data[0] = 0x80 | (ev.channel0 & 0x0F);
+        data[1] = (uint8_t)ev.noteNumber;
+        data[2] = (uint8_t)ev.velocity7;
         len = 3;
-    } else if (ev.status == "ControlChange") {
-        data[0] = 0xB0 | ((ev.channel - 1) & 0x0F);
-        data[1] = (uint8_t)ev.note;
-        data[2] = (uint8_t)ev.velocity;
+    } else if (ev.statusCode == MIDI_CONTROL_CHANGE) {
+        data[0] = 0xB0 | (ev.channel0 & 0x0F);
+        data[1] = (uint8_t)ev.noteNumber;
+        data[2] = (uint8_t)ev.velocity7;
         len = 3;
-    } else if (ev.status == "ProgramChange") {
-        data[0] = 0xC0 | ((ev.channel - 1) & 0x0F);
-        data[1] = (uint8_t)ev.note;
+    } else if (ev.statusCode == MIDI_PROGRAM_CHANGE) {
+        data[0] = 0xC0 | (ev.channel0 & 0x0F);
+        data[1] = (uint8_t)ev.noteNumber;
         len = 2;
-    } else if (ev.status == "AfterTouch") {
-        data[0] = 0xD0 | ((ev.channel - 1) & 0x0F);
-        data[1] = (uint8_t)ev.velocity;
+    } else if (ev.statusCode == MIDI_CHANNEL_PRESSURE) {
+        data[0] = 0xD0 | (ev.channel0 & 0x0F);
+        data[1] = (uint8_t)ev.velocity7;
         len = 2;
-    } else if (ev.status == "PitchBend") {
-        int     pb  = ev.pitchBend;                 // 0-16383
-        data[0] = 0xE0 | ((ev.channel - 1) & 0x0F);
+    } else if (ev.statusCode == MIDI_PITCH_BEND) {
+        int     pb  = ev.pitchBend14;               // 0-16383
+        data[0] = 0xE0 | (ev.channel0 & 0x0F);
         data[1] = (uint8_t)(pb & 0x7F);
         data[2] = (uint8_t)((pb >> 7) & 0x7F);
         len = 3;
@@ -183,7 +186,7 @@ void loop() {
         // Push to display
         char line[32];
         formatEvent(ev, line, sizeof(line));
-        display.pushEvent(eventColor(ev.status), line);
+        display.pushEvent(eventColor(ev.statusCode), line);
 
         // Forward to OSC target
         if (forwardToOSC(ev)) {
@@ -192,7 +195,7 @@ void loop() {
 
         // Serial log
         Serial.printf("[MIDI] %-12s ch=%-2d  %s\n",
-                      ev.status.c_str(), ev.channel, line);
+                      MIDIHandler::statusName(ev.statusCode), ev.channel0 + 1, line);
     }
 
     if (countersChanged) {

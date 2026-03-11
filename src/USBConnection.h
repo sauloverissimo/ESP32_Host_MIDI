@@ -76,7 +76,8 @@ protected:
     // Internal USB Host callbacks.
     static void _clientEventCallback(const usb_host_client_event_msg_t *eventMsg, void *arg);
     static void _onReceive(usb_transfer_t *transfer);
-    void _processConfig(const usb_config_desc_t *config_desc);
+    virtual void _processConfig(const usb_config_desc_t *config_desc);
+    virtual void _onDeviceGone() {}  // Override to free extra resources on disconnect.
 };
 
 #endif // USB_CONNECTION_H
