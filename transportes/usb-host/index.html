@@ -2095,13 +2095,14 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">task</span><span class="p">();</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">getQueue</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[USB] %s %s ch=%d vel=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">}</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[USB] %s %s ch=%d vel=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">            </span><span class="n">MIDIHandler</span><span class="o">::</span><span class="n">statusName</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">statusCode</span><span class="p">),</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">            </span><span class="n">MIDIHandler</span><span class="o">::</span><span class="n">noteWithOctave</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">noteNumber</span><span class="p">,</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">noteBuf</span><span class="p">)),</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity7</span><span class="p">);</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Nenhuma configuração adicional é necessária — o transporte USB é built-in.</p>
 <hr />
@@ -2120,7 +2121,7 @@
         HANDLER-&gt;&gt;BUF: task() — lê mensagens
         BUF-&gt;&gt;HANDLER: [0x09, 0x90, 0x3C, 0x64]
         HANDLER-&gt;&gt;HANDLER: Parseia → MIDIEventData
-        Note right of HANDLER: status="NoteOn"&lt;br/&gt;note=60, noteName="C"&lt;br/&gt;noteOctave="C4"&lt;br/&gt;velocity=100
+        Note right of HANDLER: statusCode=MIDI_NOTE_ON&lt;br/&gt;noteNumber=60&lt;br/&gt;velocity7=100
     end</code></pre>
 <h3 id="formato-do-pacote-usb-midi">Formato do Pacote USB-MIDI<a class="headerlink" href="#formato-do-pacote-usb-midi" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Byte 0: CIN (Cable Index Number)  — tipo da mensagem
@@ -2147,7 +2148,7 @@
 <h2 id="limitacoes">Limitações<a class="headerlink" href="#limitacoes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Um dispositivo por vez</strong> (sem hub, exceto no P4)</li>
-<li>Apenas <strong>USB MIDI 1.0</strong> (não suporta USB Audio ou HID)</li>
+<li><strong>USB MIDI 1.0 e 2.0 (via USBMIDI2Connection)</strong> (não suporta USB Audio ou HID)</li>
 <li><strong>Não pode coexistir com USB Device</strong> — ambos usam o mesmo pino OTG</li>
 </ul>
 <hr />
@@ -2178,6 +2179,9 @@
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>MIDI 2.0:</strong> Para suporte nativo USB MIDI 2.0 com negociação UMP, use <code>USBMIDI2Connection</code>. Veja a <a href="../../api/referencia/#usbmidi2connection">referência da API</a>.</p>
+</blockquote>
 <hr />
 <h2 id="proximos-passos">Próximos Passos<a class="headerlink" href="#proximos-passos" title="Permanent link">&para;</a></h2>
 <ul>

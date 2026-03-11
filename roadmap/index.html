@@ -1672,10 +1672,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#estado-atual-v510" class="md-nav__link">
+  <a href="#estado-atual-v520" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estado Atual — v5.1.0
+        Estado Atual — v5.2.0
       
     </span>
   </a>
@@ -1760,6 +1760,17 @@
   
     <nav class="md-nav" aria-label="Changelog">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v520" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.2.0
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#v510" class="md-nav__link">
@@ -1856,10 +1867,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#estado-atual-v510" class="md-nav__link">
+  <a href="#estado-atual-v520" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estado Atual — v5.1.0
+        Estado Atual — v5.2.0
       
     </span>
   </a>
@@ -1944,6 +1955,17 @@
   
     <nav class="md-nav" aria-label="Changelog">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v520" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.2.0
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#v510" class="md-nav__link">
@@ -2036,8 +2058,8 @@
 <h1 id="roadmap">🗺️ Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h1>
 <p>Estado atual e direção futura da biblioteca ESP32_Host_MIDI.</p>
 <hr />
-<h2 id="estado-atual-v510">Estado Atual — v5.1.0<a class="headerlink" href="#estado-atual-v510" title="Permanent link">&para;</a></h2>
-<p>A versão 5.1.0 é uma biblioteca madura e estável. O núcleo — <strong>8 transportes, uma API</strong> — está completo e funcional, agora com suporte a SysEx em todos os transportes.</p>
+<h2 id="estado-atual-v520">Estado Atual — v5.2.0<a class="headerlink" href="#estado-atual-v520" title="Permanent link">&para;</a></h2>
+<p>A versão 5.2.0 é uma biblioteca madura e estável. O núcleo — <strong>9 transportes, uma API</strong> — está completo e funcional, com campos MIDI 2.0 spec-compliant, USB Host MIDI 2.0 nativo, e SysEx em todos os transportes.</p>
 <pre class="mermaid"><code>graph TD
     classDef done fill:#C8E6C9,color:#1B5E20,stroke:#388E3C,stroke-width:2px
     classDef feat fill:#B3E5FC,color:#01579B,stroke:#0288D1,stroke-width:2px
@@ -2045,6 +2067,7 @@
     subgraph T["📡 Transportes"]
         direction LR
         USB["🔌 USB Host"]:::done
+        USBM2["🎵 USB MIDI 2.0"]:::done
         BLE["📱 BLE MIDI"]:::done
         USBDEV["💻 USB Device"]:::done
         ESPNOW["📡 ESP-NOW"]:::done
@@ -2061,6 +2084,7 @@
         SYSEX["SysEx"]:::done
         HIST["PSRAM History"]:::done
         GINGO["Gingo Adapter"]:::done
+        MIDI2["MIDI 2.0 Fields"]:::done
     end</code></pre>
 <hr />
 <h2 id="em-desenvolvimento">Em Desenvolvimento<a class="headerlink" href="#em-desenvolvimento" title="Permanent link">&para;</a></h2>
@@ -2088,6 +2112,11 @@
 <td>~~SysEx handler~~</td>
 <td>~~Média~~</td>
 <td>✅ Implementado em v5.1.0</td>
+</tr>
+<tr>
+<td>~~USB MIDI 2.0 Host~~</td>
+<td>~~Alta~~</td>
+<td>✅ Implementado em v5.2.0</td>
 </tr>
 <tr>
 <td>Running Status TX</td>
@@ -2142,6 +2171,18 @@
 </span></code></pre></div>
 <hr />
 <h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
+<h3 id="v520">v5.2.0<a class="headerlink" href="#v520" title="Permanent link">&para;</a></h3>
+<ul>
+<li>MIDIStatus enum com status bytes MIDI reais (0x80–0xE0)</li>
+<li>Novos campos spec-compliant: statusCode, channel0 (0–15), noteNumber, velocity7, velocity16, pitchBend14, pitchBend32</li>
+<li>Campos deprecated mantidos para compatibilidade (channel, status, note, velocity, pitchBend, noteName, noteOctave)</li>
+<li>Helpers estáticos: noteName(), noteOctave(), noteWithOctave(), statusName() — zero allocation</li>
+<li>USBMIDI2Connection: USB Host com MIDI 2.0/UMP nativo (Protocol Negotiation, Function Blocks, Group Terminal Blocks)</li>
+<li>UMP callback path no MIDITransport (dispatchUMPData)</li>
+<li>9 exemplos migrados para nova API</li>
+<li>251 testes nativos (MIDIHandler + MIDI2Support + USB MIDI 2.0 scan)</li>
+<li>Guia de migração: docs/migration-v6.md</li>
+</ul>
 <h3 id="v510">v5.1.0<a class="headerlink" href="#v510" title="Permanent link">&para;</a></h3>
 <ul>
 <li>SysEx send/receive em todos os transportes (USB Host, USB Device, UART)</li>

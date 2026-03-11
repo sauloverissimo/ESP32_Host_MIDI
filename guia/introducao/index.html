@@ -2028,14 +2028,17 @@
 <h2 id="o-que-e-a-biblioteca">O Que É a Biblioteca<a class="headerlink" href="#o-que-e-a-biblioteca" title="Permanent link">&para;</a></h2>
 <p>A ideia central é simples: não importa de onde o MIDI vem — USB, Bluetooth, WiFi, cabo serial, rádio — ele chega sempre na mesma fila de eventos (<code>getQueue()</code>), com o mesmo formato (<code>MIDIEventData</code>), pronto para processar.</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">getQueue</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="p">;</span><span class="w">      </span><span class="c1">// &quot;NoteOn&quot;, &quot;NoteOff&quot;, &quot;ControlChange&quot;, &quot;PitchBend&quot;...</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">;</span><span class="w">     </span><span class="c1">// 1–16</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">note</span><span class="p">;</span><span class="w">        </span><span class="c1">// número MIDI (0–127)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">;</span><span class="w">  </span><span class="c1">// &quot;C4&quot;, &quot;D#5&quot;, &quot;G3&quot;...</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">;</span><span class="w">    </span><span class="c1">// 0–127</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">timestamp</span><span class="p">;</span><span class="w">   </span><span class="c1">// millis() na chegada</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">chordIndex</span><span class="p">;</span><span class="w">  </span><span class="c1">// agrupa notas simultâneas</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">}</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">statusCode</span><span class="p">;</span><span class="w">  </span><span class="c1">// MIDIStatus enum: MIDI_NOTE_ON, MIDI_NOTE_OFF, MIDI_CONTROL_CHANGE...</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="p">;</span><span class="w">    </span><span class="c1">// 0–15 (some +1 para exibir 1–16)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">noteNumber</span><span class="p">;</span><span class="w">  </span><span class="c1">// número MIDI (0–127)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity7</span><span class="p">;</span><span class="w">   </span><span class="c1">// 0–127</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity16</span><span class="p">;</span><span class="w">  </span><span class="c1">// 0–65535 (MIDI 2.0)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend14</span><span class="p">;</span><span class="w"> </span><span class="c1">// 0–16383 (MIDI 1.0, centro = 8192)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend32</span><span class="p">;</span><span class="w"> </span><span class="c1">// 0–4294967295 (MIDI 2.0)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">timestamp</span><span class="p">;</span><span class="w">   </span><span class="c1">// millis() na chegada</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">chordIndex</span><span class="p">;</span><span class="w">  </span><span class="c1">// agrupa notas simultâneas</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="c1">// Helpers estáticos: MIDIHandler::statusName(), noteWithOctave(), noteName()</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Ao mesmo tempo, <code>midiHandler.sendNoteOn()</code> e outros métodos de envio transmitem para <strong>todos</strong> os transportes ativos simultaneamente. Um evento que chega pelo USB pode sair imediatamente pelo BLE, pelo DIN-5 e pelo WiFi — sem nenhum código extra.</p>
 <hr />
@@ -2046,6 +2049,10 @@
       ESP32-S3 / S2 / P4
       Teclados class-compliant
       Latência &lt; 1 ms
+    USB MIDI 2.0
+      ESP32-S3 / S2 / P4
+      USBMIDI2Connection / UMP
+      Protocol Negotiation nativo
     BLE MIDI
       Qualquer ESP32 com BT
       iOS · macOS · Android
@@ -2124,7 +2131,7 @@
         HANDLER-&gt;&gt;BUF: Lê mensagens pendentes
         BUF-&gt;&gt;HANDLER: [0x09, 0x90, 0x3C, 0x64]
         HANDLER-&gt;&gt;HANDLER: Parseia → MIDIEventData
-        Note over HANDLER: status="NoteOn"&lt;br/&gt;note=60 (C4)&lt;br/&gt;velocity=100
+        Note over HANDLER: statusCode=MIDI_NOTE_ON&lt;br/&gt;noteNumber=60&lt;br/&gt;velocity7=100
         HANDLER-&gt;&gt;USER: getQueue() retorna evento
     end</code></pre>
 <hr />

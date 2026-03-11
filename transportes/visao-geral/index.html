@@ -1979,7 +1979,7 @@
 
 
 <h1 id="transportes-visao-geral">📡 Transportes — Visão Geral<a class="headerlink" href="#transportes-visao-geral" title="Permanent link">&para;</a></h1>
-<p>A biblioteca suporta <strong>8 transportes MIDI simultâneos</strong>. Cada um implementa a mesma interface abstrata <code>MIDITransport</code>, garantindo que o <code>MIDIHandler</code> os trate de forma uniforme.</p>
+<p>A biblioteca suporta <strong>9 transportes MIDI simultâneos</strong>. Cada um implementa a mesma interface abstrata <code>MIDITransport</code>, garantindo que o <code>MIDIHandler</code> os trate de forma uniforme.</p>
 <hr />
 <h2 id="comparacao-de-transportes">Comparação de Transportes<a class="headerlink" href="#comparacao-de-transportes" title="Permanent link">&para;</a></h2>
 <table>
@@ -1997,6 +1997,14 @@
 <tr>
 <td><a href="../usb-host/">🔌 USB Host</a></td>
 <td>USB MIDI 1.0</td>
+<td>Cabo USB-OTG</td>
+<td><strong>&lt; 1 ms</strong></td>
+<td>S3 / S2 / P4</td>
+<td>Nenhuma</td>
+</tr>
+<tr>
+<td><a href="../usb-host/#midi-20">🎵 USB Host MIDI 2.0</a></td>
+<td>USB MIDI 2.0 / UMP</td>
 <td>Cabo USB-OTG</td>
 <td><strong>&lt; 1 ms</strong></td>
 <td>S3 / S2 / P4</td>
@@ -2224,7 +2232,7 @@
 <h2 id="proximos-passos">Próximos Passos<a class="headerlink" href="#proximos-passos" title="Permanent link">&para;</a></h2>
 <p>Explore cada transporte em detalhe:</p>
 <ul>
-<li><a href="../usb-host/">🔌 USB Host</a> — teclados e pads USB class-compliant</li>
+<li><a href="../usb-host/">🔌 USB Host</a> — teclados e pads USB class-compliant (MIDI 1.0 e 2.0)</li>
 <li><a href="../ble-midi/">📱 BLE MIDI</a> — iOS, macOS e Android</li>
 <li><a href="../usb-device/">💻 USB Device</a> — ESP32 como interface USB para DAW</li>
 <li><a href="../uart-din5/">🎹 UART / DIN-5</a> — sintetizadores vintage</li>
