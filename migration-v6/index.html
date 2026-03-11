@@ -12,31 +12,27 @@
         <meta name="author" content="Saulo Verissimo">
       
       
-        <link rel="canonical" href="https://sauloverissimo.github.io/ESP32_Host_MIDI/transportes/usb-host/">
+        <link rel="canonical" href="https://sauloverissimo.github.io/ESP32_Host_MIDI/migration-v6/">
       
       
-        <link rel="prev" href="../visao-geral/">
-      
-      
-        <link rel="next" href="../ble-midi/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
-        <title>USB Host (OTG) - 🎛️ ESP32 Host MIDI</title>
+        <title>Migration Guide: v5.x → v6.0 - 🎛️ ESP32 Host MIDI</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usb-host-otg" class="md-skip">
+        <a href="#migration-guide-v5x-v60" class="md-skip">
           Pular para conteúdo
         </a>
       
@@ -98,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
-    <a href="../.." title="🎛️ ESP32 Host MIDI" class="md-header__button md-logo" aria-label="🎛️ ESP32 Host MIDI" data-md-component="logo">
+    <a href=".." title="🎛️ ESP32 Host MIDI" class="md-header__button md-logo" aria-label="🎛️ ESP32 Host MIDI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -118,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              USB Host (OTG)
+              Migration Guide: v5.x → v6.0
             
           </span>
         </div>
@@ -225,7 +221,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -246,7 +242,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../guia/introducao/" class="md-tabs__link">
+        <a href="../guia/introducao/" class="md-tabs__link">
           
   
   
@@ -262,13 +258,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../visao-geral/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../transportes/visao-geral/" class="md-tabs__link">
           
   
   
@@ -288,7 +282,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../funcionalidades/deteccao-acordes/" class="md-tabs__link">
+        <a href="../funcionalidades/deteccao-acordes/" class="md-tabs__link">
           
   
   
@@ -308,7 +302,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/referencia/" class="md-tabs__link">
+        <a href="../api/referencia/" class="md-tabs__link">
           
   
   
@@ -328,7 +322,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../exemplos/t-display-s3/" class="md-tabs__link">
+        <a href="../exemplos/t-display-s3/" class="md-tabs__link">
           
   
   
@@ -348,7 +342,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../avancado/hardware/" class="md-tabs__link">
+        <a href="../avancado/hardware/" class="md-tabs__link">
           
   
   
@@ -366,7 +360,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../roadmap/" class="md-tabs__link">
+      <a href="../roadmap/" class="md-tabs__link">
         
   
   
@@ -407,7 +401,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="🎛️ ESP32 Host MIDI" class="md-nav__button md-logo" aria-label="🎛️ ESP32 Host MIDI" data-md-component="logo">
+    <a href=".." title="🎛️ ESP32 Host MIDI" class="md-nav__button md-logo" aria-label="🎛️ ESP32 Host MIDI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -437,7 +431,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -518,7 +512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guia/introducao/" class="md-nav__link">
+      <a href="../guia/introducao/" class="md-nav__link">
         
   
   
@@ -546,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guia/instalacao/" class="md-nav__link">
+      <a href="../guia/instalacao/" class="md-nav__link">
         
   
   
@@ -574,7 +568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guia/primeiros-passos/" class="md-nav__link">
+      <a href="../guia/primeiros-passos/" class="md-nav__link">
         
   
   
@@ -602,7 +596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guia/configuracao/" class="md-nav__link">
+      <a href="../guia/configuracao/" class="md-nav__link">
         
   
   
@@ -634,31 +628,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -676,7 +667,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -694,7 +685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../visao-geral/" class="md-nav__link">
+      <a href="../transportes/visao-geral/" class="md-nav__link">
         
   
   
@@ -719,37 +710,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    USB Host (OTG)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../transportes/usb-host/" class="md-nav__link">
         
   
   
@@ -765,142 +729,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Índice">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Índice
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#hardware-necessario" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hardware Necessário
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#velocidade-usb" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Velocidade USB
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuracao-no-arduino-ide" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuração no Arduino IDE
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#codigo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Código
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fluxo-interno-de-dados" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fluxo Interno de Dados
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Fluxo Interno de Dados">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#formato-do-pacote-usb-midi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Formato do Pacote USB-MIDI
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dispositivos-suportados" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dispositivos Suportados
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limitacoes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Limitações
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exemplos-com-usb-host" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exemplos com USB Host
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Próximos Passos
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -913,7 +741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ble-midi/" class="md-nav__link">
+      <a href="../transportes/ble-midi/" class="md-nav__link">
         
   
   
@@ -941,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usb-device/" class="md-nav__link">
+      <a href="../transportes/usb-device/" class="md-nav__link">
         
   
   
@@ -969,7 +797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../uart-din5/" class="md-nav__link">
+      <a href="../transportes/uart-din5/" class="md-nav__link">
         
   
   
@@ -997,7 +825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rtp-midi/" class="md-nav__link">
+      <a href="../transportes/rtp-midi/" class="md-nav__link">
         
   
   
@@ -1025,7 +853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ethernet-midi/" class="md-nav__link">
+      <a href="../transportes/ethernet-midi/" class="md-nav__link">
         
   
   
@@ -1053,7 +881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../esp-now/" class="md-nav__link">
+      <a href="../transportes/esp-now/" class="md-nav__link">
         
   
   
@@ -1081,7 +909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../osc/" class="md-nav__link">
+      <a href="../transportes/osc/" class="md-nav__link">
         
   
   
@@ -1170,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../funcionalidades/deteccao-acordes/" class="md-nav__link">
+      <a href="../funcionalidades/deteccao-acordes/" class="md-nav__link">
         
   
   
@@ -1198,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../funcionalidades/notas-ativas/" class="md-nav__link">
+      <a href="../funcionalidades/notas-ativas/" class="md-nav__link">
         
   
   
@@ -1226,7 +1054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../funcionalidades/sysex/" class="md-nav__link">
+      <a href="../funcionalidades/sysex/" class="md-nav__link">
         
   
   
@@ -1254,7 +1082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../funcionalidades/historico-psram/" class="md-nav__link">
+      <a href="../funcionalidades/historico-psram/" class="md-nav__link">
         
   
   
@@ -1282,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../funcionalidades/gingo-adapter/" class="md-nav__link">
+      <a href="../funcionalidades/gingo-adapter/" class="md-nav__link">
         
   
   
@@ -1371,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/referencia/" class="md-nav__link">
+      <a href="../api/referencia/" class="md-nav__link">
         
   
   
@@ -1460,7 +1288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/t-display-s3/" class="md-nav__link">
+      <a href="../exemplos/t-display-s3/" class="md-nav__link">
         
   
   
@@ -1488,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/sysex-monitor/" class="md-nav__link">
+      <a href="../exemplos/sysex-monitor/" class="md-nav__link">
         
   
   
@@ -1516,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/uart-basico/" class="md-nav__link">
+      <a href="../exemplos/uart-basico/" class="md-nav__link">
         
   
   
@@ -1544,7 +1372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/rtp-midi-wifi/" class="md-nav__link">
+      <a href="../exemplos/rtp-midi-wifi/" class="md-nav__link">
         
   
   
@@ -1572,7 +1400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/osc-bridge/" class="md-nav__link">
+      <a href="../exemplos/osc-bridge/" class="md-nav__link">
         
   
   
@@ -1600,7 +1428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/esp-now-jam/" class="md-nav__link">
+      <a href="../exemplos/esp-now-jam/" class="md-nav__link">
         
   
   
@@ -1628,7 +1456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../exemplos/ethernet-midi/" class="md-nav__link">
+      <a href="../exemplos/ethernet-midi/" class="md-nav__link">
         
   
   
@@ -1717,7 +1545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../avancado/hardware/" class="md-nav__link">
+      <a href="../avancado/hardware/" class="md-nav__link">
         
   
   
@@ -1745,7 +1573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../avancado/troubleshooting/" class="md-nav__link">
+      <a href="../avancado/troubleshooting/" class="md-nav__link">
         
   
   
@@ -1780,7 +1608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../roadmap/" class="md-nav__link">
+      <a href="../roadmap/" class="md-nav__link">
         
   
   
@@ -1827,10 +1655,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#hardware-necessario" class="md-nav__link">
+  <a href="#field-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hardware Necessário
+        Field Mapping
       
     </span>
   </a>
@@ -1838,55 +1666,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#velocidade-usb" class="md-nav__link">
+  <a href="#code-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Velocidade USB
+        Code Examples
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuracao-no-arduino-ide" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuração no Arduino IDE
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#codigo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Código
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fluxo-interno-de-dados" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fluxo Interno de Dados
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Fluxo Interno de Dados">
+    <nav class="md-nav" aria-label="Code Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#formato-do-pacote-usb-midi" class="md-nav__link">
+  <a href="#before-v5x" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Formato do Pacote USB-MIDI
+        Before (v5.x)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-v52-v60" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (v5.2+ / v6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pitch-bend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pitch Bend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-raw-midi-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building raw MIDI bytes
       
     </span>
   </a>
@@ -1899,10 +1727,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dispositivos-suportados" class="md-nav__link">
+  <a href="#midistatus-enum-values" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dispositivos Suportados
+        MIDIStatus Enum Values
       
     </span>
   </a>
@@ -1910,10 +1738,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#limitacoes" class="md-nav__link">
+  <a href="#fields-not-changing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Limitações
+        Fields NOT changing
       
     </span>
   </a>
@@ -1921,21 +1749,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exemplos-com-usb-host" class="md-nav__link">
+  <a href="#timeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exemplos com USB Host
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proximos-passos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Próximos Passos
+        Timeline
       
     </span>
   </a>
@@ -1960,46 +1777,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navegação" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    🏠 Início
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../visao-geral/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    📡 Transportes
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -2010,180 +1787,139 @@
   
 
 
-<h1 id="usb-host-otg">🔌 USB Host (OTG)<a class="headerlink" href="#usb-host-otg" title="Permanent link">&para;</a></h1>
-<p>Conecta qualquer dispositivo USB MIDI class-compliant — teclados, pads, interfaces, controladores — diretamente ao ESP32 via USB-OTG. Sem hub, sem driver, sem configuração no computador.</p>
-<hr />
-<h2 id="hardware-necessario">Hardware Necessário<a class="headerlink" href="#hardware-necessario" title="Permanent link">&para;</a></h2>
+<h1 id="migration-guide-v5x-v60">Migration Guide: v5.x → v6.0<a class="headerlink" href="#migration-guide-v5x-v60" title="Permanent link">&para;</a></h1>
+<p>ESP32_Host_MIDI v5.2 introduces new MIDI spec-compliant fields alongside the existing ones.
+In v6.0, the deprecated fields will be removed. This guide helps you migrate.</p>
+<h2 id="field-mapping">Field Mapping<a class="headerlink" href="#field-mapping" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Requisito</th>
-<th>Detalhe</th>
+<th>v5.x (deprecated in v5.2)</th>
+<th>v5.2+ / v6.0 replacement</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Chip</td>
-<td>ESP32-S3, ESP32-S2, ou ESP32-P4</td>
+<td><code>ev.status == "NoteOn"</code></td>
+<td><code>ev.statusCode == MIDI_NOTE_ON</code></td>
+<td>Enum comparison, zero-cost</td>
 </tr>
 <tr>
-<td>Pinos</td>
-<td>D+ / D- do conector USB-OTG</td>
+<td><code>ev.status == "NoteOff"</code></td>
+<td><code>ev.statusCode == MIDI_NOTE_OFF</code></td>
+<td></td>
 </tr>
 <tr>
-<td>Cabo</td>
-<td>USB-OTG (host) — ponta micro-OTG ou USB-A fêmea</td>
+<td><code>ev.status == "ControlChange"</code></td>
+<td><code>ev.statusCode == MIDI_CONTROL_CHANGE</code></td>
+<td></td>
 </tr>
 <tr>
-<td>Placa recomendada</td>
-<td>LilyGO T-Display-S3 (tem conector OTG nativo)</td>
+<td><code>ev.status == "PitchBend"</code></td>
+<td><code>ev.statusCode == MIDI_PITCH_BEND</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ev.status == "ProgramChange"</code></td>
+<td><code>ev.statusCode == MIDI_PROGRAM_CHANGE</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ev.status == "ChannelPressure"</code></td>
+<td><code>ev.statusCode == MIDI_CHANNEL_PRESSURE</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ev.channel</code> (1-16)</td>
+<td><code>ev.channel0</code> (0-15)</td>
+<td>MIDI spec convention; display as <code>ev.channel0 + 1</code></td>
+</tr>
+<tr>
+<td><code>ev.note</code></td>
+<td><code>ev.noteNumber</code></td>
+<td>Same value (0-127)</td>
+</tr>
+<tr>
+<td><code>ev.velocity</code> (7-bit)</td>
+<td><code>ev.velocity7</code> (7-bit) or <code>ev.velocity16</code> (16-bit)</td>
+<td><code>velocity16</code> uses MIDI 2.0 scaling</td>
+</tr>
+<tr>
+<td><code>ev.pitchBend</code> (14-bit)</td>
+<td><code>ev.pitchBend14</code> (14-bit) or <code>ev.pitchBend32</code> (32-bit)</td>
+<td><code>pitchBend32</code> uses MIDI 2.0 scaling</td>
+</tr>
+<tr>
+<td><code>ev.status.c_str()</code> (display)</td>
+<td><code>MIDIHandler::statusName(ev.statusCode)</code></td>
+<td>Returns <code>const char*</code>, zero allocation</td>
+</tr>
+<tr>
+<td><code>ev.noteName</code> (std::string)</td>
+<td><code>MIDIHandler::noteName(ev.noteNumber)</code></td>
+<td>Returns <code>const char*</code>, zero allocation</td>
+</tr>
+<tr>
+<td><code>ev.noteOctave</code> (std::string)</td>
+<td><code>MIDIHandler::noteWithOctave(ev.noteNumber, buf, sizeof(buf))</code></td>
+<td>Caller provides <code>char buf[8]</code></td>
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="admonition-title">ESP32 Classic NÃO suporta USB Host</p>
-<p>Apenas S2, S3 e P4 têm hardware USB-OTG. O ESP32 clássico (original) não suporta este transporte.</p>
-</div>
-<hr />
-<h2 id="velocidade-usb">Velocidade USB<a class="headerlink" href="#velocidade-usb" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Chip</th>
-<th>Velocidade</th>
-<th>Largura de Banda</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ESP32-S2</td>
-<td>Full-Speed</td>
-<td>12 Mbps</td>
-</tr>
-<tr>
-<td>ESP32-S3</td>
-<td>Full-Speed</td>
-<td>12 Mbps</td>
-</tr>
-<tr>
-<td>ESP32-P4</td>
-<td><strong>High-Speed</strong></td>
-<td>480 Mbps (hub múltiplos dispositivos)</td>
-</tr>
-</tbody>
-</table>
-<p>Para MIDI (31250 baud), Full-Speed é mais que suficiente. O ESP32-P4 com High-Speed permite conectar <strong>hubs USB</strong> com múltiplos dispositivos simultâneos.</p>
-<hr />
-<h2 id="configuracao-no-arduino-ide">Configuração no Arduino IDE<a class="headerlink" href="#configuracao-no-arduino-ide" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Tools → USB Mode → &quot;USB Host&quot;
+<h2 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h2>
+<h3 id="before-v5x">Before (v5.x)<a class="headerlink" href="#before-v5x" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;NoteOn&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
 </span></code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Esta opção só aparece quando você seleciona uma placa ESP32-S3, S2 ou P4 no Board Manager.</p>
-</div>
-<hr />
-<h2 id="codigo">Código<a class="headerlink" href="#codigo" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ESP32_Host_MIDI.h&gt;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">// Tools &gt; USB Mode → &quot;USB Host&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="mi">115200</span><span class="p">);</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span><span class="w">  </span><span class="c1">// USB Host iniciado automaticamente</span>
+<h3 id="after-v52-v60">After (v5.2+ / v6.0)<a class="headerlink" href="#after-v52-v60" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kt">char</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">statusCode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MIDI_NOTE_ON</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="n">MIDIHandler</span><span class="o">::</span><span class="n">noteWithOctave</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">noteNumber</span><span class="p">,</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">noteBuf</span><span class="p">)),</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity7</span><span class="p">);</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kt">void</span><span class="w"> </span><span class="nf">loop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">task</span><span class="p">();</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">getQueue</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">        </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[USB] %s %s ch=%d vel=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">            </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>Nenhuma configuração adicional é necessária — o transporte USB é built-in.</p>
-<hr />
-<h2 id="fluxo-interno-de-dados">Fluxo Interno de Dados<a class="headerlink" href="#fluxo-interno-de-dados" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>sequenceDiagram
-    participant DEV as 🎹 Teclado USB
-    participant DRIVER as USB Host Driver (Core 0)
-    participant BUF as Ring Buffer (64 slots)
-    participant HANDLER as MIDIHandler (Core 1)
-
-    DEV-&gt;&gt;DRIVER: Pacote USB-MIDI (4 bytes)
-    Note over DRIVER: CIN=0x09 (NoteOn)&lt;br/&gt;0x90 0x3C 0x64
-    DRIVER-&gt;&gt;BUF: Armazena com portMUX (thread-safe)
-
-    loop Cada loop() no Core 1
-        HANDLER-&gt;&gt;BUF: task() — lê mensagens
-        BUF-&gt;&gt;HANDLER: [0x09, 0x90, 0x3C, 0x64]
-        HANDLER-&gt;&gt;HANDLER: Parseia → MIDIEventData
-        Note right of HANDLER: status="NoteOn"&lt;br/&gt;note=60, noteName="C"&lt;br/&gt;noteOctave="C4"&lt;br/&gt;velocity=100
-    end</code></pre>
-<h3 id="formato-do-pacote-usb-midi">Formato do Pacote USB-MIDI<a class="headerlink" href="#formato-do-pacote-usb-midi" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Byte 0: CIN (Cable Index Number)  — tipo da mensagem
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Byte 1: Status MIDI               — 0x90 = NoteOn canal 1
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Byte 2: Data 1                    — nota (0-127)
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Byte 3: Data 2                    — velocidade (0-127)
+<h3 id="pitch-bend">Pitch Bend<a class="headerlink" href="#pitch-bend" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Before:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">// After:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend14</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">// Or use 32-bit MIDI 2.0 resolution:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">// uint32_t bend32 = ev.pitchBend32;  // center = 0x80000000</span>
 </span></code></pre></div>
-<hr />
-<h2 id="dispositivos-suportados">Dispositivos Suportados<a class="headerlink" href="#dispositivos-suportados" title="Permanent link">&para;</a></h2>
-<p>Qualquer dispositivo <strong>USB MIDI 1.0 Class Compliant</strong> funciona sem driver:</p>
+<h3 id="building-raw-midi-bytes">Building raw MIDI bytes<a class="headerlink" href="#building-raw-midi-bytes" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// Before:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">((</span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">// After:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
+</span></code></pre></div>
+<h2 id="midistatus-enum-values">MIDIStatus Enum Values<a class="headerlink" href="#midistatus-enum-values" title="Permanent link">&para;</a></h2>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">enum</span><span class="w"> </span><span class="nc">MIDIStatus</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">MIDI_NOTE_OFF</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="mh">0x80</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">MIDI_NOTE_ON</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">MIDI_POLY_PRESSURE</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mh">0xA0</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">MIDI_CONTROL_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xB0</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">MIDI_PROGRAM_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">MIDI_CHANNEL_PRESSURE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mh">0xD0</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">MIDI_PITCH_BEND</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE0</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">};</span>
+</span></code></pre></div>
+<p>Values match the upper nibble of MIDI 1.0 status bytes — no conversion needed.</p>
+<h2 id="fields-not-changing">Fields NOT changing<a class="headerlink" href="#fields-not-changing" title="Permanent link">&para;</a></h2>
+<p>These fields remain the same in v6.0:</p>
 <ul>
-<li>Teclados MIDI (Arturia, Akai, Native Instruments, Roland, Yamaha...)</li>
-<li>Pads de percussão (Akai MPC, Roland SPD...)</li>
-<li>Interfaces de áudio com porta MIDI (Focusrite, PreSonus...)</li>
-<li>Controladores DJ (Numark, Pioneer...)</li>
-<li>Footswitches e pedaleiras MIDI</li>
-<li>Instrumentos de sopro digitais (Akai EWI)</li>
+<li><code>ev.index</code>, <code>ev.msgIndex</code>, <code>ev.timestamp</code>, <code>ev.delay</code>, <code>ev.chordIndex</code></li>
 </ul>
-<div class="admonition tip">
-<p class="admonition-title">Como verificar se é class-compliant</p>
-<p>Se o dispositivo funciona em macOS ou Linux <strong>sem instalar driver</strong>, é class-compliant e vai funcionar com ESP32_Host_MIDI.</p>
-</div>
-<hr />
-<h2 id="limitacoes">Limitações<a class="headerlink" href="#limitacoes" title="Permanent link">&para;</a></h2>
+<h2 id="timeline">Timeline<a class="headerlink" href="#timeline" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Um dispositivo por vez</strong> (sem hub, exceto no P4)</li>
-<li>Apenas <strong>USB MIDI 1.0</strong> (não suporta USB Audio ou HID)</li>
-<li><strong>Não pode coexistir com USB Device</strong> — ambos usam o mesmo pino OTG</li>
-</ul>
-<hr />
-<h2 id="exemplos-com-usb-host">Exemplos com USB Host<a class="headerlink" href="#exemplos-com-usb-host" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Exemplo</th>
-<th>O que mostra</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>T-Display-S3</code></td>
-<td>Notas ativas + log de eventos no display</td>
-</tr>
-<tr>
-<td><code>T-Display-S3-Queue</code></td>
-<td>Fila de eventos completa com debug</td>
-</tr>
-<tr>
-<td><code>T-Display-S3-Piano</code></td>
-<td>Piano roll de 25 teclas com rolagem</td>
-</tr>
-<tr>
-<td><code>T-Display-S3-Gingoduino</code></td>
-<td>Detecção de acordes em tempo real</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="proximos-passos">Próximos Passos<a class="headerlink" href="#proximos-passos" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../ble-midi/">BLE MIDI →</a> — adicionar Bluetooth sem remover o USB</li>
-<li><a href="../usb-device/">USB Device →</a> — ESP32 como interface USB para DAW (mutualmente exclusivo com USB Host)</li>
-<li><a href="../../guia/primeiros-passos/">Primeiros Passos →</a> — sketch completo USB + BLE</li>
+<li><strong>v5.2</strong>: New fields added. Old fields still work but are deprecated.</li>
+<li><strong>v6.0</strong>: Deprecated fields removed. Struct becomes POD/trivially-copyable (~32 bytes vs ~160+ bytes).</li>
 </ul>
 
 
@@ -2240,10 +1976,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.path", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.path", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
