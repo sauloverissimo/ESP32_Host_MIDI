@@ -31,6 +31,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sponsors/sauloverissimo"><img src="https://img.shields.io/badge/Sponsor-❤-ea4aaa?style=flat-square&logo=github-sponsors&logoColor=white" alt="Sponsor" /></a>
+</p>
+
+<p align="center">
   <a href="README-PT-BR.md">🇧🇷 Português (Brasil)</a>
 </p>
 
