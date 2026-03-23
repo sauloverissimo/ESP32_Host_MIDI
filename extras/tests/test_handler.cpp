@@ -715,12 +715,343 @@ void test_edge_cases() {
 }
 
 // ---------------------------------------------------------------------------
+// MockTransport — for routing tests
+// ---------------------------------------------------------------------------
+
+class MockTransport : public MIDITransport {
+public:
+    const char* _name;
+    bool _connected;
+    std::vector<std::vector<uint8_t>> sentMessages;
+
+    MockTransport(const char* name = "Mock", bool connected = true)
+        : _name(name), _connected(connected) {}
+
+    void task() override {}
+    bool isConnected() const override { return _connected; }
+    const char* name() const override { return _name; }
+
+    bool sendMidiMessage(const uint8_t* data, size_t length) override {
+        if (!_connected) return false;
+        sentMessages.push_back(std::vector<uint8_t>(data, data + length));
+        return true;
+    }
+
+    void clearSent() { sentMessages.clear(); }
+
+    // Simulate incoming MIDI (calls dispatchMidiData which fires the callback)
+    void injectMidi(uint8_t status, uint8_t d1, uint8_t d2 = 0) {
+        uint8_t cin = (status >> 4) & 0x0F;
+        uint8_t buf[4] = { cin, status, d1, d2 };
+        dispatchMidiData(buf, 4);
+    }
+};
+
+// Helper: feed MIDI via a specific transport and return last event
+static MIDIEventData feedMidiVia(MIDIHandler& h, MockTransport& t,
+                                  uint8_t status, uint8_t d1, uint8_t d2 = 0) {
+    t.injectMidi(status, d1, d2);
+    h.task();  // drain transport queue
+    auto& q = h.getQueue();
+    return q.back();
+}
+
+// ---------------------------------------------------------------------------
+// Test: Source tracking — events carry the transport that received them
+// ---------------------------------------------------------------------------
+
+void test_source_tracking() {
+    printf("\n[Source Tracking]\n");
+
+    MIDIHandler h;
+    MIDIHandlerConfig cfg;
+    cfg.maxEvents = 20;
+    h.begin(cfg);
+
+    MockTransport usb("USB Host");
+    MockTransport ble("BLE Server");
+    h.addTransport(&usb);
+    h.addTransport(&ble);
+
+    g_fakeMillis = 20000;
+
+    TEST("event from USB has source == &usb");
+    auto ev1 = feedMidiVia(h, usb, 0x90, 60, 100);
+    ASSERT(ev1.source == &usb);
+    PASS();
+
+    TEST("event from BLE has source == &ble");
+    auto ev2 = feedMidiVia(h, ble, 0x90, 64, 80);
+    ASSERT(ev2.source == &ble);
+    PASS();
+
+    TEST("source->name() returns correct name");
+    ASSERT(strcmp(ev1.source->name(), "USB Host") == 0);
+    ASSERT(strcmp(ev2.source->name(), "BLE Server") == 0);
+    PASS();
+
+    TEST("direct handleMidiMessage has source == nullptr");
+    uint8_t buf[4] = { 0x09, 0x90, 72, 90 };
+    h.handleMidiMessage(buf, 4);
+    auto& q = h.getQueue();
+    auto ev3 = q.back();
+    ASSERT(ev3.source == nullptr);
+    PASS();
+
+    TEST("CC event has correct source");
+    auto ev4 = feedMidiVia(h, usb, 0xB0, 1, 64);
+    ASSERT(ev4.source == &usb);
+    ASSERT(ev4.statusCode == MIDI_CONTROL_CHANGE);
+    PASS();
+
+    TEST("PitchBend event has correct source");
+    auto ev5 = feedMidiVia(h, ble, 0xE0, 0, 64);
+    ASSERT(ev5.source == &ble);
+    ASSERT(ev5.statusCode == MIDI_PITCH_BEND);
+    PASS();
+
+    TEST("ProgramChange event has correct source");
+    auto ev6 = feedMidiVia(h, usb, 0xC0, 42, 0);
+    ASSERT(ev6.source == &usb);
+    ASSERT(ev6.statusCode == MIDI_PROGRAM_CHANGE);
+    PASS();
+
+    TEST("ChannelPressure event has correct source");
+    auto ev7 = feedMidiVia(h, ble, 0xD0, 100, 0);
+    ASSERT(ev7.source == &ble);
+    ASSERT(ev7.statusCode == MIDI_CHANNEL_PRESSURE);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Test: Targeted send — messages go to specific transport
+// ---------------------------------------------------------------------------
+
+void test_targeted_send() {
+    printf("\n[Targeted Send]\n");
+
+    MIDIHandler h;
+    h.begin();
+
+    MockTransport t1("Synth");
+    MockTransport t2("Monitor");
+    h.addTransport(&t1);
+    h.addTransport(&t2);
+
+    g_fakeMillis = 30000;
+
+    TEST("sendNoteOn to t1 only");
+    t1.clearSent(); t2.clearSent();
+    h.sendNoteOn(1, 60, 100, &t1);
+    ASSERT_EQ(t1.sentMessages.size(), 1);
+    ASSERT_EQ(t2.sentMessages.size(), 0);
+    PASS();
+
+    TEST("sendNoteOn to t2 only");
+    t1.clearSent(); t2.clearSent();
+    h.sendNoteOn(1, 60, 100, &t2);
+    ASSERT_EQ(t1.sentMessages.size(), 0);
+    ASSERT_EQ(t2.sentMessages.size(), 1);
+    PASS();
+
+    TEST("sendNoteOn broadcast (nullptr) goes to first");
+    t1.clearSent(); t2.clearSent();
+    h.sendNoteOn(1, 60, 100);
+    // Broadcast sends to first successful transport
+    ASSERT(t1.sentMessages.size() == 1 || t2.sentMessages.size() == 1);
+    PASS();
+
+    TEST("sendNoteOff targeted");
+    t1.clearSent(); t2.clearSent();
+    h.sendNoteOff(1, 60, 0, &t2);
+    ASSERT_EQ(t1.sentMessages.size(), 0);
+    ASSERT_EQ(t2.sentMessages.size(), 1);
+    PASS();
+
+    TEST("sendControlChange targeted");
+    t1.clearSent(); t2.clearSent();
+    h.sendControlChange(1, 7, 127, &t1);
+    ASSERT_EQ(t1.sentMessages.size(), 1);
+    ASSERT_EQ(t2.sentMessages.size(), 0);
+    // Verify bytes: 0xB0, 7, 127
+    ASSERT_EQ(t1.sentMessages[0][0], 0xB0);
+    ASSERT_EQ(t1.sentMessages[0][1], 7);
+    ASSERT_EQ(t1.sentMessages[0][2], 127);
+    PASS();
+
+    TEST("sendProgramChange targeted");
+    t1.clearSent(); t2.clearSent();
+    h.sendProgramChange(2, 42, &t2);
+    ASSERT_EQ(t2.sentMessages.size(), 1);
+    ASSERT_EQ(t2.sentMessages[0][0], 0xC1); // ch2 = 0xC0 | 1
+    ASSERT_EQ(t2.sentMessages[0][1], 42);
+    PASS();
+
+    TEST("sendPitchBend targeted");
+    t1.clearSent(); t2.clearSent();
+    h.sendPitchBend(1, 0, &t1); // center
+    ASSERT_EQ(t1.sentMessages.size(), 1);
+    // Center = 8192 = 0x2000, LSB=0x00, MSB=0x40
+    ASSERT_EQ(t1.sentMessages[0][0], 0xE0);
+    ASSERT_EQ(t1.sentMessages[0][1], 0x00);
+    ASSERT_EQ(t1.sentMessages[0][2], 0x40);
+    PASS();
+
+    TEST("sendRaw targeted");
+    t1.clearSent(); t2.clearSent();
+    uint8_t raw[3] = { 0x90, 60, 100 };
+    h.sendRaw(raw, 3, &t2);
+    ASSERT_EQ(t1.sentMessages.size(), 0);
+    ASSERT_EQ(t2.sentMessages.size(), 1);
+    PASS();
+
+    TEST("targeted send to disconnected transport returns false");
+    MockTransport offline("Offline", false);
+    h.addTransport(&offline);
+    bool result = h.sendNoteOn(1, 60, 100, &offline);
+    ASSERT(!result);
+    PASS();
+
+    TEST("invalid channel rejected");
+    t1.clearSent();
+    bool r1 = h.sendNoteOn(0, 60, 100, &t1);
+    bool r2 = h.sendNoteOn(17, 60, 100, &t1);
+    ASSERT(!r1);
+    ASSERT(!r2);
+    ASSERT_EQ(t1.sentMessages.size(), 0);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Test: Transport access API
+// ---------------------------------------------------------------------------
+
+void test_transport_access() {
+    printf("\n[Transport Access]\n");
+
+    MIDIHandler h;
+    h.begin();
+
+    MockTransport t1("Port A");
+    MockTransport t2("Port B");
+    h.addTransport(&t1);
+    h.addTransport(&t2);
+
+    // Built-in transports (USB, BLE) are not available in test build
+    // (ESP32_HOST_MIDI_NO_USB_HOST is defined), so count = external only
+
+    TEST("getTransportCount includes added transports");
+    ASSERT(h.getTransportCount() >= 2);
+    PASS();
+
+    TEST("getTransport returns correct pointer");
+    int idx = h.getTransportCount();
+    ASSERT(h.getTransport(idx - 2) == &t1);
+    ASSERT(h.getTransport(idx - 1) == &t2);
+    PASS();
+
+    TEST("getTransport out of bounds returns nullptr");
+    ASSERT(h.getTransport(-1) == nullptr);
+    ASSERT(h.getTransport(99) == nullptr);
+    PASS();
+
+    TEST("transport name() works via getTransport");
+    MIDITransport* p = h.getTransport(idx - 1);
+    ASSERT(p != nullptr);
+    ASSERT(strcmp(p->name(), "Port B") == 0);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Test: Routing scenario — al1-24's use case
+// ---------------------------------------------------------------------------
+
+void test_routing_scenario() {
+    printf("\n[Routing Scenario]\n");
+
+    MIDIHandler h;
+    MIDIHandlerConfig cfg;
+    cfg.maxEvents = 50;
+    h.begin(cfg);
+
+    MockTransport windCtrl("Wind Controller");
+    MockTransport footCtrl("Foot Controller");
+    MockTransport synth("Synth");
+    h.addTransport(&windCtrl);
+    h.addTransport(&footCtrl);
+    h.addTransport(&synth);
+
+    g_fakeMillis = 40000;
+
+    // Wind controller sends NoteOn + CC02 + PitchBend
+    feedMidiVia(h, windCtrl, 0x90, 60, 100);
+    feedMidiVia(h, windCtrl, 0xB0, 2, 64);
+    feedMidiVia(h, windCtrl, 0xE0, 0, 64);
+
+    // Foot controller sends CC for patch change
+    feedMidiVia(h, footCtrl, 0xB0, 0, 5);   // Bank Select
+    feedMidiVia(h, footCtrl, 0xC0, 42, 0);  // Program Change
+
+    TEST("all 5 events in queue");
+    ASSERT_EQ(h.getQueue().size(), 5);
+    PASS();
+
+    TEST("route only to synth, check nothing echoes back");
+    synth.clearSent();
+    windCtrl.clearSent();
+    footCtrl.clearSent();
+
+    auto& q = h.getQueue();
+    for (const auto& event : q) {
+        if (!event.source || event.source == &synth) continue;
+
+        if (event.statusCode == MIDI_NOTE_ON) {
+            h.sendNoteOn(event.channel0 + 1, event.noteNumber, event.velocity7, &synth);
+        } else if (event.statusCode == MIDI_CONTROL_CHANGE) {
+            // Foot controller CCs go to channel 16
+            uint8_t ch = (event.source == &footCtrl) ? 16 : (event.channel0 + 1);
+            h.sendControlChange(ch, event.noteNumber, event.velocity7, &synth);
+        } else if (event.statusCode == MIDI_PITCH_BEND) {
+            h.sendPitchBend(event.channel0 + 1, event.pitchBend14 - 8192, &synth);
+        } else if (event.statusCode == MIDI_PROGRAM_CHANGE) {
+            h.sendProgramChange(event.channel0 + 1, event.noteNumber, &synth);
+        }
+    }
+
+    // Synth received all 5 messages
+    ASSERT_EQ(synth.sentMessages.size(), 5);
+    PASS();
+
+    TEST("wind controller received nothing");
+    ASSERT_EQ(windCtrl.sentMessages.size(), 0);
+    PASS();
+
+    TEST("foot controller received nothing");
+    ASSERT_EQ(footCtrl.sentMessages.size(), 0);
+    PASS();
+
+    TEST("foot controller CC went to channel 16");
+    // Find the Bank Select CC in synth messages (was CC 0)
+    bool found = false;
+    for (auto& msg : synth.sentMessages) {
+        if (msg.size() >= 3 && (msg[0] & 0xF0) == 0xB0 && msg[1] == 0) {
+            // Channel should be 16 = 0xBF
+            ASSERT_EQ(msg[0], 0xBF);
+            found = true;
+            break;
+        }
+    }
+    ASSERT(found);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
 int main() {
-    printf("ESP32_Host_MIDI — MIDIHandler test suite (v5.2)\n");
-    printf("================================================\n");
+    printf("ESP32_Host_MIDI — MIDIHandler test suite (v5.2 + routing)\n");
+    printf("==========================================================\n");
 
     test_noteon_fields();
     test_noteoff_fields();
@@ -740,7 +1071,13 @@ int main() {
     test_raw_midi_format();
     test_edge_cases();
 
-    printf("\n================================================\n");
+    // New routing tests
+    test_source_tracking();
+    test_targeted_send();
+    test_transport_access();
+    test_routing_scenario();
+
+    printf("\n==========================================================\n");
     printf("Results: %d passed, %d failed\n", g_pass, g_fail);
 
     return (g_fail == 0) ? 0 : 1;
