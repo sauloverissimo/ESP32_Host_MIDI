@@ -36,6 +36,7 @@ public:
     // Returns true after a successful begin().
     // MIDI DIN-5 has no handshake — "connected" means the port is open.
     bool isConnected() const override;
+    const char* name() const override { return "UART"; }
 
     // Sends raw MIDI bytes over the TX pin.
     // Returns false if txPin was not configured (-1) or begin() not called.

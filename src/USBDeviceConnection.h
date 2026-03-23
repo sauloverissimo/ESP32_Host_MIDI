@@ -90,6 +90,7 @@ public:
     // Returns true once begin() has been called and the USB stack is running.
     // TinyUSB does not expose a per-session "port open" state for MIDI class.
     bool isConnected() const override { return _initialized; }
+    const char* name() const override { return "USB Device"; }
 
     // Sends raw MIDI bytes as a USB MIDI packet to the connected host (DAW).
     bool sendMidiMessage(const uint8_t* data, size_t length) override {

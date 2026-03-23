@@ -960,6 +960,24 @@ void test_transport_access() {
     ASSERT(p != nullptr);
     ASSERT(strcmp(p->name(), "Port B") == 0);
     PASS();
+
+    TEST("default MIDITransport::name() returns 'Transport'");
+    // MockTransport overrides name(), so test the base directly
+    class BareTransport : public MIDITransport {
+    public:
+        void task() override {}
+        bool isConnected() const override { return false; }
+    };
+    BareTransport bare;
+    ASSERT(strcmp(bare.name(), "Transport") == 0);
+    PASS();
+
+    TEST("each transport has distinct name via override");
+    MockTransport a("UART"), b("ESP-NOW"), c("OSC");
+    ASSERT(strcmp(a.name(), "UART") == 0);
+    ASSERT(strcmp(b.name(), "ESP-NOW") == 0);
+    ASSERT(strcmp(c.name(), "OSC") == 0);
+    PASS();
 }
 
 // ---------------------------------------------------------------------------

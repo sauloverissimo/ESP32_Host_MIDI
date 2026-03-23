@@ -170,6 +170,7 @@ public:
     bool isConnected() const override {
         return _initialized && (WiFi.status() == WL_CONNECTED);
     }
+    const char* name() const override { return "MIDI2 UDP"; }
 
     // sendMidiMessage() — scales MIDI 1.0 bytes up to MIDI 2.0 resolution and
     // sends a 12-byte UMP-over-UDP datagram to the configured target peer.

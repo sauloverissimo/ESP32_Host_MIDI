@@ -103,6 +103,7 @@ public:
     bool isConnected() const override {
         return _initialized && (WiFi.status() == WL_CONNECTED);
     }
+    const char* name() const override { return "OSC"; }
 
     // Converts raw MIDI bytes to an OSC message and sends it to targetIP:targetPort.
     // Returns false if no target was configured or WiFi is down.

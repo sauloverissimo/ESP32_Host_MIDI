@@ -31,6 +31,8 @@ class USBMIDI2Connection : public USBConnection {
 public:
     USBMIDI2Connection();
 
+    const char* name() const override { return "USB Host MIDI2"; }
+
     // True when the connected device negotiated MIDI 2.0 (Alt 1).
     bool isMIDI2() const { return _midi2Active; }
 

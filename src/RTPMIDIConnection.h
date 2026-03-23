@@ -100,6 +100,7 @@ public:
 
     // Returns true while at least one macOS/iOS session is connected.
     bool isConnected() const override { return _connectedCount > 0; }
+    const char* name() const override { return "RTP-MIDI"; }
 
     // Sends raw MIDI bytes to all connected RTP-MIDI peers.
     bool sendMidiMessage(const uint8_t* data, size_t length) override {
