@@ -51,6 +51,7 @@
 
 #if ESP32_HOST_MIDI_HAS_BLE
   #include "BLEConnection.h"
+  #include "BLEClientConnection.h"
 #endif
 
 #include "MIDIHandlerConfig.h"
