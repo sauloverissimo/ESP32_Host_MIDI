@@ -73,6 +73,7 @@ struct MIDIEventData {
   unsigned long timestamp;  // Timestamp in milliseconds (millis())
   unsigned long delay;      // Delta time (ms) since previous event
   int chordIndex;           // Chord grouping index (simultaneous notes share the same index)
+  MIDITransport* source = nullptr;  // Transport that received this message (nullptr if unknown)
 
   // --- MIDI spec compliant fields (v5.2+) ---
   MIDIStatus statusCode;    // Status as enum (MIDI_NOTE_ON, MIDI_CONTROL_CHANGE, etc.)
@@ -98,6 +99,7 @@ struct MIDIEventData {
 struct MIDISysExEvent {
   int index;                      // Global SysEx counter
   unsigned long timestamp;        // Timestamp in milliseconds (millis())
+  MIDITransport* source = nullptr; // Transport that received this message
   std::vector<uint8_t> data;      // Complete message including 0xF0 and 0xF7
 };
 
@@ -203,10 +205,21 @@ private:
   MIDITransport* transports[MAX_TRANSPORTS];
   int transportCount;
 
+  // Per-transport callback context so we know which transport dispatched data
+  struct TransportContext {
+      MIDIHandler* handler;
+      MIDITransport* transport;
+  };
+  TransportContext transportContexts[MAX_TRANSPORTS];
+
   void registerTransport(MIDITransport* t);
   static void _onTransportMidiData(void* ctx, const uint8_t* data, size_t len);
   static void _onTransportDisconnected(void* ctx);
   static void _onTransportSysExData(void* ctx, const uint8_t* data, size_t len);
+
+  // Internal: handleMidiMessage/handleSysExMessage with source tracking
+  void handleMidiMessage(const uint8_t* data, size_t length, MIDITransport* source);
+  void handleSysExMessage(const uint8_t* data, size_t length, MIDITransport* source);
 
   // SysEx
   std::deque<MIDISysExEvent> sysexQueue;

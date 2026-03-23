@@ -33,6 +33,8 @@ public:
     // Returns whether a BLE central is currently connected.
     bool isConnected() const override;
 
+    const char* name() const override { return "BLE Server"; }
+
     // Sends a MIDI message via BLE NOTIFY.
     // data: raw MIDI bytes (status + data, no BLE header, no CIN byte).
     // Returns true if connected and notification was sent.

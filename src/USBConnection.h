@@ -29,6 +29,8 @@ public:
     // Returns whether the USB connection is ready.
     bool isConnected() const override { return isReady; }
 
+    const char* name() const override { return "USB Host"; }
+
     // Returns the last error message (empty if none).
     const String& getLastError() const { return lastError; }
 
