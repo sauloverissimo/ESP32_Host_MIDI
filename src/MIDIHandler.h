@@ -144,14 +144,27 @@ public:
   // MIDIHandler will call task() on it and receive data via callbacks.
   void addTransport(MIDITransport* transport);
 
-  // MIDI Output — send via any transport that supports sending.
-  // channel: 1-16. Returns true if any transport sent the message.
-  bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
-  bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity);
-  bool sendControlChange(uint8_t channel, uint8_t controller, uint8_t value);
-  bool sendProgramChange(uint8_t channel, uint8_t program);
-  bool sendPitchBend(uint8_t channel, int value);  // value: -8192 to 8191
-  bool sendRaw(const uint8_t* data, size_t length);
+  // Transport access for selective routing.
+  int getTransportCount() const { return transportCount; }
+  MIDITransport* getTransport(int index) const {
+      return (index >= 0 && index < transportCount) ? transports[index] : nullptr;
+  }
+
+#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
+  MIDITransport* getUSBTransport() { return &usbTransport; }
+#endif
+#if ESP32_HOST_MIDI_HAS_BLE
+  MIDITransport* getBLETransport() { return &bleTransport; }
+#endif
+
+  // MIDI Output — send via specific transport, or broadcast if target is nullptr.
+  // channel: 1-16. Returns true if message was sent.
+  bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);
+  bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);
+  bool sendControlChange(uint8_t channel, uint8_t controller, uint8_t value, MIDITransport* target = nullptr);
+  bool sendProgramChange(uint8_t channel, uint8_t program, MIDITransport* target = nullptr);
+  bool sendPitchBend(uint8_t channel, int value, MIDITransport* target = nullptr);  // value: -8192 to 8191
+  bool sendRaw(const uint8_t* data, size_t length, MIDITransport* target = nullptr);
   bool sendBleRaw(const uint8_t* data, size_t length);  // backward compat alias
 
   // SysEx API — opt-in, does not affect existing event queue.

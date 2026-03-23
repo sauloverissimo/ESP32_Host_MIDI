@@ -689,56 +689,61 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length, MIDITran
 
 // --- MIDI Output (via any transport that supports sending) ---
 
-bool MIDIHandler::sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
+bool MIDIHandler::sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0x90 | ((channel - 1) & 0x0F)), note, velocity };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
+bool MIDIHandler::sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0x80 | ((channel - 1) & 0x0F)), note, velocity };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendControlChange(uint8_t channel, uint8_t controller, uint8_t value) {
+bool MIDIHandler::sendControlChange(uint8_t channel, uint8_t controller, uint8_t value, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0xB0 | ((channel - 1) & 0x0F)), controller, value };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendProgramChange(uint8_t channel, uint8_t program) {
+bool MIDIHandler::sendProgramChange(uint8_t channel, uint8_t program, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[2] = { (uint8_t)(0xC0 | ((channel - 1) & 0x0F)), program };
+  if (target) return target->sendMidiMessage(data, 2);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 2)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendPitchBend(uint8_t channel, int value) {
+bool MIDIHandler::sendPitchBend(uint8_t channel, int value, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
-  // Normalize -8192..8191 to 0..16383 (center = 8192)
   uint16_t v = (uint16_t)(value + 8192) & 0x3FFF;
   uint8_t data[3] = { (uint8_t)(0xE0 | ((channel - 1) & 0x0F)),
                       (uint8_t)(v & 0x7F),
                       (uint8_t)((v >> 7) & 0x7F) };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendRaw(const uint8_t* data, size_t length) {
+bool MIDIHandler::sendRaw(const uint8_t* data, size_t length, MIDITransport* target) {
+  if (target) return target->sendMidiMessage(data, length);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, length)) return true;
   }
