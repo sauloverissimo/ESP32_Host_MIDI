@@ -139,7 +139,8 @@ void BLEClientConnection::disconnect() {
 
 std::string BLEClientConnection::getConnectedAddress() const {
     if (_connected && pClient) {
-        return pClient->getPeerAddress().toString();
+        String addr = pClient->getPeerAddress().toString();
+        return std::string(addr.c_str());
     }
     return "";
 }
@@ -228,13 +229,14 @@ void BLEClientConnection::ScanCB::onResult(BLEAdvertisedDevice advertisedDevice)
 
     // Filter by address if specified
     if (!parent->targetAddr.empty()) {
-        if (advertisedDevice.getAddress().toString() != parent->targetAddr) return;
+        String addr = advertisedDevice.getAddress().toString();
+        if (std::string(addr.c_str()) != parent->targetAddr) return;
     }
 
     // Filter by name if specified
     if (!parent->targetDevName.empty()) {
         if (!advertisedDevice.haveName() ||
-            advertisedDevice.getName() != parent->targetDevName) return;
+            std::string(advertisedDevice.getName().c_str()) != parent->targetDevName) return;
     }
 
     // Found a match: stop scan, store address for task() to connect on main loop
