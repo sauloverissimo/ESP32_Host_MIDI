@@ -235,6 +235,30 @@ void setup() { midiHandler.begin(); }
 
 > **MIDI 2.0:** Use `USBMIDI2Connection` for native USB MIDI 2.0 with UMP. See the [MIDI 2.0 section](#usb-host-midi-20) below.
 
+##### Multi-Device via USB Hub
+
+Connect multiple USB MIDI devices simultaneously through a powered USB hub using `USBHubManager`. Supports up to 4 devices. ESP32-S3 (Full-Speed 12 Mbps) works well with 2–3 devices; ESP32-P4 (High-Speed 480 Mbps) handles more.
+
+```cpp
+#define ESP32_HOST_MIDI_NO_USB_HOST   // disable built-in single-device USB
+#include <ESP32_Host_MIDI.h>
+#include <USBHubManager.h>
+
+USBHubManager usbHub;
+
+void setup() {
+    midiHandler.begin();
+    usbHub.begin(midiHandler);  // discovers and registers devices automatically
+}
+
+void loop() {
+    usbHub.task();          // handle device connect/disconnect
+    midiHandler.task();     // poll all transports
+}
+```
+
+Hot-plug is supported: devices are registered on connect and cleaned up on disconnect. See the full example in `USB-Hub-Multi-Device`.
+
 ---
 
 #### BLE MIDI
@@ -544,6 +568,7 @@ The LilyGO T-Display-S3 has a 1.9" 170×320 ST7789 display + ESP32-S3. These exa
 | `T-Display-S3-ESP-NOW-Jam` | ESP-NOW | Peer status + jam events |
 | `T-Display-S3-OSC` | OSC + WiFi | WiFi status + OSC bridge log |
 | `T-Display-S3-USB-Device` | BLE + USB Device | Dual status + bridge log |
+| `USB-Hub-Multi-Device` | USB Host (hub) | Serial log of multi-device events |
 
 ---
 
@@ -722,7 +747,10 @@ ESP32_Host_MIDI/
 │   ├── MIDIHandler.h / .cpp          ← event queue, chord detection, active notes
 │   ├── MIDITransport.h               ← abstract transport interface
 │   ├── MIDIHandlerConfig.h           ← config struct
-│   ├── USBConnection.h / .cpp        ← USB Host OTG
+│   ├── MIDITypes.h                   ← shared types (RawUsbMessage)
+│   ├── USBConnection.h / .cpp        ← USB Host OTG (single device)
+│   ├── USBDeviceTransport.h / .cpp   ← per-device USB MIDI transport
+│   ├── USBHubManager.h / .cpp        ← multi-device USB hub orchestrator
 │   ├── USBMIDI2Connection.h / .cpp   ← USB Host MIDI 2.0 (UMP negotiation)
 │   ├── MIDI2Support.h                ← UMP types, scaler, builder, parser
 │   ├── BLEConnection.h / .cpp        ← BLE MIDI
@@ -737,6 +765,7 @@ ESP32_Host_MIDI/
 │   └── tests/
 │       ├── test_native.cpp           ← MIDI2Support + MIDITransport tests (32)
 │       ├── test_handler.cpp          ← MIDIHandler tests (99)
+│       ├── test_multi_usb/           ← multi-USB device tests (23)
 │       └── test_midi2_scan.cpp       ← USB MIDI 2.0 descriptor tests (120)
 └── examples/
     ├── T-Display-S3/                 T-Display-S3-Queue/

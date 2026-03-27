@@ -118,9 +118,42 @@ Qualquer dispositivo **USB MIDI 1.0 Class Compliant** funciona sem driver:
 
 ---
 
+## Múltiplos Dispositivos via Hub USB
+
+Conecte até **4 dispositivos USB MIDI** simultaneamente usando `USBHubManager` com um hub USB alimentado.
+
+| Chip | Velocidade | Recomendação |
+|------|-----------|-------------|
+| ESP32-S3 | Full-Speed (12 Mbps) | 2–3 dispositivos |
+| ESP32-P4 | High-Speed (480 Mbps) | 4+ dispositivos |
+
+```cpp
+#define ESP32_HOST_MIDI_NO_USB_HOST   // desabilita USB single-device built-in
+#include <ESP32_Host_MIDI.h>
+#include <USBHubManager.h>
+
+USBHubManager usbHub;
+
+void setup() {
+    midiHandler.begin();
+    usbHub.begin(midiHandler);
+}
+
+void loop() {
+    usbHub.task();
+    midiHandler.task();
+}
+```
+
+Hot-plug é suportado: dispositivos são registrados ao conectar e removidos ao desconectar. Veja o exemplo completo em `USB-Hub-Multi-Device`.
+
+!!! note "sdkconfig para hubs multi-TT"
+    ESP-IDF v5.x suporta hubs single-TT nativamente. Para hubs multi-TT, adicione `CONFIG_USB_HOST_HUB_MULTI_TT=y` ao sdkconfig.
+
+---
+
 ## Limitações
 
-- **Um dispositivo por vez** (sem hub, exceto no P4)
 - **USB MIDI 1.0 e 2.0 (via USBMIDI2Connection)** (não suporta USB Audio ou HID)
 - **Não pode coexistir com USB Device** — ambos usam o mesmo pino OTG
 
@@ -134,6 +167,7 @@ Qualquer dispositivo **USB MIDI 1.0 Class Compliant** funciona sem driver:
 | `T-Display-S3-Queue` | Fila de eventos completa com debug |
 | `T-Display-S3-Piano` | Piano roll de 25 teclas com rolagem |
 | `T-Display-S3-Gingoduino` | Detecção de acordes em tempo real |
+| `USB-Hub-Multi-Device` | Múltiplos dispositivos USB via hub |
 
 > **MIDI 2.0:** Para suporte nativo USB MIDI 2.0 com negociação UMP, use `USBMIDI2Connection`. Veja a [referência da API](../api/referencia.md#usbmidi2connection).
 
