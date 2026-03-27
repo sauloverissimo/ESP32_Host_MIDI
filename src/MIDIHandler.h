@@ -142,6 +142,10 @@ public:
   // MIDIHandler will call task() on it and receive data via callbacks.
   void addTransport(MIDITransport* transport);
 
+  // Remove a previously registered transport.
+  // Clears its callbacks and shifts the array. Safe to call if transport is not registered.
+  void removeTransport(MIDITransport* transport);
+
   // MIDI Output — send via any transport that supports sending.
   // channel: 1-16. Returns true if any transport sent the message.
   bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
@@ -199,7 +203,7 @@ private:
   std::string getNoteWithOctave(int note) const;
 
   // --- Transport abstraction ---
-  static const int MAX_TRANSPORTS = 4;
+  static const int MAX_TRANSPORTS = 8;
   MIDITransport* transports[MAX_TRANSPORTS];
   int transportCount;
 

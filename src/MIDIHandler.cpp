@@ -90,6 +90,23 @@ void MIDIHandler::addTransport(MIDITransport* transport) {
   registerTransport(transport);
 }
 
+void MIDIHandler::removeTransport(MIDITransport* transport) {
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i] == transport) {
+      // Clear callbacks so detached transport doesn't fire stale pointers
+      transport->setMidiCallback(nullptr, nullptr);
+      transport->setSysExCallback(nullptr, nullptr);
+      transport->setConnectionCallbacks(nullptr, nullptr, nullptr);
+      // Shift remaining transports down
+      for (int j = i; j < transportCount - 1; j++) {
+        transports[j] = transports[j + 1];
+      }
+      transports[--transportCount] = nullptr;
+      return;
+    }
+  }
+}
+
 void MIDIHandler::enableHistory(int capacity) {
   if (capacity <= 0) {
     // Disable history, freeing allocated memory

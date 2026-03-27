@@ -1,6 +1,10 @@
 #ifndef USB_CONNECTION_H
 #define USB_CONNECTION_H
 
+// NOTE: For multi-device USB (hub) scenarios, use USBHubManager instead.
+// USBConnection remains the default for single-device setups and is used
+// internally by MIDIHandler::begin() when USB is available.
+
 #include <Arduino.h>
 #include <vector>
 #include <usb/usb_host.h>
