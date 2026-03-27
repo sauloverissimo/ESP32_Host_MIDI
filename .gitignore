@@ -5,6 +5,7 @@
 *.swp
 *.swo
 *~
+.gitignore
 
 # Claude Code
 CLAUDE.md
@@ -27,4 +28,4 @@ experimental/
 extras/tests/test_native
 extras/tests/test_integration
 extras/tests/test_handler
-extras/tests/test_multi_usb/test_multi_usb
+extras/tests/test_multi_usb/test_multi_usbROADMAP.md
