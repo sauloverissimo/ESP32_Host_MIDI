@@ -8,6 +8,7 @@
 
 # Claude Code
 CLAUDE.md
+docs/superpowers/
 
 # Legacy files (removed in v3.0.0)
 /displayhandler.h
@@ -25,3 +26,5 @@ site/
 experimental/
 extras/tests/test_native
 extras/tests/test_integration
+extras/tests/test_handler
+extras/tests/test_multi_usb/test_multi_usb
