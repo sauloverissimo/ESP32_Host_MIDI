@@ -8,13 +8,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "MIDITransport.h"
-
-// Structure to store a raw USB packet.
-// Although transfers can be up to 64 bytes, only the first 4 are relevant per USB-MIDI event.
-struct RawUsbMessage {
-    uint8_t data[64];
-    size_t length;
-};
+#include "MIDITypes.h"
 
 class USBConnection : public MIDITransport {
 public:
