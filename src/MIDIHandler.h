@@ -82,6 +82,7 @@ struct MIDIEventData {
   uint8_t velocity7;        // 7-bit velocity (original MIDI 1.0 value)
   uint32_t pitchBend32;     // 32-bit pitch bend (MIDI 2.0, center = 0x80000000)
   uint16_t pitchBend14;     // 14-bit pitch bend (0-16383, center = 8192)
+  uint8_t sourceDevice;     // USB device address (0 = unknown/single-device mode)
 
   // --- Deprecated fields (kept for backward compatibility, will be removed in v6.0) ---
   int channel;              // MIDI channel (1-16) — deprecated: use channel0 (0-15)

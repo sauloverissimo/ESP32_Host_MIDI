@@ -510,6 +510,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity16 = MIDI2Scaler::scale7to16(midiData[2]);
     event.pitchBend14 = 0;
     event.pitchBend32 = 0x80000000;
+    event.sourceDevice = 0;
     // Deprecated fields
     event.channel = channel;
     event.status = "ControlChange";
@@ -536,6 +537,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity16 = 0;
     event.pitchBend14 = 0;
     event.pitchBend32 = 0x80000000;
+    event.sourceDevice = 0;
     // Deprecated fields
     event.channel = channel;
     event.status = "ProgramChange";
@@ -562,6 +564,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity16 = MIDI2Scaler::scale7to16(midiData[1]);
     event.pitchBend14 = 0;
     event.pitchBend32 = 0x80000000;
+    event.sourceDevice = 0;
     // Deprecated fields
     event.channel = channel;
     event.status = "ChannelPressure";
@@ -589,6 +592,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity16 = 0;
     event.pitchBend14 = static_cast<uint16_t>(pitchValue);
     event.pitchBend32 = MIDI2Scaler::scale14to32(pitchValue);
+    event.sourceDevice = 0;
     // Deprecated fields
     event.channel = channel;
     event.status = "PitchBend";
@@ -679,6 +683,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   event.velocity16 = MIDI2Scaler::scale7to16(velocity);
   event.pitchBend14 = 0;
   event.pitchBend32 = 0x80000000;
+  event.sourceDevice = 0;
   // Deprecated fields
   event.channel = channel;
   event.status = statusType;
