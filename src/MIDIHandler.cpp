@@ -71,7 +71,9 @@ void MIDIHandler::task() {
 // --- Transport Abstraction ---
 
 void MIDIHandler::_onTransportMidiData(void* ctx, const uint8_t* data, size_t len) {
-  static_cast<MIDIHandler*>(ctx)->handleMidiMessage(data, len);
+  auto* tctx = static_cast<TransportCallbackContext*>(ctx);
+  tctx->handler->handleMidiMessage(data, len);
+  tctx->handler->forwardToOtherTransports(tctx->transport, data, len);
 }
 
 void MIDIHandler::_onTransportDisconnected(void* ctx) {
@@ -80,7 +82,9 @@ void MIDIHandler::_onTransportDisconnected(void* ctx) {
 
 void MIDIHandler::registerTransport(MIDITransport* t) {
   if (transportCount >= MAX_TRANSPORTS) return;
-  t->setMidiCallback(_onTransportMidiData, this);
+  int idx = transportCount;
+  _transportCtx[idx] = { this, t };
+  t->setMidiCallback(_onTransportMidiData, &_transportCtx[idx]);
   t->setSysExCallback(_onTransportSysExData, this);
   t->setConnectionCallbacks(nullptr, _onTransportDisconnected, this);
   transports[transportCount++] = t;
@@ -97,9 +101,12 @@ void MIDIHandler::removeTransport(MIDITransport* transport) {
       transport->setMidiCallback(nullptr, nullptr);
       transport->setSysExCallback(nullptr, nullptr);
       transport->setConnectionCallbacks(nullptr, nullptr, nullptr);
-      // Shift remaining transports down
+      // Shift remaining transports and rebuild callback contexts
       for (int j = i; j < transportCount - 1; j++) {
         transports[j] = transports[j + 1];
+        _transportCtx[j] = { this, transports[j] };
+        // Re-register callback with updated context pointer
+        transports[j]->setMidiCallback(_onTransportMidiData, &_transportCtx[j]);
       }
       transports[--transportCount] = nullptr;
       return;
@@ -695,6 +702,29 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   event.pitchBend = 0;
 
   addEvent(event);
+}
+
+// --- Inter-device forwarding ---
+
+void MIDIHandler::forwardToOtherTransports(MIDITransport* source, const uint8_t* data, size_t len) {
+  // Extract MIDI bytes (same logic as handleMidiMessage)
+  const uint8_t* midiData;
+  size_t midiLen;
+  if (len >= 4) {
+    midiData = data + 1;  // USB-MIDI: skip CIN byte
+    midiLen = 3;
+  } else if (len >= 2) {
+    midiData = data;      // BLE/raw: use directly
+    midiLen = len;
+  } else {
+    return;
+  }
+
+  for (int i = 0; i < transportCount; i++) {
+    if (transports[i] != source && transports[i]->isConnected()) {
+      transports[i]->sendMidiMessage(midiData, midiLen);
+    }
+  }
 }
 
 // --- MIDI Output (via any transport that supports sending) ---

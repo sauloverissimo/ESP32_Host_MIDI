@@ -9,6 +9,9 @@ USBDeviceTransport::USBDeviceTransport()
     _clientHandle(nullptr),
     _deviceHandle(nullptr),
     _transfer(nullptr),
+    _outTransfer(nullptr),
+    _outEndpoint(0),
+    _outMaxPacketSize(0),
     _claimedInterface(0),
     _interfaceClaimed(false),
     _head(0),
@@ -48,6 +51,13 @@ void USBDeviceTransport::detach() {
         usb_host_transfer_free(_transfer);
         _transfer = nullptr;
     }
+
+    if (_outTransfer) {
+        usb_host_transfer_free(_outTransfer);
+        _outTransfer = nullptr;
+    }
+    _outEndpoint = 0;
+    _outMaxPacketSize = 0;
 
     if (_interfaceClaimed) {
         usb_host_interface_release(_clientHandle, _deviceHandle, _claimedInterface);
@@ -193,6 +203,7 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                 if (err == ESP_OK) {
                     _claimedInterface = bInterfaceNumber;
                     _interfaceClaimed = true;
+                    bool foundIn = false;
                     uint16_t idx2 = index + len;
                     while (idx2 < totalLength) {
                         if (idx2 + 1 >= totalLength) break;
@@ -200,15 +211,17 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                         if (len2 < 2 || (idx2 + len2) > totalLength) break;
                         uint8_t type2 = p[idx2 + 1];
                         if (type2 == 0x04) break; // Next interface
-                        if (type2 == 0x05 && bNumEndpoints > 0) {
-                            if (len2 >= 7) {
-                                uint8_t bEndpointAddress = p[idx2 + 2];
-                                uint8_t bmAttributes = p[idx2 + 3];
-                                uint16_t wMaxPacketSize = (p[idx2 + 4] | (p[idx2 + 5] << 8));
-                                uint8_t bInterval = p[idx2 + 6];
-                                if (wMaxPacketSize > 512) wMaxPacketSize = 512;
-                                if (wMaxPacketSize == 0) wMaxPacketSize = 64;
-                                if (bEndpointAddress & 0x80) {
+                        if (type2 == 0x05 && len2 >= 7) {
+                            uint8_t bEndpointAddress = p[idx2 + 2];
+                            uint8_t bmAttributes = p[idx2 + 3];
+                            uint16_t wMaxPacketSize = (p[idx2 + 4] | (p[idx2 + 5] << 8));
+                            uint8_t bInterval = p[idx2 + 6];
+                            if (wMaxPacketSize > 512) wMaxPacketSize = 512;
+                            if (wMaxPacketSize == 0) wMaxPacketSize = 64;
+
+                            if (bEndpointAddress & 0x80) {
+                                // IN endpoint (device -> host)
+                                if (!foundIn) {
                                     uint8_t transferType = bmAttributes & 0x03;
                                     uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
                                     esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &_transfer);
@@ -219,16 +232,35 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                                         _transfer->context = this;
                                         _transfer->num_bytes = wMaxPacketSize;
                                         _interval = (bInterval == 0) ? 1 : bInterval;
-                                        _ready = true;
-                                        claimedOk = true;
-                                        return true;
+                                        foundIn = true;
                                     }
+                                }
+                            } else {
+                                // OUT endpoint (host -> device)
+                                if (_outEndpoint == 0) {
+                                    _outEndpoint = bEndpointAddress;
+                                    _outMaxPacketSize = wMaxPacketSize;
                                 }
                             }
                         }
                         idx2 += len2;
                     }
-                    // No suitable endpoint found; release the interface
+                    if (foundIn) {
+                        // Allocate OUT transfer if we found an OUT endpoint
+                        if (_outEndpoint != 0) {
+                            usb_host_transfer_alloc(_outMaxPacketSize, 0, &_outTransfer);
+                            if (_outTransfer) {
+                                _outTransfer->device_handle = _deviceHandle;
+                                _outTransfer->bEndpointAddress = _outEndpoint;
+                                _outTransfer->callback = _onSendComplete;
+                                _outTransfer->context = this;
+                            }
+                        }
+                        _ready = true;
+                        claimedOk = true;
+                        return true;
+                    }
+                    // No IN endpoint found; release the interface
                     usb_host_interface_release(_clientHandle, _deviceHandle, bInterfaceNumber);
                     _interfaceClaimed = false;
                 }
@@ -236,21 +268,44 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
         }
         index += len;
     }
-    if (!claimedOk) {
-        // Fallback: try a default endpoint with safe size
-        esp_err_t err = usb_host_transfer_alloc(64, 3000, &_transfer);
-        if (err == ESP_OK && _transfer != nullptr) {
-            _transfer->device_handle = _deviceHandle;
-            _transfer->bEndpointAddress = 0x81;
-            _transfer->callback = _onReceive;
-            _transfer->context = this;
-            _transfer->num_bytes = 64;
-            _interval = 1;
-            _ready = true;
-            return true;
-        }
-    }
+    // No MIDI Streaming interface found -- this device is not USB-MIDI.
     return false;
+}
+
+bool USBDeviceTransport::sendMidiMessage(const uint8_t* data, size_t length) {
+    if (!_ready || !_outTransfer || _outEndpoint == 0 || length < 1) {
+        return false;
+    }
+
+    // Build USB-MIDI event packet (4 bytes per message).
+    // Cable Number = 0, Code Index Number derived from status byte.
+    uint8_t status = data[0] & 0xF0;
+    uint8_t cin = 0;
+
+    switch (status) {
+        case 0x80: cin = 0x08; break;  // Note Off
+        case 0x90: cin = 0x09; break;  // Note On
+        case 0xA0: cin = 0x0A; break;  // Poly Pressure
+        case 0xB0: cin = 0x0B; break;  // Control Change
+        case 0xC0: cin = 0x0C; break;  // Program Change
+        case 0xD0: cin = 0x0D; break;  // Channel Pressure
+        case 0xE0: cin = 0x0E; break;  // Pitch Bend
+        default: return false;          // SysEx and others not handled here
+    }
+
+    _outTransfer->num_bytes = 4;
+    _outTransfer->data_buffer[0] = cin;
+    _outTransfer->data_buffer[1] = data[0];
+    _outTransfer->data_buffer[2] = (length > 1) ? data[1] : 0;
+    _outTransfer->data_buffer[3] = (length > 2) ? data[2] : 0;
+
+    esp_err_t err = usb_host_transfer_submit(_outTransfer);
+    return (err == ESP_OK);
+}
+
+void USBDeviceTransport::_onSendComplete(usb_transfer_t* transfer) {
+    // Nothing to do -- transfer completed. The buffer is reusable.
+    (void)transfer;
 }
 
 void USBDeviceTransport::_onReceive(usb_transfer_t* transfer) {

@@ -23,6 +23,7 @@ public:
     // MIDITransport interface
     void task() override;
     bool isConnected() const override { return _ready; }
+    bool sendMidiMessage(const uint8_t* data, size_t length) override;
 
     // Device identification
     uint8_t deviceAddress() const { return _address; }
@@ -41,7 +42,10 @@ private:
 
     usb_host_client_handle_t _clientHandle;
     usb_device_handle_t _deviceHandle;
-    usb_transfer_t* _transfer;
+    usb_transfer_t* _transfer;       // IN transfer (device -> host)
+    usb_transfer_t* _outTransfer;    // OUT transfer (host -> device)
+    uint8_t _outEndpoint;            // OUT endpoint address (0 = not available)
+    uint16_t _outMaxPacketSize;
     uint8_t _claimedInterface;
     bool _interfaceClaimed;
 
@@ -61,6 +65,7 @@ private:
     bool parseConfig(const usb_config_desc_t* config);
 
     static void _onReceive(usb_transfer_t* transfer);
+    static void _onSendComplete(usb_transfer_t* transfer);
 };
 
 #endif // USB_DEVICE_TRANSPORT_H

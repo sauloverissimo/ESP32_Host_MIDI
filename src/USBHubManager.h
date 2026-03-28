@@ -57,6 +57,7 @@ private:
     struct PendingAction {
         PendingOp op;
         int slot;
+        USBDeviceTransport* transport;  // Stored here so slot can be cleared immediately
     };
     QueueHandle_t _pendingQueue;  // FreeRTOS queue of PendingAction
     void processPendingOps();

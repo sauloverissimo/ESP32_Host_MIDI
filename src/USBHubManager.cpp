@@ -133,6 +133,15 @@ void USBHubManager::onNewDevice(uint8_t address) {
         return;
     }
 
+    // Skip hub devices (bDeviceClass 0x09) -- they are not MIDI devices
+    const usb_device_desc_t* devDesc;
+    if (usb_host_get_device_descriptor(devHandle, &devDesc) == ESP_OK) {
+        if (devDesc->bDeviceClass == 0x09) {
+            usb_host_device_close(_clientHandle, devHandle);
+            return;
+        }
+    }
+
     USBDeviceTransport* transport = new (std::nothrow) USBDeviceTransport();
     if (!transport) {
         usb_host_device_close(_clientHandle, devHandle);
@@ -151,7 +160,7 @@ void USBHubManager::onNewDevice(uint8_t address) {
     _handles[slot] = devHandle;
 
     // Enqueue ADD operation for main loop
-    PendingAction action = { PendingOp::ADD, slot };
+    PendingAction action = { PendingOp::ADD, slot, transport };
     xQueueSend(_pendingQueue, &action, 0);
 }
 
@@ -161,17 +170,24 @@ void USBHubManager::onDeviceGone(usb_device_handle_t devHandle) {
         return;  // Unknown device
     }
 
+    // Grab the transport pointer before clearing the slot
+    USBDeviceTransport* transport = _devices[slot];
+
+    // Clear slot immediately so findFreeSlot() works if the device reconnects
+    // before the main loop processes the REMOVE operation.
+    _devices[slot] = nullptr;
+    _handles[slot] = nullptr;
+
     // Detach the transport (releases interface, frees transfer)
-    if (_devices[slot]) {
-        _devices[slot]->detach();
+    if (transport) {
+        transport->detach();
     }
 
     // Close the USB device handle
     usb_host_device_close(_clientHandle, devHandle);
-    _handles[slot] = nullptr;
 
-    // Enqueue REMOVE operation for main loop
-    PendingAction action = { PendingOp::REMOVE, slot };
+    // Enqueue REMOVE for main loop (removeTransport + delete)
+    PendingAction action = { PendingOp::REMOVE, slot, transport };
     xQueueSend(_pendingQueue, &action, 0);
 }
 
@@ -187,16 +203,15 @@ void USBHubManager::processPendingOps() {
         }
         switch (action.op) {
             case PendingOp::ADD:
-                if (_handler && _devices[action.slot]) {
-                    _handler->addTransport(_devices[action.slot]);
+                if (_handler && action.transport) {
+                    _handler->addTransport(action.transport);
                 }
                 break;
             case PendingOp::REMOVE:
-                if (_handler && _devices[action.slot]) {
-                    _handler->removeTransport(_devices[action.slot]);
+                if (_handler && action.transport) {
+                    _handler->removeTransport(action.transport);
                 }
-                delete _devices[action.slot];
-                _devices[action.slot] = nullptr;
+                delete action.transport;
                 break;
         }
     }

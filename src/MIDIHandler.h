@@ -208,10 +208,20 @@ private:
   MIDITransport* transports[MAX_TRANSPORTS];
   int transportCount;
 
+  // Context passed to each transport callback so we know which transport sent data.
+  struct TransportCallbackContext {
+    MIDIHandler* handler;
+    MIDITransport* transport;
+  };
+  TransportCallbackContext _transportCtx[MAX_TRANSPORTS];
+
   void registerTransport(MIDITransport* t);
   static void _onTransportMidiData(void* ctx, const uint8_t* data, size_t len);
   static void _onTransportDisconnected(void* ctx);
   static void _onTransportSysExData(void* ctx, const uint8_t* data, size_t len);
+
+  // Forward MIDI data to all transports except the one that sent it.
+  void forwardToOtherTransports(MIDITransport* source, const uint8_t* data, size_t len);
 
   // SysEx
   std::deque<MIDISysExEvent> sysexQueue;
