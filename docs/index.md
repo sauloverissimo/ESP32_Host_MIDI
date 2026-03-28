@@ -1,12 +1,14 @@
-# 🎛️ ESP32 Host MIDI
+# ESP32 Host MIDI
 
-**O hub MIDI universal para ESP32 — 8 transportes, uma API.**
+**The universal MIDI hub for ESP32 -- 9 transports, one API.**
 
-ESP32_Host_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo. Conecte um teclado USB, receba notas de um iPhone via Bluetooth, conecte o seu DAW pelo WiFi com RTP-MIDI, controle o Max/MSP via OSC, alcance sintetizadores vintage por um cabo DIN-5 — **tudo ao mesmo tempo, tudo pela mesma API limpa de eventos.**
+ESP32_Host_MIDI turns your ESP32 into a full-featured, multi-protocol MIDI hub. Connect a USB keyboard, receive notes from an iPhone via Bluetooth, bridge your DAW over WiFi with RTP-MIDI, control Max/MSP via OSC, reach vintage DIN-5 synths through a serial cable, link boards wirelessly with ESP-NOW -- **all simultaneously, all through the same clean event API.**
+
+> **Language / Idioma:** [English](en/) | [Portugues (Brasil)](pt-BR/)
 
 ---
 
-## Visão Geral da Arquitetura
+## Architecture Overview
 
 ```mermaid
 flowchart TD
@@ -14,19 +16,19 @@ flowchart TD
     classDef handler   fill:#E8EAF6,color:#283593,stroke:#3F51B5,stroke-width:3px
     classDef output    fill:#B2DFDB,color:#004D40,stroke:#00796B,stroke-width:2px
 
-    USB["🔌 USB Host"]:::transport
-    BLE["📱 BLE MIDI"]:::transport
-    DEV["💻 USB Device"]:::transport
-    UART["🎹 UART / DIN-5"]:::transport
-    RTP["🌐 RTP-MIDI"]:::transport
-    ETH["🔗 Ethernet"]:::transport
-    OSC["🎨 OSC"]:::transport
-    NOW["📡 ESP-NOW"]:::transport
+    USB["USB Host"]:::transport
+    BLE["BLE MIDI"]:::transport
+    DEV["USB Device"]:::transport
+    UART["UART / DIN-5"]:::transport
+    RTP["RTP-MIDI"]:::transport
+    ETH["Ethernet"]:::transport
+    OSC["OSC"]:::transport
+    NOW["ESP-NOW"]:::transport
 
-    HANDLER["⚙️ MIDIHandler\nFila thread-safe · Detecção de Acordes · Notas Ativas"]:::handler
+    HANDLER["MIDIHandler\nThread-safe queue - Chord Detection - Active Notes"]:::handler
 
-    GET["📤 getQueue() · getActiveNotes() · lastChord()"]:::output
-    SEND["📨 sendNoteOn() · sendCC() · sendPitchBend()"]:::output
+    GET["getQueue() - getActiveNotes() - lastChord()"]:::output
+    SEND["sendNoteOn() - sendCC() - sendPitchBend()"]:::output
 
     USB  & BLE  & DEV  --> HANDLER
     UART & RTP  & ETH  --> HANDLER
@@ -39,19 +41,19 @@ flowchart TD
 
 ---
 
-## Início Rápido
+## Quick Start
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
-// Arduino IDE: Tools > USB Mode → "USB Host"
+// Arduino IDE: Tools > USB Mode > "USB Host"
 
 void setup() {
     Serial.begin(115200);
-    midiHandler.begin();  // inicializa USB Host + BLE automaticamente
+    midiHandler.begin();  // initializes USB Host + BLE automatically
 }
 
 void loop() {
-    midiHandler.task();  // processa todos os transportes
+    midiHandler.task();  // processes all transports
 
     for (const auto& ev : midiHandler.getQueue()) {
         char noteBuf[8];
@@ -66,135 +68,136 @@ void loop() {
 
 ---
 
-## O Que Você Pode Construir
+## What You Can Build
 
-=== "🎸 Instrumentos"
-    - **Pedalboard sem fio** — botões → ESP-NOW → hub → DIN-5 para rack de efeitos
-    - **Pad de bateria MIDI** — sensores piezo + ADC → notas MIDI sensíveis a velocidade
-    - **Controlador MIDI customizado** — encoders, faders → USB Device → qualquer DAW
-    - **Theremin MIDI** — sensores ultrassônicos → pitch/volume → BLE para iPad
-    - **Conversor MIDI para CV** — ESP32 + MCP4728 DAC → 0–5 V para Eurorack
+=== "Instruments"
+    - **Wireless pedalboard** -- buttons > ESP-NOW > hub > DIN-5 to effects rack
+    - **MIDI drum pad** -- piezo sensors + ADC > velocity-sensitive MIDI notes
+    - **Custom MIDI controller** -- encoders, faders > USB Device > any DAW
+    - **MIDI theremin** -- ultrasonic sensors > pitch/volume > BLE to iPad
+    - **MIDI to CV converter** -- ESP32 + MCP4728 DAC > 0-5 V for Eurorack
 
-=== "🌐 Pontes e Roteadores"
-    - **Interface USB sem fio** — teclado USB → ESP32 → WiFi → macOS Logic Pro
-    - **Adaptador DIN-5 para DAW** — sintetizador vintage → ESP32 → USB Device
-    - **Mesh de palco** — ESP-NOW entre performers → saída USB única para FOH
+=== "Bridges and Routers"
+    - **Wireless USB interface** -- USB keyboard > ESP32 > WiFi > macOS Logic Pro
+    - **DIN-5 to DAW adapter** -- vintage synth > ESP32 > USB Device
+    - **Stage mesh** -- ESP-NOW between performers > single USB output to FOH
 
-=== "🎨 Software Criativo"
-    - **OSC ↔ MIDI** — Max/MSP, Pure Data, SuperCollider via WiFi UDP
-    - **TouchOSC → sintetizador DIN-5** — touchscreen para hardware vintage
-    - **Composição algorítmica** — Max → OSC → ESP32 → BLE → app no iPad
+=== "Creative Software"
+    - **OSC to MIDI** -- Max/MSP, Pure Data, SuperCollider via WiFi UDP
+    - **TouchOSC to DIN-5 synth** -- touchscreen to vintage hardware
+    - **Algorithmic composition** -- Max > OSC > ESP32 > BLE > iPad app
 
-=== "📊 Educação e Monitoramento"
-    - **Piano roll ao vivo** — 25 teclas com rolagem em display 1.9"
-    - **Detector de acordes** — toque um acorde, veja "Cmaj7" instantaneamente
-    - **Logger de eventos** — timestamps, canal, velocidade, agrupamento de acordes
+=== "Education and Monitoring"
+    - **Live piano roll** -- 25-key scrolling display on 1.9" screen
+    - **Chord detector** -- play a chord, see "Cmaj7" instantly
+    - **Event logger** -- timestamps, channel, velocity, chord grouping
 
 ---
 
-## Galeria
+## Gallery
 
 <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin:24px 0">
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="230" alt="Piano Visualizer" style="border-radius:8px"/>
-    <figcaption><em>Piano roll de 25 teclas</em></figcaption>
+    <figcaption><em>25-key piano roll</em></figcaption>
   </figure>
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="230" alt="Gingoduino" style="border-radius:8px"/>
-    <figcaption><em>Detecção de acordes (Gingoduino)</em></figcaption>
+    <figcaption><em>Chord detection (Gingoduino)</em></figcaption>
   </figure>
 </div>
 
 <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin:24px 0">
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/RTP-MIDI-WiFi/images/RTP.jpeg" width="230" alt="RTP-MIDI" style="border-radius:8px"/>
-    <figcaption><em>RTP-MIDI no macOS Audio MIDI Setup</em></figcaption>
+    <figcaption><em>RTP-MIDI on macOS Audio MIDI Setup</em></figcaption>
   </figure>
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="230" alt="BLE Receiver" style="border-radius:8px"/>
-    <figcaption><em>BLE MIDI Receiver (iPhone → ESP32)</em></figcaption>
+    <figcaption><em>BLE MIDI Receiver (iPhone to ESP32)</em></figcaption>
   </figure>
   <figure style="margin:0; text-align:center">
     <img src="https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/examples/T-Display-S3-Queue/images/queue.jpeg" width="230" alt="Event Queue" style="border-radius:8px"/>
-    <figcaption><em>Fila de eventos em tempo real</em></figcaption>
+    <figcaption><em>Real-time event queue</em></figcaption>
   </figure>
 </div>
 
 ---
 
-## Navegação
+## Documentation
 
 <div class="grid cards" markdown>
 
--   :material-book-open-page-variant:{ .lg .middle } **Guia**
+-   :material-book-open-page-variant:{ .lg .middle } **Guide**
 
     ---
 
-    Do básico ao avançado: instalação, primeiros passos, configuração.
+    From basics to advanced: installation, getting started, configuration.
 
-    [:octicons-arrow-right-24: Começar](guia/introducao.md)
+    [:octicons-arrow-right-24: English](en/guide/introduction.md) | [:octicons-arrow-right-24: Portugues](pt-BR/guia/introducao.md)
 
--   :material-antenna:{ .lg .middle } **Transportes**
-
-    ---
-
-    8 protocolos documentados: USB, BLE, WiFi, Ethernet, DIN-5, ESP-NOW, OSC.
-
-    [:octicons-arrow-right-24: Ver Transportes](transportes/visao-geral.md)
-
--   :material-puzzle:{ .lg .middle } **Funcionalidades**
+-   :material-antenna:{ .lg .middle } **Transports**
 
     ---
 
-    Detecção de acordes, notas ativas, histórico PSRAM e integração com Gingoduino.
+    9 protocols documented: USB Host, USB Device, BLE, WiFi, Ethernet, DIN-5, ESP-NOW, OSC, MIDI 2.0.
 
-    [:octicons-arrow-right-24: Ver Funcionalidades](funcionalidades/deteccao-acordes.md)
+    [:octicons-arrow-right-24: English](en/transports/overview.md) | [:octicons-arrow-right-24: Portugues](pt-BR/transportes/visao-geral.md)
+
+-   :material-puzzle:{ .lg .middle } **Features**
+
+    ---
+
+    Chord detection, active notes, PSRAM history, SysEx, and Gingoduino integration.
+
+    [:octicons-arrow-right-24: English](en/features/chord-detection.md) | [:octicons-arrow-right-24: Portugues](pt-BR/funcionalidades/deteccao-acordes.md)
 
 -   :material-code-braces:{ .lg .middle } **API**
 
     ---
 
-    Referência completa de classes, métodos e estruturas de dados.
+    Complete reference for classes, methods, and data structures.
 
-    [:octicons-arrow-right-24: Ver API](api/referencia.md)
+    [:octicons-arrow-right-24: English](en/api/reference.md) | [:octicons-arrow-right-24: Portugues](pt-BR/api/referencia.md)
 
--   :material-lightbulb:{ .lg .middle } **Exemplos**
-
-    ---
-
-    Sketches prontos para usar: piano roll, OSC bridge, ESP-NOW Jam e mais.
-
-    [:octicons-arrow-right-24: Ver Exemplos](exemplos/t-display-s3.md)
-
--   :material-wrench:{ .lg .middle } **Avançado**
+-   :material-lightbulb:{ .lg .middle } **Examples**
 
     ---
 
-    Compatibilidade de hardware e troubleshooting.
+    Ready-to-use sketches: piano roll, OSC bridge, ESP-NOW Jam, and more.
 
-    [:octicons-arrow-right-24: Ver Avançado](avancado/hardware.md)
+    [:octicons-arrow-right-24: English](en/examples/t-display-s3.md) | [:octicons-arrow-right-24: Portugues](pt-BR/exemplos/t-display-s3.md)
+
+-   :material-wrench:{ .lg .middle } **Advanced**
+
+    ---
+
+    Hardware compatibility and troubleshooting.
+
+    [:octicons-arrow-right-24: English](en/advanced/hardware.md) | [:octicons-arrow-right-24: Portugues](pt-BR/avancado/hardware.md)
 
 </div>
 
 ---
 
-## Matriz de Transportes
+## Transport Matrix
 
-| Transporte | Protocolo | Física | Latência | Chips |
-|-----------|----------|--------|---------|-------|
-| 🔌 USB Host | USB MIDI 1.0 | Cabo USB-OTG | **< 1 ms** | S3 / S2 / P4 |
-| 📱 BLE MIDI | BLE MIDI 1.0 | Bluetooth LE | 3–15 ms | Qualquer ESP32 com BT |
-| 💻 USB Device | USB MIDI 1.0 | Cabo USB-OTG | **< 1 ms** | S3 / S2 / P4 |
-| 📡 ESP-NOW | ESP-NOW | Rádio 2,4 GHz | 1–5 ms | Qualquer ESP32 |
-| 🌐 RTP-MIDI | AppleMIDI / RFC 6295 | WiFi UDP | 5–20 ms | Qualquer ESP32 com WiFi |
-| 🔗 Ethernet | AppleMIDI / RFC 6295 | Cabeado | 2–10 ms | W5500 SPI ou ESP32-P4 |
-| 🎨 OSC | Open Sound Control | WiFi UDP | 5–15 ms | Qualquer ESP32 com WiFi |
-| 🎹 UART / DIN-5 | Serial MIDI 1.0 | DIN-5 | **< 1 ms** | Qualquer ESP32 |
+| Transport | Protocol | Physical | Latency | Chips |
+|-----------|----------|----------|---------|-------|
+| USB Host | USB MIDI 1.0 | USB-OTG cable | **< 1 ms** | S3 / S2 / P4 |
+| BLE MIDI | BLE MIDI 1.0 | Bluetooth LE | 3-15 ms | Any ESP32 with BT |
+| USB Device | USB MIDI 1.0 | USB-OTG cable | **< 1 ms** | S3 / S2 / P4 |
+| ESP-NOW | ESP-NOW | 2.4 GHz radio | 1-5 ms | Any ESP32 |
+| RTP-MIDI | AppleMIDI / RFC 6295 | WiFi UDP | 5-20 ms | Any ESP32 with WiFi |
+| Ethernet | AppleMIDI / RFC 6295 | Wired | 2-10 ms | W5500 SPI or ESP32-P4 |
+| OSC | Open Sound Control | WiFi UDP | 5-15 ms | Any ESP32 with WiFi |
+| UART / DIN-5 | Serial MIDI 1.0 | DIN-5 | **< 1 ms** | Any ESP32 |
+| MIDI 2.0 UMP | Universal MIDI Packet | WiFi UDP | 5-20 ms | Any ESP32 with WiFi |
 
 ---
 
-## Links do Ecossistema
+## Ecosystem Links
 
-- **[Gingoduino](https://github.com/sauloverissimo/gingoduino)** — biblioteca de teoria musical para ESP32 (detecta acordes, escalas e progressões)
-- **[Gingo](https://sauloverissimo.github.io/gingo/)** — versão Python do Gingoduino para desktop e scripts
-- **[LilyGO T-Display-S3](https://www.lilygo.cc/products/t-display-s3)** — placa recomendada (ESP32-S3 + display 1.9")
+- **[Gingoduino](https://github.com/sauloverissimo/gingoduino)** -- music theory library for ESP32 (detects chords, scales, and progressions)
+- **[Gingo](https://sauloverissimo.github.io/gingo/)** -- Python version of Gingoduino for desktop and scripts
+- **[LilyGO T-Display-S3](https://www.lilygo.cc/products/t-display-s3)** -- recommended board (ESP32-S3 + 1.9" display)
