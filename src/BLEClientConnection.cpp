@@ -221,9 +221,14 @@ bool BLEClientConnection::dequeue(RawMsg& msg) {
 // --- Scan Callback ---
 
 void BLEClientConnection::ScanCB::onResult(BLEAdvertisedDevice advertisedDevice) {
-    // Check if this device advertises BLE MIDI service
-    if (!advertisedDevice.haveServiceUUID() ||
-        !advertisedDevice.isAdvertisingService(BLEUUID(BLE_MIDI_SVC))) {
+    bool hasMidiUUID = advertisedDevice.haveServiceUUID() &&
+                       advertisedDevice.isAdvertisingService(BLEUUID(BLE_MIDI_SVC));
+    bool hasTargetFilter = !parent->targetAddr.empty() || !parent->targetDevName.empty();
+
+    // If no target filter is set, require MIDI UUID in the advertisement.
+    // If a target filter is set, allow name/address match without MIDI UUID --
+    // the MIDI service will be verified after connection in connectToDevice().
+    if (!hasMidiUUID && !hasTargetFilter) {
         return;
     }
 
