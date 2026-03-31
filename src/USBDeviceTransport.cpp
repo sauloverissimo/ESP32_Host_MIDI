@@ -1,5 +1,8 @@
 #include "USBDeviceTransport.h"
 #include <string.h>
+#include <esp_log.h>
+
+static const char* TAG = "USBMidiDev";
 
 USBDeviceTransport::USBDeviceTransport()
   : _ready(false),
@@ -198,7 +201,16 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
             uint8_t bNumEndpoints      = p[index + 4];
             uint8_t bInterfaceClass    = p[index + 5];
             uint8_t bInterfaceSubClass = p[index + 6];
-            if (bInterfaceClass == 0x01 && bInterfaceSubClass == 0x03) {
+
+            ESP_LOGD(TAG, "intf %d alt %d cls 0x%02x sub 0x%02x eps %d",
+                     bInterfaceNumber, bAlternateSetting,
+                     bInterfaceClass, bInterfaceSubClass, bNumEndpoints);
+
+            // Only claim MIDI Streaming interfaces (class 0x01, subclass 0x03)
+            // that have at least one endpoint -- AudioControl (subclass 0x01) and
+            // zero-bandwidth Alt Setting 0 descriptors are skipped intentionally.
+            if (bInterfaceClass == 0x01 && bInterfaceSubClass == 0x03 && bNumEndpoints > 0) {
+                ESP_LOGD(TAG, "trying claim: intf %d alt %d", bInterfaceNumber, bAlternateSetting);
                 esp_err_t err = usb_host_interface_claim(_clientHandle, _deviceHandle, bInterfaceNumber, bAlternateSetting);
                 if (err == ESP_OK) {
                     _claimedInterface = bInterfaceNumber;
@@ -218,6 +230,9 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                             uint8_t bInterval = p[idx2 + 6];
                             if (wMaxPacketSize > 512) wMaxPacketSize = 512;
                             if (wMaxPacketSize == 0) wMaxPacketSize = 64;
+
+                            ESP_LOGD(TAG, "  ep 0x%02x attr 0x%02x pkt %d",
+                                     bEndpointAddress, bmAttributes, wMaxPacketSize);
 
                             if (bEndpointAddress & 0x80) {
                                 // IN endpoint (device -> host)
@@ -256,19 +271,29 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                                 _outTransfer->context = this;
                             }
                         }
+                        ESP_LOGI(TAG, "MIDI intf %d alt %d claimed (IN 0x%02x OUT 0x%02x)",
+                                 bInterfaceNumber, bAlternateSetting,
+                                 _transfer ? _transfer->bEndpointAddress : 0,
+                                 _outEndpoint);
                         _ready = true;
                         claimedOk = true;
                         return true;
                     }
                     // No IN endpoint found; release the interface
+                    ESP_LOGW(TAG, "intf %d alt %d: no IN endpoint, releasing",
+                             bInterfaceNumber, bAlternateSetting);
                     usb_host_interface_release(_clientHandle, _deviceHandle, bInterfaceNumber);
                     _interfaceClaimed = false;
+                } else {
+                    ESP_LOGW(TAG, "claim intf %d alt %d failed: 0x%x",
+                             bInterfaceNumber, bAlternateSetting, err);
                 }
             }
         }
         index += len;
     }
     // No MIDI Streaming interface found -- this device is not USB-MIDI.
+    ESP_LOGW(TAG, "no MIDI Streaming interface found (addr %d)", _address);
     return false;
 }
 
