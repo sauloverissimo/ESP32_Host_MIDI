@@ -29,6 +29,9 @@ public:
     // Returns whether the USB connection is ready.
     bool isConnected() const override { return isReady; }
 
+    // Sends a MIDI message to the connected USB device.
+    bool sendMidiMessage(const uint8_t* data, size_t length) override;
+
     // Returns the last error message (empty if none).
     const String& getLastError() const { return lastError; }
 
@@ -44,7 +47,9 @@ protected:
     usb_host_client_handle_t clientHandle;
     usb_device_handle_t deviceHandle;
     uint32_t eventFlags;
-    usb_transfer_t* midiTransfer;
+    usb_transfer_t* midiTransfer;     // IN transfer (receive)
+    usb_transfer_t* _outTransfer;     // OUT transfer (send)
+    volatile bool _outTransferBusy;   // True while an OUT transfer is pending
 
     // Ring buffer for raw USB packets.
     // Protected by spinlock for thread-safe access on dual-core ESP32.
@@ -76,6 +81,7 @@ protected:
     // Internal USB Host callbacks.
     static void _clientEventCallback(const usb_host_client_event_msg_t *eventMsg, void *arg);
     static void _onReceive(usb_transfer_t *transfer);
+    static void _onSendComplete(usb_transfer_t *transfer);
     virtual void _processConfig(const usb_config_desc_t *config_desc);
     virtual void _onDeviceGone() {}  // Override to free extra resources on disconnect.
 };
