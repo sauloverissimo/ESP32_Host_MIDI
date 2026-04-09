@@ -16,9 +16,10 @@ USBConnection::USBConnection()
     interval(0),
     lastCheck(0),
     clientHandle(nullptr),
-    deviceHandle(nullptr),
     eventFlags(0),
     midiTransfer(nullptr),
+    _outTransfer(nullptr),
+    _outTransferBusy(false),
     queueHead(0),
     queueTail(0),
     queueMux(portMUX_INITIALIZER_UNLOCKED),
@@ -215,6 +216,10 @@ void USBConnection::_clientEventCallback(const usb_host_client_event_msg_t *even
                 usb_host_transfer_free(usbCon->midiTransfer);
                 usbCon->midiTransfer = nullptr;
             }
+            if (usbCon->_outTransfer) {
+                usb_host_transfer_free(usbCon->_outTransfer);
+                usbCon->_outTransfer = nullptr;
+            }
             usb_host_device_close(usbCon->clientHandle, usbCon->deviceHandle);
             usbCon->isReady = false;
             usbCon->dispatchDisconnected();
@@ -271,7 +276,8 @@ void USBConnection::_processConfig(const usb_config_desc_t *config_desc) {
                         if (len2 < 2 || (idx2 + len2) > totalLength) break;
                         uint8_t type2 = p[idx2 + 1];
                         if (type2 == 0x04) break; // Next interface
-                        if (type2 == 0x05 && bNumEndpoints > 0) {
+                        
+                        if (type2 == 0x05 && bNumEndpoints > 0) { // It's an endpoint descriptor!
                             if (len2 >= 7) {
                                 uint8_t bEndpointAddress = p[idx2 + 2];
                                 uint8_t bmAttributes = p[idx2 + 3];
@@ -279,9 +285,10 @@ void USBConnection::_processConfig(const usb_config_desc_t *config_desc) {
                                 uint8_t bInterval = p[idx2 + 6];
                                 if (wMaxPacketSize > 512) wMaxPacketSize = 512;
                                 if (wMaxPacketSize == 0) wMaxPacketSize = 64;
-                                if (bEndpointAddress & 0x80) {
-                                    uint8_t transferType = bmAttributes & 0x03;
-                                    uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
+                                uint8_t transferType = bmAttributes & 0x03;
+                                uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
+                                
+                                if (bEndpointAddress & 0x80) { // IN Endpoint
                                     esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &midiTransfer);
                                     if (e2 == ESP_OK && midiTransfer != nullptr) {
                                         midiTransfer->device_handle = deviceHandle;
@@ -292,13 +299,22 @@ void USBConnection::_processConfig(const usb_config_desc_t *config_desc) {
                                         interval = (bInterval == 0) ? 1 : bInterval;
                                         isReady = true;
                                         claimedOk = true;
-                                        return;
+                                    }
+                                } else { // OUT Endpoint
+                                    esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &_outTransfer);
+                                    if (e2 == ESP_OK && _outTransfer != nullptr) {
+                                        _outTransfer->device_handle = deviceHandle;
+                                        _outTransfer->bEndpointAddress = bEndpointAddress;
+                                        _outTransfer->callback = _onSendComplete;
+                                        _outTransfer->context = this;
+                                        _outTransfer->num_bytes = wMaxPacketSize;
                                     }
                                 }
                             }
                         }
                         idx2 += len2;
                     }
+                    if (claimedOk) return;
                     usb_host_interface_release(clientHandle, deviceHandle, bInterfaceNumber);
                 }
             }
@@ -317,5 +333,47 @@ void USBConnection::_processConfig(const usb_config_desc_t *config_desc) {
             interval = 1;
             isReady = true;
         }
+    }
+}
+
+// ---------- Send ----------
+
+bool USBConnection::sendMidiMessage(const uint8_t* data, size_t length) {
+    if (!isReady || !_outTransfer || length == 0) return false;
+    if (_outTransferBusy) return false;
+
+    // Obtener "Code Index Number" (CIN).
+    // Para NoteOn, NoteOff, CC, y PitchBend el CIN es igual a High Nibble (>> 4).
+    // Para Real-time (status > 0xF8), el CIN es 0x0F.
+    uint8_t cin = 0;
+    if (data[0] >= 0x80 && data[0] <= 0xEF) {
+        cin = data[0] >> 4;
+    } else if (data[0] >= 0xF8) {
+        cin = 0x0F;
+    } else {
+        cin = 0x04; // Para SysEx o mensajes no estándar, aunque SysEx largo requiere partición.
+    }
+
+    uint8_t packet[4] = {0, 0, 0, 0};
+    packet[0] = cin;
+    for (size_t i = 0; i < length && i < 3; i++) {
+        packet[i + 1] = data[i];
+    }
+
+    memcpy(_outTransfer->data_buffer, packet, 4);
+    _outTransfer->num_bytes = 4;
+
+    _outTransferBusy = true;
+    esp_err_t err = usb_host_transfer_submit(_outTransfer);
+    if (err != ESP_OK) {
+        _outTransferBusy = false;
+    }
+    return err == ESP_OK;
+}
+
+void USBConnection::_onSendComplete(usb_transfer_t *transfer) {
+    USBConnection *usbCon = static_cast<USBConnection*>(transfer->context);
+    if (usbCon) {
+        usbCon->_outTransferBusy = false;
     }
 }
