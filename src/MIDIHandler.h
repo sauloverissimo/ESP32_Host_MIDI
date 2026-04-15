@@ -23,7 +23,7 @@
 #endif
 
 #ifndef ESP32_HOST_MIDI_HAS_BLE
-  #if defined(CONFIG_BT_ENABLED)
+  #if defined(CONFIG_BT_ENABLED) && !defined(ESP32_HOST_MIDI_NO_BLE)
     #define ESP32_HOST_MIDI_HAS_BLE 1
   #else
     #define ESP32_HOST_MIDI_HAS_BLE 0

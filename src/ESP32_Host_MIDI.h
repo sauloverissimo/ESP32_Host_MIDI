@@ -17,7 +17,9 @@
 
 // BLE requires Bluetooth support (ESP32, ESP32-S3, ESP32-C3, ESP32-C6, ESP32-H2).
 // ESP32-S2 and ESP32-P4 do NOT have native Bluetooth.
-#if defined(CONFIG_BT_ENABLED)
+// Define ESP32_HOST_MIDI_NO_BLE before including this header to exclude BLE
+// even when Bluetooth is available (useful for isolating BLE+USB Host conflicts).
+#if defined(CONFIG_BT_ENABLED) && !defined(ESP32_HOST_MIDI_NO_BLE)
   #define ESP32_HOST_MIDI_HAS_BLE 1
 #else
   #define ESP32_HOST_MIDI_HAS_BLE 0
