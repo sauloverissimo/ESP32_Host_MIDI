@@ -133,14 +133,16 @@ void USBHubManager::onNewDevice(uint8_t address) {
         return;
     }
 
-    // Skip hub devices (bDeviceClass 0x09) -- they are not MIDI devices
+    // Read device descriptor (keep the read to match normal code path).
+    // Hub class filter (bDeviceClass == 0x09) temporarily disabled for
+    // EP allocation debugging. See discussion #16.
+    // TODO: restore hub filter after root cause is found
     const usb_device_desc_t* devDesc;
-    if (usb_host_get_device_descriptor(devHandle, &devDesc) == ESP_OK) {
-        if (devDesc->bDeviceClass == 0x09) {
-            usb_host_device_close(_clientHandle, devHandle);
-            return;
-        }
-    }
+    usb_host_get_device_descriptor(devHandle, &devDesc);
+    // if (devDesc && devDesc->bDeviceClass == 0x09) {
+    //     usb_host_device_close(_clientHandle, devHandle);
+    //     return;
+    // }
 
     USBDeviceTransport* transport = new (std::nothrow) USBDeviceTransport();
     if (!transport) {

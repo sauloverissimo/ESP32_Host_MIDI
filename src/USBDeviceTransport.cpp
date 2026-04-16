@@ -183,7 +183,6 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
     const uint8_t* p = config_desc->val;
     uint16_t totalLength = config_desc->wTotalLength;
     uint16_t index = 0;
-    bool claimedOk = false;
 
     while (index < totalLength) {
         if (index + 1 >= totalLength) break;
@@ -276,7 +275,6 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
                                  _transfer ? _transfer->bEndpointAddress : 0,
                                  _outEndpoint);
                         _ready = true;
-                        claimedOk = true;
                         return true;
                     }
                     // No IN endpoint found; release the interface
