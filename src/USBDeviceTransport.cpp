@@ -179,10 +179,14 @@ void USBDeviceTransport::processQueue() {
     }
 }
 
-bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
+int USBDeviceTransport::scanMidiInterfaces(
+        const usb_config_desc_t* config_desc,
+        IntfCandidate candidates[MAX_CANDIDATES])
+{
     const uint8_t* p = config_desc->val;
     uint16_t totalLength = config_desc->wTotalLength;
     uint16_t index = 0;
+    int count = 0;
 
     while (index < totalLength) {
         if (index + 1 >= totalLength) break;
@@ -190,109 +194,170 @@ bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
         if (len < 2 || (index + len) > totalLength) break;
 
         uint8_t descriptorType = p[index + 1];
-        if (descriptorType == 0x04) { // Interface Descriptor
-            if (len < 9) {
-                index += len;
-                continue;
-            }
-            uint8_t bInterfaceNumber   = p[index + 2];
-            uint8_t bAlternateSetting  = p[index + 3];
-            uint8_t bNumEndpoints      = p[index + 4];
-            uint8_t bInterfaceClass    = p[index + 5];
-            uint8_t bInterfaceSubClass = p[index + 6];
+        if (descriptorType == 0x04 && len >= 9) {       // Interface
+            uint8_t bIntfNum      = p[index + 2];
+            uint8_t bAltSetting   = p[index + 3];
+            uint8_t bNumEps       = p[index + 4];
+            uint8_t bIntfClass    = p[index + 5];
+            uint8_t bIntfSubClass = p[index + 6];
 
             ESP_LOGD(TAG, "intf %d alt %d cls 0x%02x sub 0x%02x eps %d",
-                     bInterfaceNumber, bAlternateSetting,
-                     bInterfaceClass, bInterfaceSubClass, bNumEndpoints);
+                     bIntfNum, bAltSetting, bIntfClass, bIntfSubClass, bNumEps);
 
-            // Only claim MIDI Streaming interfaces (class 0x01, subclass 0x03)
-            // that have at least one endpoint -- AudioControl (subclass 0x01) and
-            // zero-bandwidth Alt Setting 0 descriptors are skipped intentionally.
-            if (bInterfaceClass == 0x01 && bInterfaceSubClass == 0x03 && bNumEndpoints > 0) {
-                ESP_LOGD(TAG, "trying claim: intf %d alt %d", bInterfaceNumber, bAlternateSetting);
-                esp_err_t err = usb_host_interface_claim(_clientHandle, _deviceHandle, bInterfaceNumber, bAlternateSetting);
-                if (err == ESP_OK) {
-                    _claimedInterface = bInterfaceNumber;
-                    _interfaceClaimed = true;
-                    bool foundIn = false;
-                    uint16_t idx2 = index + len;
-                    while (idx2 < totalLength) {
-                        if (idx2 + 1 >= totalLength) break;
-                        uint8_t len2 = p[idx2];
-                        if (len2 < 2 || (idx2 + len2) > totalLength) break;
-                        uint8_t type2 = p[idx2 + 1];
-                        if (type2 == 0x04) break; // Next interface
-                        if (type2 == 0x05 && len2 >= 7) {
-                            uint8_t bEndpointAddress = p[idx2 + 2];
-                            uint8_t bmAttributes = p[idx2 + 3];
-                            uint16_t wMaxPacketSize = (p[idx2 + 4] | (p[idx2 + 5] << 8));
-                            uint8_t bInterval = p[idx2 + 6];
-                            if (wMaxPacketSize > 512) wMaxPacketSize = 512;
-                            if (wMaxPacketSize == 0) wMaxPacketSize = 64;
-
-                            ESP_LOGD(TAG, "  ep 0x%02x attr 0x%02x pkt %d",
-                                     bEndpointAddress, bmAttributes, wMaxPacketSize);
-
-                            if (bEndpointAddress & 0x80) {
-                                // IN endpoint (device -> host)
-                                if (!foundIn) {
-                                    uint8_t transferType = bmAttributes & 0x03;
-                                    uint32_t timeout = (transferType == 0x02) ? 3000 : 0;
-                                    esp_err_t e2 = usb_host_transfer_alloc(wMaxPacketSize, timeout, &_transfer);
-                                    if (e2 == ESP_OK && _transfer != nullptr) {
-                                        _transfer->device_handle = _deviceHandle;
-                                        _transfer->bEndpointAddress = bEndpointAddress;
-                                        _transfer->callback = _onReceive;
-                                        _transfer->context = this;
-                                        _transfer->num_bytes = wMaxPacketSize;
-                                        _interval = (bInterval == 0) ? 1 : bInterval;
-                                        foundIn = true;
-                                    }
-                                }
-                            } else {
-                                // OUT endpoint (host -> device)
-                                if (_outEndpoint == 0) {
-                                    _outEndpoint = bEndpointAddress;
-                                    _outMaxPacketSize = wMaxPacketSize;
-                                }
-                            }
-                        }
-                        idx2 += len2;
-                    }
-                    if (foundIn) {
-                        // Allocate OUT transfer if we found an OUT endpoint
-                        if (_outEndpoint != 0) {
-                            usb_host_transfer_alloc(_outMaxPacketSize, 0, &_outTransfer);
-                            if (_outTransfer) {
-                                _outTransfer->device_handle = _deviceHandle;
-                                _outTransfer->bEndpointAddress = _outEndpoint;
-                                _outTransfer->callback = _onSendComplete;
-                                _outTransfer->context = this;
-                            }
-                        }
-                        ESP_LOGI(TAG, "MIDI intf %d alt %d claimed (IN 0x%02x OUT 0x%02x)",
-                                 bInterfaceNumber, bAlternateSetting,
-                                 _transfer ? _transfer->bEndpointAddress : 0,
-                                 _outEndpoint);
-                        _ready = true;
-                        return true;
-                    }
-                    // No IN endpoint found; release the interface
-                    ESP_LOGW(TAG, "intf %d alt %d: no IN endpoint, releasing",
-                             bInterfaceNumber, bAlternateSetting);
-                    usb_host_interface_release(_clientHandle, _deviceHandle, bInterfaceNumber);
-                    _interfaceClaimed = false;
-                } else {
-                    ESP_LOGW(TAG, "claim intf %d alt %d failed: 0x%x",
-                             bInterfaceNumber, bAlternateSetting, err);
+            if (bIntfClass == 0x01 && bIntfSubClass == 0x03 && bNumEps > 0) {
+                if (count >= MAX_CANDIDATES) {
+                    ESP_LOGW(TAG, "candidate list full at %d, truncating scan",
+                             MAX_CANDIDATES);
+                    break;
                 }
+                candidates[count] = { bIntfNum, bAltSetting, bNumEps,
+                                      (uint16_t)(index + len) };
+                count++;
             }
         }
         index += len;
     }
-    // No MIDI Streaming interface found -- this device is not USB-MIDI.
-    ESP_LOGW(TAG, "no MIDI Streaming interface found (addr %d)", _address);
-    return false;
+    return count;
+}
+
+int USBDeviceTransport::selectBestCandidate(const IntfCandidate* cand, int count)
+{
+    if (count == 0) return -1;
+
+    // Pass 1: pick the target interface number -- the FIRST one that appears
+    // in descriptor order. This matches the legacy behavior of parseConfig
+    // which claimed the first MIDI Streaming interface it found.
+    uint8_t targetIntf = cand[0].bInterfaceNumber;
+
+    // Pass 2: among all candidates for that interface, prefer the highest
+    // alt setting (Alt 1 > Alt 0) for MIDI 2.0 preference.
+    int bestIdx = -1;
+    uint8_t bestAlt = 0;
+    for (int i = 0; i < count; i++) {
+        if (cand[i].bInterfaceNumber != targetIntf) continue;
+        if (bestIdx < 0 || cand[i].bAlternateSetting > bestAlt) {
+            bestIdx = i;
+            bestAlt = cand[i].bAlternateSetting;
+        }
+    }
+    return bestIdx;
+}
+
+bool USBDeviceTransport::parseConfig(const usb_config_desc_t* config_desc) {
+    // Reset per-attach state (this object may be reused across reconnects)
+    _outEndpoint = 0;
+    _outMaxPacketSize = 0;
+
+    IntfCandidate candidates[MAX_CANDIDATES];
+    int n = scanMidiInterfaces(config_desc, candidates);
+    if (n == 0) {
+        ESP_LOGW(TAG, "no MIDI Streaming interface found (addr %d)", _address);
+        return false;
+    }
+
+    int best = selectBestCandidate(candidates, n);
+    if (best < 0) {
+        ESP_LOGW(TAG, "no viable MIDI interface candidate (addr %d)", _address);
+        return false;
+    }
+
+    const IntfCandidate& c = candidates[best];
+    ESP_LOGI(TAG, "selected MIDI intf %d alt %d (from %d candidates)",
+             c.bInterfaceNumber, c.bAlternateSetting, n);
+
+    esp_err_t err = usb_host_interface_claim(
+        _clientHandle, _deviceHandle,
+        c.bInterfaceNumber, c.bAlternateSetting);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "claim intf %d alt %d failed: 0x%x",
+                 c.bInterfaceNumber, c.bAlternateSetting, err);
+        return false;
+    }
+
+    _claimedInterface = c.bInterfaceNumber;
+    _interfaceClaimed = true;
+
+    // Walk endpoints from recorded offset. Stop at next interface descriptor.
+    const uint8_t* p = config_desc->val;
+    uint16_t totalLength = config_desc->wTotalLength;
+    uint16_t idx = c.endpointsOffset;
+    bool foundIn = false;
+
+    while (idx < totalLength) {
+        if (idx + 1 >= totalLength) break;
+        uint8_t len = p[idx];
+        if (len < 2 || (idx + len) > totalLength) break;
+        uint8_t type = p[idx + 1];
+        if (type == 0x04) break;  // next interface
+        if (type == 0x05 && len >= 7) {
+            uint8_t bEpAddr   = p[idx + 2];
+            uint8_t bmAttr    = p[idx + 3];
+            uint16_t wMaxPkt  = (p[idx + 4] | (p[idx + 5] << 8));
+            uint8_t bInterval = p[idx + 6];
+            if (wMaxPkt > 512) wMaxPkt = 512;
+            if (wMaxPkt == 0) wMaxPkt = 64;
+
+            ESP_LOGD(TAG, "  ep 0x%02x attr 0x%02x pkt %d",
+                     bEpAddr, bmAttr, wMaxPkt);
+
+            if (bEpAddr & 0x80) {
+                // IN endpoint (device -> host)
+                if (!foundIn) {
+                    uint8_t xferType = bmAttr & 0x03;
+                    uint32_t timeout = (xferType == 0x02) ? 3000 : 0;
+                    esp_err_t e2 = usb_host_transfer_alloc(wMaxPkt, timeout, &_transfer);
+                    if (e2 == ESP_OK && _transfer) {
+                        _transfer->device_handle    = _deviceHandle;
+                        _transfer->bEndpointAddress = bEpAddr;
+                        _transfer->callback         = _onReceive;
+                        _transfer->context          = this;
+                        _transfer->num_bytes        = wMaxPkt;
+                        _interval = (bInterval == 0) ? 1 : bInterval;
+                        foundIn = true;
+                    }
+                }
+            } else {
+                // OUT endpoint (host -> device) -- first OUT wins
+                if (_outEndpoint == 0) {
+                    _outEndpoint = bEpAddr;
+                    _outMaxPacketSize = wMaxPkt;
+                }
+            }
+        }
+        idx += len;
+    }
+
+    if (!foundIn) {
+        // NOTE: behavioral change vs legacy parseConfig.
+        // Legacy code would advance the outer loop and try the next MIDI
+        // Streaming interface descriptor on this failure. New code picks a
+        // single candidate up front and gives up if it fails. This is a
+        // conscious choice: malformed preferred alt settings are rare, and
+        // the simplicity of a single claim path outweighs the edge case.
+        // If field reports show devices hitting this path, revisit.
+        ESP_LOGW(TAG, "intf %d alt %d claimed but no IN endpoint found",
+                 c.bInterfaceNumber, c.bAlternateSetting);
+        usb_host_interface_release(_clientHandle, _deviceHandle, c.bInterfaceNumber);
+        _interfaceClaimed = false;
+        _claimedInterface = 0;
+        return false;
+    }
+
+    if (_outEndpoint != 0) {
+        usb_host_transfer_alloc(_outMaxPacketSize, 0, &_outTransfer);
+        if (_outTransfer) {
+            _outTransfer->device_handle    = _deviceHandle;
+            _outTransfer->bEndpointAddress = _outEndpoint;
+            _outTransfer->callback         = _onSendComplete;
+            _outTransfer->context          = this;
+        }
+    }
+
+    ESP_LOGI(TAG, "MIDI intf %d alt %d claimed (IN 0x%02x OUT 0x%02x)",
+             c.bInterfaceNumber, c.bAlternateSetting,
+             _transfer ? _transfer->bEndpointAddress : 0, _outEndpoint);
+    _ready = true;
+    return true;
 }
 
 bool USBDeviceTransport::sendMidiMessage(const uint8_t* data, size_t length) {

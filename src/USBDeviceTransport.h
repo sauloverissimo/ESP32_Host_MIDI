@@ -64,6 +64,22 @@ private:
     bool dequeue(RawUsbMessage& msg);
     bool parseConfig(const usb_config_desc_t* config);
 
+    // Two-pass probe helpers: scan all MIDI Streaming candidates first,
+    // pick the preferred alt setting (Alt 1 > Alt 0 for MIDI 2.0 preference),
+    // then claim exactly once. Prevents double-claim on devices that expose
+    // both Alt 0 and Alt 1 of the same interface.
+    struct IntfCandidate {
+        uint8_t  bInterfaceNumber;
+        uint8_t  bAlternateSetting;
+        uint8_t  bNumEndpoints;
+        uint16_t endpointsOffset;  // byte offset in config descriptor
+    };
+    static constexpr int MAX_CANDIDATES = 8;
+
+    int scanMidiInterfaces(const usb_config_desc_t* config_desc,
+                           IntfCandidate candidates[MAX_CANDIDATES]);
+    int selectBestCandidate(const IntfCandidate* cand, int count);
+
     static void _onReceive(usb_transfer_t* transfer);
     static void _onSendComplete(usb_transfer_t* transfer);
 };
