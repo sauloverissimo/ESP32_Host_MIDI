@@ -106,6 +106,12 @@ void USBHubManager::_usbTask(void* arg) {
     for (;;) {
         usb_host_lib_handle_events(1, &mgr->_eventFlags);
         usb_host_client_handle_events(mgr->_clientHandle, 1);
+        // Explicit yield to give IDLE0 a chance to run.
+        // Without this, a device that generates rapid USB events (e.g. on
+        // enumeration error or repeated URB failure) can starve IDLE0 and
+        // trigger the task watchdog. One tick is enough for IDLE0 to
+        // reset the WDT without meaningfully delaying USB event processing.
+        vTaskDelay(1);
     }
 }
 
@@ -122,14 +128,17 @@ void USBHubManager::_clientEventCallback(const usb_host_client_event_msg_t* msg,
 }
 
 void USBHubManager::onNewDevice(uint8_t address) {
+    ESP_LOGI(TAG, "NEW_DEV event: address=%d", address);
     int slot = findFreeSlot();
     if (slot < 0) {
-        return;  // No free slots
+        ESP_LOGW(TAG, "NEW_DEV: no free slots, ignoring address %d", address);
+        return;
     }
 
     usb_device_handle_t devHandle = nullptr;
     esp_err_t err = usb_host_device_open(_clientHandle, address, &devHandle);
     if (err != ESP_OK) {
+        ESP_LOGW(TAG, "NEW_DEV: usb_host_device_open failed: 0x%x", err);
         return;
     }
 
@@ -152,6 +161,7 @@ void USBHubManager::onNewDevice(uint8_t address) {
 
     if (!transport->attach(_clientHandle, devHandle, address)) {
         // No MIDI interface found or attach failed
+        ESP_LOGW(TAG, "NEW_DEV: attach failed for address %d, cleaning up", address);
         delete transport;
         usb_host_device_close(_clientHandle, devHandle);
         return;
@@ -161,6 +171,8 @@ void USBHubManager::onNewDevice(uint8_t address) {
     _devices[slot] = transport;
     _handles[slot] = devHandle;
 
+    ESP_LOGI(TAG, "NEW_DEV: attached addr=%d in slot %d", address, slot);
+
     // Enqueue ADD operation for main loop
     PendingAction action = { PendingOp::ADD, slot, transport };
     xQueueSend(_pendingQueue, &action, 0);
@@ -169,8 +181,10 @@ void USBHubManager::onNewDevice(uint8_t address) {
 void USBHubManager::onDeviceGone(usb_device_handle_t devHandle) {
     int slot = findByHandle(devHandle);
     if (slot < 0) {
-        return;  // Unknown device
+        ESP_LOGW(TAG, "DEV_GONE: handle not found, ignoring");
+        return;
     }
+    ESP_LOGI(TAG, "DEV_GONE: slot %d", slot);
 
     // Grab the transport pointer before clearing the slot
     USBDeviceTransport* transport = _devices[slot];
