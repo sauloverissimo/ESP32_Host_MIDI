@@ -53,8 +53,13 @@ void MIDIHandler::begin(const MIDIHandlerConfig& cfg) {
 #endif
 
 #if ESP32_HOST_MIDI_HAS_BLE
-  registerTransport(&bleTransport);
-  bleTransport.begin(std::string(cfg.bleName));
+  // Runtime gate: only initialize BLE if user opted in via cfg.enableBle.
+  // The compile-time member is always present (ODR safety), but we skip
+  // begin()/advertising when disabled, freeing ~130 KB of RAM.
+  if (cfg.enableBle) {
+    registerTransport(&bleTransport);
+    bleTransport.begin(std::string(cfg.bleName));
+  }
 #endif
 
   if (cfg.historyCapacity > 0) {

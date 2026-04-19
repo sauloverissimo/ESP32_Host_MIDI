@@ -59,6 +59,16 @@ struct MIDIHandlerConfig {
     // BLE device name used when advertising.
     // Only relevant when BLE is available on the hardware.
     const char* bleName = "ESP32 MIDI BLE";
+
+    // Enable BLE transport at runtime. Set to false BEFORE calling begin()
+    // to skip NimBLE initialization, freeing ~130 KB of RAM and eliminating
+    // any BLE advertising.
+    //
+    // This replaces the earlier compile-time ESP32_HOST_MIDI_NO_BLE define,
+    // which suffered from an ODR violation when set in a sketch (the library
+    // .cpp was still compiled with BLE, causing silent memory corruption).
+    // A runtime flag works reliably across translation units.
+    bool enableBle = true;
 };
 
 #endif // MIDI_HANDLER_CONFIG_H
