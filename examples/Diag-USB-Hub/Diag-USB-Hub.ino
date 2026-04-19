@@ -2,8 +2,21 @@
 //
 // Tests whether USBHubManager can claim the MIDI interface.
 // Compare with Diag-USB-Single to isolate hub-manager issues.
+//
+// IMPORTANT build settings (Arduino IDE: Tools menu):
+//   Board:          ESP32S3 Dev Module (or ESP32P4)
+//   USB Mode:       USB-OTG (TinyUSB)   <- required: USB Host cannot start
+//                                          in "Hardware CDC and JTAG" mode
+//                                          because the HWCDC driver reserves
+//                                          the PHY at boot.
+//   USB CDC On Boot: Disabled
+//   Core Debug Level: Debug (optional, to see parseConfig logs)
+//
+// Hardware note for clone boards (YD-ESP32-S3 and similar):
+//   The "USB-OTG" solder jumper on the back of the board must be CLOSED
+//   for the native USB port to supply 5V VBUS to downstream devices.
+//   Without this, plugged MIDI devices will not power up.
 
-#define ESP32_HOST_MIDI_NO_BLE
 #define ESP32_HOST_MIDI_NO_USB_HOST
 
 #include <Arduino.h>
@@ -19,6 +32,7 @@ void setup() {
 
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 10;
+    cfg.enableBle = false;  // skip BLE init (saves ~130 KB RAM)
     midiHandler.begin(cfg);
 
     if (usbHub.begin(midiHandler)) {

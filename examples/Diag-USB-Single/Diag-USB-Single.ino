@@ -2,8 +2,10 @@
 //
 // Tests whether USBConnection can claim the MIDI interface.
 // Compare with Diag-USB-Hub to isolate hub-manager issues.
-
-#define ESP32_HOST_MIDI_NO_BLE
+//
+// IMPORTANT build settings (Arduino IDE: Tools menu):
+//   USB Mode:       USB-OTG (TinyUSB)   <- required for USB Host
+//   USB CDC On Boot: Disabled
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
@@ -15,6 +17,7 @@ void setup() {
 
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 10;
+    cfg.enableBle = false;  // skip BLE init (saves ~130 KB RAM)
     midiHandler.begin(cfg);
 
     Serial.println("Ready. Plug a USB MIDI device.");
