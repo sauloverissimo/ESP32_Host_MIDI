@@ -54,15 +54,16 @@ void BLEConnection::begin(const std::string& deviceName) {
 
     BLEService* pService = pServer->createService(BLE_MIDI_SERVICE_UUID);
 
-    // BLE MIDI spec requires READ + NOTIFY + WRITE_NR
+    // BLE MIDI spec requires READ + NOTIFY + WRITE_NR.
+    // The CCCD (0x2902) descriptor is added automatically by the underlying stack
+    // (NimBLE in arduino-esp32 3.x; BlueDroid in 2.x) whenever NOTIFY/INDICATE is set,
+    // so we no longer add it manually (BLE2902 is deprecated and will be removed).
     pCharacteristic = pService->createCharacteristic(
         BLE_MIDI_CHARACTERISTIC_UUID,
         BLECharacteristic::PROPERTY_READ    |
         BLECharacteristic::PROPERTY_NOTIFY  |
         BLECharacteristic::PROPERTY_WRITE_NR
     );
-    // CCCD descriptor: allows the central to enable/disable notifications.
-    pCharacteristic->addDescriptor(new BLE2902());
 
     // Receive callback: strips the 2-byte BLE MIDI header and enqueues raw MIDI bytes.
     // BLE MIDI packet format: [header][timestamp][midi_bytes...]

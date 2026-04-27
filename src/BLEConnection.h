@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
-#include <BLE2902.h>
 #include <freertos/portmacro.h>
 #include <freertos/semphr.h>
 #include "MIDITransport.h"
