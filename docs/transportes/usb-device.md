@@ -111,18 +111,19 @@ flowchart LR
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <BLEConnection.h>            // v6.0+: BLE explícito
 #include "src/USBDeviceConnection.h"
 // Tools > USB Mode → "USB-OTG (TinyUSB)"
 
 USBDeviceConnection usbMIDI("BLE-USB Bridge");
+BLEConnection       bleHost;
 
 void setup() {
     midiHandler.addTransport(&usbMIDI);
+    midiHandler.addTransport(&bleHost);
     usbMIDI.begin();
-
-    MIDIHandlerConfig cfg;
-    cfg.bleName = "Bridge MIDI";
-    midiHandler.begin(cfg);
+    bleHost.begin("Bridge MIDI");      // nome BLE direto no transport
+    midiHandler.begin();
 
     // Pronto! Qualquer MIDI de BLE vai para USB e vice-versa
 }

@@ -20,77 +20,69 @@ A biblioteca suporta **9 transportes MIDI simultâneos**. Cada um implementa a m
 
 ---
 
-## Transportes Built-in vs. Externos
+## Padrão de uso (v6.0+: todo transporte é explícito)
 
 ```mermaid
 graph LR
-    subgraph BUILTIN["✅ Built-in — registrados automaticamente"]
-        USB["🔌 USB Host\n(ESP32-S3/S2/P4)"]
-        BLE["📱 BLE MIDI\n(ESP32 com Bluetooth)"]
-        ESPNOW["📡 ESP-NOW\n(qualquer ESP32)"]
-    end
-
-    subgraph EXTERNAL["📦 Externos — incluir manualmente"]
+    subgraph TRANSPORTS["📦 Transports — cada um instanciado pelo user"]
+        USB["🔌 USBConnection"]
+        USB2["🎵 USBMIDI2Connection"]
+        BLE["📱 BLEConnection"]
+        USBDEV["💻 USBDeviceConnection"]
         UART["🎹 UARTConnection"]
+        ESPNOW["📡 ESPNowConnection"]
         RTP["🌐 RTPMIDIConnection"]
         ETH["🔗 EthernetMIDIConnection"]
         OSC["🎨 OSCConnection"]
-        USBDEV["💻 USBDeviceConnection"]
     end
 
-    BUILTIN --> HANDLER["MIDIHandler\nmidiHandler.begin()"]
-    EXTERNAL --> ADD["midiHandler.addTransport()"]
-    ADD --> HANDLER
+    TRANSPORTS --> ADD["midiHandler.addTransport(&transport)"]
+    ADD --> HANDLER["MIDIHandler"]
 
-    style BUILTIN fill:#1B5E20,color:#fff,stroke:#2E7D32
-    style EXTERNAL fill:#1A237E,color:#fff,stroke:#283593
+    style TRANSPORTS fill:#1A237E,color:#fff,stroke:#283593
     style HANDLER fill:#3F51B5,color:#fff,stroke:#283593
 ```
 
-### Transportes Built-in
+Em v5 o `MIDIHandler::begin()` instanciava automaticamente `USBConnection` e `BLEConnection` quando o chip suportava. Em v6+ todo transporte é explícito: o user inclui o header, instancia globalmente, registra via `addTransport()`, e chama `transport.begin()`. Isso reduz acoplamento e faz o código pagar só pelo que usa.
 
-Registrados automaticamente quando o chip suporta:
-
-```cpp
-#include <ESP32_Host_MIDI.h>
-
-void setup() {
-    midiHandler.begin();  // USB + BLE + ESP-NOW iniciados automaticamente
-}
-```
-
-### Transportes Externos
-
-Devem ser incluídos e registrados manualmente:
+### Padrão completo
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
-#include "src/UARTConnection.h"     // DIN-5 MIDI serial
-#include "src/RTPMIDIConnection.h"  // Apple MIDI via WiFi
-#include "src/OSCConnection.h"      // OSC via WiFi
+#include <USBConnection.h>          // inclua só os transports que vai usar
+#include <BLEConnection.h>
+#include <UARTConnection.h>
+#include <RTPMIDIConnection.h>
+#include <OSCConnection.h>
 
-UARTConnection uartMIDI;
+USBConnection     usbHost;
+BLEConnection     bleHost;
+UARTConnection    uartMIDI;
 RTPMIDIConnection rtpMIDI;
-OSCConnection oscMIDI;
+OSCConnection     oscMIDI;
 
 void setup() {
-    // 1. Inicializar transportes externos
-    uartMIDI.begin(Serial1, 16, 17);
-    rtpMIDI.begin("Meu ESP32");
-    oscMIDI.begin(8000, IPAddress(192,168,1,100), 9000);
-
-    // 2. Registrar no handler
+    // 1. Registre cada transport
+    midiHandler.addTransport(&usbHost);
+    midiHandler.addTransport(&bleHost);
     midiHandler.addTransport(&uartMIDI);
     midiHandler.addTransport(&rtpMIDI);
     midiHandler.addTransport(&oscMIDI);
 
-    // 3. Iniciar o handler
+    // 2. Cada transport inicia seu próprio stack
+    usbHost.begin();
+    bleHost.begin("Meu ESP32");
+    uartMIDI.begin(Serial1, 16, 17);
+    rtpMIDI.begin("Meu ESP32");
+    oscMIDI.begin(8000, IPAddress(192,168,1,100), 9000);
+
+    // 3. Inicia o handler (queue, dispatch, chord detection, etc.)
     midiHandler.begin();
 }
 ```
 
-!!! warning "Limite de transportes"
-    O `MIDIHandler` suporta até **4 transportes externos** via `addTransport()`. Os transportes built-in (USB, BLE, ESP-NOW) não contam neste limite.
+!!! warning "Limite de transports"
+    O `MIDIHandler` suporta até **4 transports** registrados via `addTransport()`. Em v6+ não há built-ins (todos contam).
 
 ---
 
@@ -197,8 +189,8 @@ public:
 MyTransport myTransport;
 
 void setup() {
+    midiHandler.addTransport(&myTransport);   // registre antes de begin()
     myTransport.begin();
-    midiHandler.addTransport(&myTransport);
     midiHandler.begin();
 }
 ```

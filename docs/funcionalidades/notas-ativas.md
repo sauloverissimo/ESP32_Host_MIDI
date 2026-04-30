@@ -63,10 +63,15 @@ for (int i = 0; i < 128; i++) {
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>      // v6.0+: cada transport explícito
 // Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;
 
 void setup() {
     Serial.begin(115200);
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin();
 }
 

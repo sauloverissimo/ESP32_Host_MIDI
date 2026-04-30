@@ -421,19 +421,30 @@ lib_deps =
 ## Referência da API
 
 ```cpp
-midiHandler.begin();                // inicia transportes built-in
-midiHandler.task();                 // chamar em cada loop()
-midiHandler.addTransport(&t);       // registrar transporte externo
+// Setup (v6.0+: cada transporte é explícito)
+USBConnection usb;                 // inclua os transportes que vai usar:
+BLEConnection ble;                 //   #include <USBConnection.h>, <BLEConnection.h>, ...
+midiHandler.addTransport(&usb);    // registra cada transporte
+midiHandler.addTransport(&ble);
+usb.begin();                       // o user controla o ciclo de vida de cada um
+ble.begin("Meu Device");
+midiHandler.begin();               // opcional: defaults
+midiHandler.begin(cfg);            // ou com config custom
+midiHandler.task();                // chamar em cada loop()
 
-const auto& q = midiHandler.getQueue();
+// Receber
+const auto& q = midiHandler.getQueue();                          // ring buffer
 std::vector<std::string> n = midiHandler.getActiveNotesVector(); // ["C4","E4","G4"]
-std::string chord = midiHandler.getChordName();                  // "Cmaj7"
+size_t count = midiHandler.getActiveNotesCount();                // notas ativas
+// Acordes, intervalos e escalas vêm da lib opcional Gingoduino
+// (veja docs/funcionalidades/gingo-adapter.md), não do MIDIHandler.
 
+// Enviar (fan-out: tenta cada transporte registrado, retorna true no primeiro aceito)
 midiHandler.sendNoteOn(ch, note, vel);
 midiHandler.sendNoteOff(ch, note, vel);
 midiHandler.sendControlChange(ch, ctrl, val);
 midiHandler.sendProgramChange(ch, prog);
-midiHandler.sendPitchBend(ch, val);   // 0–16383, centro = 8192
+midiHandler.sendPitchBend(ch, val);   // -8192..+8191, centro = 0
 ```
 
 ---
