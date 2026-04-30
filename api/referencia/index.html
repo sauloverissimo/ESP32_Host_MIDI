@@ -1429,10 +1429,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ble-status" class="md-nav__link">
+  <a href="#ble-status-v6-consultar-a-instancia-de-bleconnection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BLE Status
+        BLE Status (v6+: consultar a instância de BLEConnection)
       
     </span>
   </a>
@@ -2214,10 +2214,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ble-status" class="md-nav__link">
+  <a href="#ble-status-v6-consultar-a-instancia-de-bleconnection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BLE Status
+        BLE Status (v6+: consultar a instância de BLEConnection)
       
     </span>
   </a>
@@ -2583,30 +2583,34 @@
 </span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="c1">// Capacidade da fila de SysEx. Mensagens mais antigas são descartadas.</span>
 </span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
 </span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">bleName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ESP32 MIDI BLE&quot;</span><span class="p">;</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">    </span><span class="c1">// Nome anunciado pelo periférico BLE MIDI.</span>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="p">};</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">    </span><span class="c1">// legacy v5: o handler passava esse nome ao BLEConnection auto-instanciado.</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">    </span><span class="c1">// Em v6+ o handler não auto-instancia transportes; passe o nome direto pra</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">    </span><span class="c1">// BLEConnection::begin(name). Campo mantido por compatibilidade binária.</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="p">};</span>
 </span></code></pre></div>
 <hr />
 <h2 id="midihandler">MIDIHandler<a class="headerlink" href="#midihandler" title="Permanent link">&para;</a></h2>
 <p>Singleton global: <code>extern MIDIHandler midiHandler;</code></p>
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">begin</span><span class="p">();</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1">// Inicializa com configuração padrão.</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">// Registra automaticamente: USBConnection (se S2/S3/P4), BLEConnection (se BT habilitado)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kt">void</span><span class="w"> </span><span class="nf">begin</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">MIDIHandlerConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">);</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1">// Inicializa com configuração personalizada.</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="kt">void</span><span class="w"> </span><span class="nf">addTransport</span><span class="p">(</span><span class="n">MIDITransport</span><span class="o">*</span><span class="w"> </span><span class="n">transport</span><span class="p">);</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1">// Registra um transporte externo (até 4 transportes externos adicionais).</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1">// Deve ser chamado ANTES de begin().</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setQueueLimit</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxEvents</span><span class="p">);</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1">// Altera a capacidade da fila após begin().</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="kt">void</span><span class="w"> </span><span class="nf">enableHistory</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">capacity</span><span class="p">);</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="c1">// Ativa buffer histórico circular (usa PSRAM se disponível, fallback para heap).</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="c1">// Pode ser chamado após begin().</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1">// Inicializa com configuração padrão. Em v6+ NÃO registra nenhum transporte:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">// o user instancia cada transport (USBConnection, BLEConnection, etc.) e</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">// chama addTransport() antes de begin().</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="kt">void</span><span class="w"> </span><span class="nf">begin</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">MIDIHandlerConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">);</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1">// Inicializa com configuração personalizada. Mesmo contrato que begin():</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1">// transports devem ser registrados via addTransport() antes desta chamada.</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="kt">void</span><span class="w"> </span><span class="nf">addTransport</span><span class="p">(</span><span class="n">MIDITransport</span><span class="o">*</span><span class="w"> </span><span class="n">transport</span><span class="p">);</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1">// Registra um transporte. Suporta até 4 transports.</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1">// Deve ser chamado ANTES de begin().</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setQueueLimit</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">maxEvents</span><span class="p">);</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1">// Altera a capacidade da fila após begin().</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="kt">void</span><span class="w"> </span><span class="nf">enableHistory</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">capacity</span><span class="p">);</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="c1">// Ativa buffer histórico circular (usa PSRAM se disponível, fallback para heap).</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="c1">// Pode ser chamado após begin().</span>
 </span></code></pre></div>
 <h3 id="loop">Loop<a class="headerlink" href="#loop" title="Permanent link">&para;</a></h3>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">task</span><span class="p">();</span>
@@ -2706,12 +2710,12 @@
 <hr />
 <h3 id="envio-de-midi">Envio de MIDI<a class="headerlink" href="#envio-de-midi" title="Permanent link">&para;</a></h3>
 <blockquote>
-<p><strong>Nota:</strong> Na v5.2, a API de envio usa canal 1–16. Na v6.0, será migrada para 0–15 (MIDI spec).</p>
+<p><strong>Nota:</strong> A API de envio usa canal 1–16 em v5.x e v6.x. A possível migração para 0–15 fica para uma versão futura.</p>
 </blockquote>
-<p>Todos os métodos de envio transmitem para <strong>todos os transportes</strong> que suportam envio:</p>
+<p>Todos os métodos de envio fazem <strong>fan-out</strong>: tentam cada transporte registrado em ordem e retornam <code>true</code> no primeiro que aceitar. Não é broadcast simultâneo.</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">sendNoteOn</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">velocity</span><span class="p">);</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1">// channel: 1–16 | note: 0–127 | velocity: 0–127</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1">// Retorna true se pelo menos um transporte enviou.</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1">// Retorna true se algum transporte aceitou.</span>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">sendNoteOff</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">note</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">velocity</span><span class="p">);</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1">// velocity tipicamente 0 para NoteOff.</span>
@@ -2727,16 +2731,17 @@
 </span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="c1">// value: -8192 a +8191 (convertido internamente para 0–16383)</span>
 </span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
 </span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">sendRaw</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
-</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="c1">// Envia bytes MIDI crus para todos os transportes.</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="c1">// Envia bytes MIDI crus, mesmo padrão fan-out.</span>
 </span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
 </span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">sendBleRaw</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
 </span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="c1">// Alias de sendRaw() (compatibilidade retroativa).</span>
 </span></code></pre></div>
-<h3 id="ble-status">BLE Status<a class="headerlink" href="#ble-status" title="Permanent link">&para;</a></h3>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="cp">#if ESP32_HOST_MIDI_HAS_BLE</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kt">bool</span><span class="w"> </span><span class="nf">isBleConnected</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="c1">// Retorna true se um dispositivo BLE MIDI estiver conectado.</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="cp">#endif</span>
+<h3 id="ble-status-v6-consultar-a-instancia-de-bleconnection">BLE Status (v6+: consultar a instância de BLEConnection)<a class="headerlink" href="#ble-status-v6-consultar-a-instancia-de-bleconnection" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1">// v6+: o método MIDIHandler::isBleConnected foi removido junto com o</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1">// member built-in BLEConnection. Consulte direto na sua instância:</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">BLEConnection</span><span class="w"> </span><span class="n">bleHost</span><span class="p">;</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1">// ...</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bleHost</span><span class="p">.</span><span class="n">isConnected</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* BLE central conectado */</span><span class="w"> </span><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="debug-callback">Debug Callback<a class="headerlink" href="#debug-callback" title="Permanent link">&para;</a></h3>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">typedef</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">RawMidiCallback</span><span class="p">)(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">raw</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">rawLen</span><span class="p">,</span>
@@ -2782,9 +2787,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="usbconnection">USBConnection<a class="headerlink" href="#usbconnection" title="Permanent link">&para;</a></h2>
-<p>Transporte USB Host. Incluído automaticamente em chips S2/S3/P4.</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1">// Uso interno — não instancie diretamente.</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="c1">// Configuração: Tools &gt; USB Mode → &quot;USB Host&quot;</span>
+<p>Transporte USB Host MIDI 1.0. Em v6+ o user instancia explicitamente.</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;USBConnection.h&gt;</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">USBConnection</span><span class="w"> </span><span class="n">usbHost</span><span class="p">;</span><span class="w">       </span><span class="c1">// global; TinyUSB precisa antes de begin</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">midiHandler</span><span class="p">.</span><span class="n">addTransport</span><span class="p">(</span><span class="o">&amp;</span><span class="n">usbHost</span><span class="p">);</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">usbHost</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span><span class="w">             </span><span class="c1">// inicia stack USB Host (FreeRTOS task no core 0)</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="c1">// Configuração Arduino IDE: Tools &gt; USB Mode → &quot;USB Host&quot;</span>
 </span></code></pre></div>
 <hr />
 <h2 id="usbmidi2connection">USBMIDI2Connection<a class="headerlink" href="#usbmidi2connection" title="Permanent link">&para;</a></h2>
@@ -2808,9 +2817,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="bleconnection">BLEConnection<a class="headerlink" href="#bleconnection" title="Permanent link">&para;</a></h2>
-<p>Transporte BLE MIDI. Incluído automaticamente se <code>CONFIG_BT_ENABLED</code>.</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1">// Uso interno — não instancie diretamente.</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="c1">// Nome configurado via MIDIHandlerConfig::bleName</span>
+<p>Transporte BLE MIDI peripheral. Em v6+ o user instancia explicitamente.</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;BLEConnection.h&gt;</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">BLEConnection</span><span class="w"> </span><span class="n">bleHost</span><span class="p">;</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">midiHandler</span><span class="p">.</span><span class="n">addTransport</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bleHost</span><span class="p">);</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="n">bleHost</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Meu ESP32&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// nome anunciado pelo BLE peripheral</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1">// Status:</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bleHost</span><span class="p">.</span><span class="n">isConnected</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* central conectada */</span><span class="w"> </span><span class="p">}</span>
 </span></code></pre></div>
 <hr />
 <h2 id="espnowconnection">ESPNowConnection<a class="headerlink" href="#espnowconnection" title="Permanent link">&para;</a></h2>
@@ -2953,7 +2968,8 @@
 <ul>
 <li><code>midiHandler.task()</code> deve ser chamado em <strong>todo</strong> <code>loop()</code>, sem bloqueios longos</li>
 <li><code>addTransport()</code> deve ser chamado <strong>antes</strong> de <code>begin()</code></li>
-<li>O máximo de transportes externos é <strong>4</strong> (built-ins não contam)</li>
+<li>O máximo de transports é <strong>4</strong> (em v6+ não há built-ins; todos contam)</li>
+<li>Cada transport precisa do seu próprio <code>begin()</code>. O <code>MIDIHandler::begin()</code> não chama <code>begin()</code> em nenhum transport</li>
 <li>Ring buffers são thread-safe com <code>portMUX</code> — seguro para FreeRTOS</li>
 <li>A fila (<code>getQueue()</code>) é válida apenas dentro da iteração — não guarde referências além do loop atual</li>
 </ul>
