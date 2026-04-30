@@ -1762,10 +1762,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v521" class="md-nav__link">
+  <a href="#v600-breaking-change" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v5.2.1
+        v6.0.0 (breaking change)
       
     </span>
   </a>
@@ -1968,10 +1968,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v521" class="md-nav__link">
+  <a href="#v600-breaking-change" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v5.2.1
+        v6.0.0 (breaking change)
       
     </span>
   </a>
@@ -2193,12 +2193,23 @@
 </span></code></pre></div>
 <hr />
 <h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
-<h3 id="v521">v5.2.1<a class="headerlink" href="#v521" title="Permanent link">&para;</a></h3>
+<h3 id="v600-breaking-change">v6.0.0 (breaking change)<a class="headerlink" href="#v600-breaking-change" title="Permanent link">&para;</a></h3>
+<p>Refactor estrutural: separação clara entre transport layer (USB Host, BLE, ESP-NOW, RTP-MIDI, etc.) e handler layer (MIDIHandler), além de bug fixes que vinham se acumulando em pontos de divergência arduino-esp32 v2.x/v3.x.</p>
+<p><strong>Breaking changes</strong></p>
 <ul>
-<li>Fix <code>BLEConnection::begin()</code>: <code>BLEDevice::init()</code> e <code>BLECharacteristic::getValue()</code> agora usam <code>std::string</code> em vez de <code>String</code>. A BLE API do arduino-esp32 v2.0.17 (BluedroidArduino) não aceita conversão implícita e a build quebrava com erro antes de qualquer código de aplicação compilar.</li>
-<li>Fix <code>USBMIDI2Connection::_claimAndSetup</code>: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de <code>usb_host_interface_claim</code>. Algumas combinações device-side (libDaisy STM32H7 + TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 (CIN MIDI 1.0) mesmo com o claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que <code>_onReceiveUMP</code> interpretava como UMP inválido. Com o fix explícito o device transita corretamente para Alt 1 (UMP nativo).</li>
-<li>Validado em hardware: ESP32-S3 com jumper OTG rodando o recipe <code>esp32-s3-devkitc-host-midi2</code> do <code>midi2_cpp</code> contra Daisy Seed <code>feat/midi2</code>. UMP MT 0x4 (velocity 16-bit, CC/PitchBend/ChannelPressure/PolyPressure 32-bit) decodificado pelo dispatch tipado.</li>
+<li><code>MIDIHandler</code> não tem mais transports built-in. As classes <code>USBConnection</code> e <code>BLEConnection</code> deixam de ser members privados; user code instancia cada transport explicitamente e registra via <code>addTransport()</code>.</li>
+<li><code>MIDIHandler::isBleConnected()</code> removido. Consultar a instância de <code>BLEConnection</code> direto via <code>isConnected()</code>.</li>
+<li><code>ESP32_Host_MIDI.h</code> (umbrella) deixa de auto-incluir <code>USBConnection.h</code> e <code>BLEConnection.h</code>. Cada transport tem seu próprio header e o user inclui só os que usa.</li>
+<li><code>MIDIHandlerConfig::bleName</code> deixa de ser usado pelo <code>MIDIHandler</code> (era passado pro transport BLE auto-instanciado). Passar nome diretamente em <code>BLEConnection::begin(name)</code>.</li>
+<li>Campos deprecated do <code>MIDIEventData</code> removidos (struct vira POD, ~32 bytes em vez de ~160+ bytes). Usar <code>statusCode</code>, <code>channel0</code>, <code>noteNumber</code>, <code>velocity7</code>/<code>velocity16</code>, <code>pitchBend14</code>/<code>pitchBend32</code>. Detalhes em <code>docs/migration-v6.md</code>.</li>
 </ul>
+<p><strong>Fixes</strong></p>
+<ul>
+<li><code>BLEConnection</code>: gates condicionais <code>ESP_ARDUINO_VERSION_MAJOR</code> para os 3 pontos de divergência v2.x BluedroidArduino vs v3.x NimBLE-Arduino: <code>BLEDevice::init</code> (std::string vs String), <code>BLECharacteristic::getValue</code> (idem), e o descriptor <code>BLE2902</code> (obrigatório em v2.x onde o wrapper Arduino não expõe a CCCD auto-criada, deprecated em v3.x).</li>
+<li><code>USBMIDI2Connection</code>: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de <code>usb_host_interface_claim</code>. Algumas combinações device-side (libDaisy STM32H7 + TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 mesmo com claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que <code>_onReceiveUMP</code> interpretava como UMP inválido. Validado em hardware com Daisy Seed <code>feat/midi2</code>: pré-fix CIN MIDI 1.0 chegava como UMP malformado, pós-fix UMP MT 0x4 nativo (velocity 16-bit, CC/PB/CP/PP 32-bit) chega corretamente.</li>
+</ul>
+<p><strong>Examples migrados pro padrão v6 explícito</strong></p>
+<p>USB Host: <code>AM-MIDI2-Adapter</code>, <code>T-Display-S3-Gingoduino</code>, <code>T-Display-S3-Piano-Debug</code>, <code>T-Display-S3-SysEx</code>, <code>USB-Host-Send</code>, <code>USB-Host-Send-Test</code>. USB Host + BLE: <code>T-Display-S3-Piano</code>, <code>T-Display-S3-Queue</code>. BLE only: <code>T-Display-S3-BLE-Receiver</code>. Examples que já usavam <code>addTransport</code> explícito (Ethernet-MIDI, P4-Dual-UART-MIDI, RTP-MIDI-WiFi, T-Display-S3-OSC, T-Display-S3-AMoled-MIDI2-UMP, UART-MIDI-Basic, T-Display-S3-USB-Device) não precisaram mudar.</p>
 <h3 id="v520">v5.2.0<a class="headerlink" href="#v520" title="Permanent link">&para;</a></h3>
 <ul>
 <li>MIDIStatus enum com status bytes MIDI reais (0x80–0xE0)</li>

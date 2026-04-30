@@ -1655,6 +1655,90 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#part-1-transport-architecture-new-in-v60" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1: Transport architecture (new in v6.0)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1: Transport architecture (new in v6.0)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-transport-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available transport headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#isbleconnected-replacement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        isBleConnected replacement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the change
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-midieventdata-field-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2: MIDIEventData field cleanup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2: MIDIEventData field cleanup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#field-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1662,6 +1746,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1788,9 +1877,99 @@
 
 
 <h1 id="migration-guide-v5x-v60">Migration Guide: v5.x → v6.0<a class="headerlink" href="#migration-guide-v5x-v60" title="Permanent link">&para;</a></h1>
-<p>ESP32_Host_MIDI v5.2 introduces new MIDI spec-compliant fields alongside the existing ones.
-In v6.0, the deprecated fields will be removed. This guide helps you migrate.</p>
-<h2 id="field-mapping">Field Mapping<a class="headerlink" href="#field-mapping" title="Permanent link">&para;</a></h2>
+<p>v6.0 contains two breaking changes that require code updates in user
+sketches. Both are independent of each other; you may need one or both
+depending on what your firmware uses.</p>
+<ol>
+<li><strong>Transport architecture</strong>: <code>MIDIHandler</code> no longer owns built-in USB
+   Host and BLE transports. User code instantiates each transport it
+   uses and registers it with <code>addTransport()</code>.</li>
+<li><strong><code>MIDIEventData</code> field cleanup</strong>: the deprecated string / 1-indexed
+   fields added before v5.2 are removed; only the spec-compliant
+   replacements (<code>statusCode</code>, <code>channel0</code>, etc.) remain.</li>
+</ol>
+<p>The two are documented in turn below.</p>
+<hr />
+<h2 id="part-1-transport-architecture-new-in-v60">Part 1: Transport architecture (new in v6.0)<a class="headerlink" href="#part-1-transport-architecture-new-in-v60" title="Permanent link">&para;</a></h2>
+<h3 id="what-changed">What changed<a class="headerlink" href="#what-changed" title="Permanent link">&para;</a></h3>
+<p>In v5.x <code>MIDIHandler</code> owned <code>USBConnection</code> and <code>BLEConnection</code> as
+private members and auto-registered them in <code>begin()</code>. The umbrella
+header <code>ESP32_Host_MIDI.h</code> auto-included both transport headers based
+on chip capability flags. Result: every consumer of the library paid
+the compile cost of USB Host and BLE even when neither was used, and
+the handler API was tied to those two transports specifically.</p>
+<p>In v6.0:</p>
+<ul>
+<li><code>MIDIHandler</code> has no built-in transport members.</li>
+<li><code>ESP32_Host_MIDI.h</code> no longer auto-includes <code>USBConnection.h</code> or
+  <code>BLEConnection.h</code>. Each transport lives behind its own header and the
+  application includes only what it uses.</li>
+<li><code>MIDIHandler::isBleConnected()</code> is removed. Query the
+  <code>BLEConnection</code> instance directly via its own <code>isConnected()</code>.</li>
+<li><code>MIDIHandlerConfig::bleName</code> is no longer used by <code>MIDIHandler</code> (it
+  used to feed the auto-registered BLE transport's <code>begin()</code>). Pass the
+  device name explicitly to <code>BLEConnection::begin()</code>.</li>
+</ul>
+<h3 id="migration-pattern">Migration pattern<a class="headerlink" href="#migration-pattern" title="Permanent link">&para;</a></h3>
+<p>For every sketch that relied on <code>midiHandler.begin()</code> auto-starting
+USB Host or BLE, add explicit transport instantiation:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// v5.x: relied on auto-start</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ESP32_Host_MIDI.h&gt;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">MIDIHandlerConfig</span><span class="w"> </span><span class="n">cfg</span><span class="p">;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">cfg</span><span class="p">.</span><span class="n">bleName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;My Device&quot;</span><span class="p">;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">cfg</span><span class="p">);</span><span class="w">   </span><span class="c1">// auto-instantiated USB Host + BLE</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">}</span>
+</span></code></pre></div>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// v6.0: explicit</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ESP32_Host_MIDI.h&gt;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;USBConnection.h&gt;</span><span class="c1">     // include each transport you actually use</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;BLEConnection.h&gt;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">USBConnection</span><span class="w"> </span><span class="n">usbHost</span><span class="p">;</span><span class="w">          </span><span class="c1">// declare globally (TinyUSB needs it</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">BLEConnection</span><span class="w"> </span><span class="n">bleHost</span><span class="p">;</span><span class="w">          </span><span class="c1">// before USB.begin())</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">MIDIHandlerConfig</span><span class="w"> </span><span class="n">cfg</span><span class="p">;</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">addTransport</span><span class="p">(</span><span class="o">&amp;</span><span class="n">usbHost</span><span class="p">);</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">addTransport</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bleHost</span><span class="p">);</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="n">usbHost</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="n">bleHost</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;My Device&quot;</span><span class="p">);</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="n">midiHandler</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="n">cfg</span><span class="p">);</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="available-transport-headers">Available transport headers<a class="headerlink" href="#available-transport-headers" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>#include &lt;USBConnection.h&gt;           // USB Host MIDI 1.0
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>#include &lt;USBMIDI2Connection.h&gt;      // USB Host MIDI 2.0 (UMP native)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>#include &lt;USBDeviceConnection.h&gt;     // USB Device MIDI 1.0
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>#include &lt;BLEConnection.h&gt;           // BLE peripheral
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>#include &lt;UARTConnection.h&gt;          // DIN-5 / TRS UART
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>#include &lt;ESPNowConnection.h&gt;        // ESP-NOW peer-to-peer wireless
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>#include &lt;RTPMIDIConnection.h&gt;       // RTP-MIDI / Apple MIDI over WiFi
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>#include &lt;EthernetMIDIConnection.h&gt;  // Apple MIDI over W5500 / P4 EMAC
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>#include &lt;OSCConnection.h&gt;           // OSC bidirectional bridge
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>#include &lt;MIDI2UDPConnection.h&gt;      // raw UMP over UDP
+</span></code></pre></div>
+<h3 id="isbleconnected-replacement"><code>isBleConnected</code> replacement<a class="headerlink" href="#isbleconnected-replacement" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// v5.x</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">midiHandler</span><span class="p">.</span><span class="n">isBleConnected</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// v6.0: query the BLE instance directly</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bleHost</span><span class="p">.</span><span class="n">isConnected</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="why-the-change">Why the change<a class="headerlink" href="#why-the-change" title="Permanent link">&para;</a></h3>
+<p>Coupling forced compilation of USB Host and BLE drivers into firmware
+that did not use them. That made trivial Arduino IDE / PlatformIO
+toolchain quirks (BLE std::string vs Arduino String, the BLE2902 CCCD
+descriptor's deprecation, the USB-MIDI 2.0 alt-switch race) cascade
+into build failures or runtime regressions for users who never
+touched the relevant code paths. The decoupling makes each transport
+pay its own cost only when explicitly used, and the library API stops
+pretending those two transports are special among the nine available.</p>
+<hr />
+<h2 id="part-2-midieventdata-field-cleanup">Part 2: <code>MIDIEventData</code> field cleanup<a class="headerlink" href="#part-2-midieventdata-field-cleanup" title="Permanent link">&para;</a></h2>
+<h3 id="field-mapping">Field Mapping<a class="headerlink" href="#field-mapping" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -1869,46 +2048,46 @@ In v6.0, the deprecated fields will be removed. This guide helps you migrate.</p
 </table>
 <h2 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h2>
 <h3 id="before-v5x">Before (v5.x)<a class="headerlink" href="#before-v5x" title="Permanent link">&para;</a></h3>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;NoteOn&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;NoteOn&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">noteOctave</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity</span><span class="p">);</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="after-v52-v60">After (v5.2+ / v6.0)<a class="headerlink" href="#after-v52-v60" title="Permanent link">&para;</a></h3>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kt">char</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">statusCode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MIDI_NOTE_ON</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="n">MIDIHandler</span><span class="o">::</span><span class="n">noteWithOctave</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">noteNumber</span><span class="p">,</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">noteBuf</span><span class="p">)),</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity7</span><span class="p">);</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kt">char</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">statusCode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MIDI_NOTE_ON</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Ch %d Note %s Vel %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">        </span><span class="n">MIDIHandler</span><span class="o">::</span><span class="n">noteWithOctave</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">noteNumber</span><span class="p">,</span><span class="w"> </span><span class="n">noteBuf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">noteBuf</span><span class="p">)),</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">        </span><span class="n">ev</span><span class="p">.</span><span class="n">velocity7</span><span class="p">);</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="pitch-bend">Pitch Bend<a class="headerlink" href="#pitch-bend" title="Permanent link">&para;</a></h3>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Before:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">// After:</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend14</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">// Or use 32-bit MIDI 2.0 resolution:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">// uint32_t bend32 = ev.pitchBend32;  // center = 0x80000000</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// Before:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1">// After:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="kt">int</span><span class="w"> </span><span class="n">bend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">ev</span><span class="p">.</span><span class="n">pitchBend14</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8192</span><span class="p">;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1">// Or use 32-bit MIDI 2.0 resolution:</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1">// uint32_t bend32 = ev.pitchBend32;  // center = 0x80000000</span>
 </span></code></pre></div>
 <h3 id="building-raw-midi-bytes">Building raw MIDI bytes<a class="headerlink" href="#building-raw-midi-bytes" title="Permanent link">&para;</a></h3>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// Before:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">((</span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">// After:</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1">// Before:</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">((</span><span class="n">ev</span><span class="p">.</span><span class="n">channel</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1">// After:</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">channel0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">);</span>
 </span></code></pre></div>
 <h2 id="midistatus-enum-values">MIDIStatus Enum Values<a class="headerlink" href="#midistatus-enum-values" title="Permanent link">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">enum</span><span class="w"> </span><span class="nc">MIDIStatus</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">MIDI_NOTE_OFF</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="mh">0x80</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">MIDI_NOTE_ON</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">MIDI_POLY_PRESSURE</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mh">0xA0</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">MIDI_CONTROL_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xB0</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">MIDI_PROGRAM_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">MIDI_CHANNEL_PRESSURE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mh">0xD0</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">MIDI_PITCH_BEND</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE0</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">};</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">enum</span><span class="w"> </span><span class="nc">MIDIStatus</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="n">MIDI_NOTE_OFF</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="mh">0x80</span><span class="p">,</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="n">MIDI_NOTE_ON</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="mh">0x90</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="n">MIDI_POLY_PRESSURE</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mh">0xA0</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="n">MIDI_CONTROL_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xB0</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">MIDI_PROGRAM_CHANGE</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="n">MIDI_CHANNEL_PRESSURE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mh">0xD0</span><span class="p">,</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="n">MIDI_PITCH_BEND</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE0</span><span class="p">,</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">};</span>
 </span></code></pre></div>
 <p>Values match the upper nibble of MIDI 1.0 status bytes — no conversion needed.</p>
 <h2 id="fields-not-changing">Fields NOT changing<a class="headerlink" href="#fields-not-changing" title="Permanent link">&para;</a></h2>
@@ -1918,8 +2097,9 @@ In v6.0, the deprecated fields will be removed. This guide helps you migrate.</p
 </ul>
 <h2 id="timeline">Timeline<a class="headerlink" href="#timeline" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>v5.2</strong>: New fields added. Old fields still work but are deprecated.</li>
-<li><strong>v6.0</strong>: Deprecated fields removed. Struct becomes POD/trivially-copyable (~32 bytes vs ~160+ bytes).</li>
+<li><strong>v5.2</strong>: New <code>MIDIEventData</code> fields added. Old fields still work but are deprecated.</li>
+<li><strong>v5.2.x</strong>: Bug fixes; transport architecture unchanged.</li>
+<li><strong>v6.0</strong>: Deprecated <code>MIDIEventData</code> fields removed (<code>MIDIEventData</code> becomes POD / trivially-copyable, ~32 bytes vs ~160+ bytes). <code>MIDIHandler</code> decoupled from built-in transports (Part 1 above). Bug fixes on top of v5.2.x: BLE compat with arduino-esp32 v2.x and v3.x; explicit SET_INTERFACE in <code>USBMIDI2Connection</code>.</li>
 </ul>
 
 
