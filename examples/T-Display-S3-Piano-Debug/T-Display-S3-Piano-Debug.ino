@@ -23,6 +23,9 @@
 #include <Arduino.h>
 #include <LovyanGFX.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: transports are no longer auto-included
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 #include "mapping.h"
 
 // ── LGFX — T-Display S3 (ST7789, 8-bit parallel) ────────────────────────────
@@ -293,6 +296,8 @@ void setup() {
     cfg.maxEvents       = 64;
     cfg.chordTimeWindow = 0;
     cfg.bleName         = "ESP32-Debug";
+    midiHandler.addTransport(&usbHost);  // v6.0: explicit
+    usbHost.begin();                      // v6.0: user owns lifecycle
     midiHandler.begin(cfg);
 
     midiHandler.setRawMidiCallback(onRawMidi);

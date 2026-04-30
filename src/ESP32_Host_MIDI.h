@@ -38,21 +38,39 @@
   #define ESP32_HOST_MIDI_HAS_ETH_MAC 0
 #endif
 
-// --- Includes ---
+// --- Includes (v6.0) ---
+//
+// This umbrella header now exposes only the always-on pieces:
+//   * MIDITransport          (the transport interface)
+//   * MIDIHandlerConfig      (config struct used by MIDIHandler)
+//   * MIDIHandler            (optional aggregator)
+//
+// In v5.x and earlier, this header auto-included USBConnection and
+// BLEConnection so a single `#include <ESP32_Host_MIDI.h>` would arrange
+// both into a default firmware. That made every consumer of the library
+// pay for compiling those two files, even firmware that used neither.
+// It also coupled the MIDIHandler API to those two transports
+// specifically (the others required addTransport).
+//
+// In v6.0 the auto-includes are gone. Application code is expected to
+// include each transport it actually uses, by name:
+//
+//   #include <USBConnection.h>          // USB Host MIDI 1.0
+//   #include <USBMIDI2Connection.h>     // USB Host MIDI 2.0
+//   #include <USBDeviceConnection.h>    // USB Device MIDI 1.0
+//   #include <BLEConnection.h>
+//   #include <UARTConnection.h>
+//   #include <ESPNowConnection.h>
+//   #include <RTPMIDIConnection.h>
+//   #include <EthernetMIDIConnection.h>
+//   #include <OSCConnection.h>
+//   #include <MIDI2UDPConnection.h>
+//
+// MIDIHandler is still here, but stripped of its built-in transports.
+// Use addTransport() to wire whichever transports you instantiate.
+// See docs/migration-v6.md for v5 -> v6 migration.
 
 #include "MIDITransport.h"
-
-// USB Host is included by default on S2/S3/P4.
-// Define ESP32_HOST_MIDI_NO_USB_HOST before including this header
-// to exclude it (e.g. when using USBDeviceConnection instead).
-#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
-  #include "USBConnection.h"
-#endif
-
-#if ESP32_HOST_MIDI_HAS_BLE
-  #include "BLEConnection.h"
-#endif
-
 #include "MIDIHandlerConfig.h"
 #include "MIDIHandler.h"
 
