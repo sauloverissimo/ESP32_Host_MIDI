@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1762,6 +1762,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#v521" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.2.1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#v520" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1955,6 +1966,17 @@
   
     <nav class="md-nav" aria-label="Changelog">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v521" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.2.1
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#v520" class="md-nav__link">
@@ -2171,6 +2193,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h2>
+<h3 id="v521">v5.2.1<a class="headerlink" href="#v521" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fix <code>BLEConnection::begin()</code>: <code>BLEDevice::init()</code> e <code>BLECharacteristic::getValue()</code> agora usam <code>std::string</code> em vez de <code>String</code>. A BLE API do arduino-esp32 v2.0.17 (BluedroidArduino) não aceita conversão implícita e a build quebrava com erro antes de qualquer código de aplicação compilar.</li>
+<li>Fix <code>USBMIDI2Connection::_claimAndSetup</code>: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de <code>usb_host_interface_claim</code>. Algumas combinações device-side (libDaisy STM32H7 + TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 (CIN MIDI 1.0) mesmo com o claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que <code>_onReceiveUMP</code> interpretava como UMP inválido. Com o fix explícito o device transita corretamente para Alt 1 (UMP nativo).</li>
+<li>Validado em hardware: ESP32-S3 com jumper OTG rodando o recipe <code>esp32-s3-devkitc-host-midi2</code> do <code>midi2_cpp</code> contra Daisy Seed <code>feat/midi2</code>. UMP MT 0x4 (velocity 16-bit, CC/PitchBend/ChannelPressure/PolyPressure 32-bit) decodificado pelo dispatch tipado.</li>
+</ul>
 <h3 id="v520">v5.2.0<a class="headerlink" href="#v520" title="Permanent link">&para;</a></h3>
 <ul>
 <li>MIDIStatus enum com status bytes MIDI reais (0x80–0xE0)</li>

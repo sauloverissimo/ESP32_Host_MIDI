@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2794,8 +2794,8 @@
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">USBMIDI2Connection</span><span class="w"> </span><span class="n">usb</span><span class="p">;</span>
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
 </span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1">// Callbacks</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">usb</span><span class="p">.</span><span class="n">setUMPCallback</span><span class="p">(</span><span class="n">onUMP</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w">   </span><span class="c1">// MIDI 2.0 nativo (UMP words)</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">usb</span><span class="p">.</span><span class="n">setMidiCallback</span><span class="p">(</span><span class="n">onMidi</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"> </span><span class="c1">// fallback MIDI 1.0</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">usb</span><span class="p">.</span><span class="n">setUMPCallback</span><span class="p">(</span><span class="n">onUMP</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span><span class="w">   </span><span class="c1">// MIDI 2.0 nativo (UMP words)</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">usb</span><span class="p">.</span><span class="n">setMidiCallback</span><span class="p">(</span><span class="n">onMidi</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span><span class="w"> </span><span class="c1">// fallback MIDI 1.0</span>
 </span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>
 </span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="c1">// Consultar capacidades após negociação</span>
 </span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="n">usb</span><span class="p">.</span><span class="n">isMIDI2</span><span class="p">();</span><span class="w">        </span><span class="c1">// true se dispositivo negociou MIDI 2.0</span>
