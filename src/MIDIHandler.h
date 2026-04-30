@@ -46,13 +46,10 @@
   #endif
 #endif
 
-#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
-  #include "USBConnection.h"
-#endif
-
-#if ESP32_HOST_MIDI_HAS_BLE
-  #include "BLEConnection.h"
-#endif
+// v6.0 separation: MIDIHandler is a pure aggregator. It no longer pulls
+// USBConnection.h or BLEConnection.h via this header. User code includes
+// each transport explicitly and registers it with addTransport().
+// See docs/migration-v6.md for the v5 -> v6 migration path.
 
 // MIDI status byte values — matches the upper nibble of MIDI 1.0 status bytes.
 // Use these with MIDIEventData::statusCode for type-safe, zero-cost comparisons.
@@ -160,9 +157,8 @@ public:
   typedef void (*SysExCallback)(const uint8_t* data, size_t length);
   void setSysExCallback(SysExCallback cb) { sysExCb = cb; }
 
-#if ESP32_HOST_MIDI_HAS_BLE
-  bool isBleConnected() const;
-#endif
+  // v6.0: isBleConnected() removed; query the BLEConnection instance
+  // directly via its isConnected() method instead.
 
   // Chord event utility methods:
   int lastChord(const std::deque<MIDIEventData>& queue) const;
@@ -214,13 +210,8 @@ private:
   SysExCallback sysExCb = nullptr;
   void handleSysExMessage(const uint8_t* data, size_t length);
 
-  // Built-in transports (owned by MIDIHandler, registered automatically in begin())
-#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
-  USBConnection usbTransport;
-#endif
-#if ESP32_HOST_MIDI_HAS_BLE
-  BLEConnection bleTransport;
-#endif
+  // v6.0: no built-in transport members. User instantiates transports and
+  // registers them via addTransport(). See docs/migration-v6.md.
 };
 
 extern MIDIHandler midiHandler;
