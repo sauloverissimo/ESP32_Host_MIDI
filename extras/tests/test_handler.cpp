@@ -715,6 +715,139 @@ void test_edge_cases() {
 }
 
 // ---------------------------------------------------------------------------
+// v6 regression tests: handler optional, transports explicit
+// ---------------------------------------------------------------------------
+//
+// Three guards against re-introducing the v5 auto-start coupling:
+//   1. MIDIHandler with zero registered transports stays alive and inert.
+//   2. addTransport multi-transport fan-out: task() pumps every registered
+//      transport; injected MIDI from one transport reaches the queue;
+//      sendNoteOn fires the first transport that accepts.
+//   3. MIDIHandlerConfig::bleName no longer triggers a hidden BLE auto-
+//      start inside begin().
+//
+// MockMidiTransport is a minimal MIDITransport implementation that counts
+// task() calls, exposes inject() to fire dispatchMidiData from outside,
+// and reports sendMidiMessage success.
+
+class MockMidiTransport : public MIDITransport {
+public:
+    int  taskCount = 0;
+    int  sentCount = 0;
+
+    void task() override { taskCount++; }
+    bool isConnected() const override { return true; }
+    bool sendMidiMessage(const uint8_t* data, size_t length) override {
+        (void)data; (void)length;
+        sentCount++;
+        return true;
+    }
+    // Public wrapper around dispatchMidiData (which is protected on
+    // MIDITransport). Lets the test hand-feed bytes into the handler
+    // through this transport's registered callback.
+    void inject(const uint8_t* data, size_t len) {
+        dispatchMidiData(data, len);
+    }
+};
+
+void test_v6_handler_no_transports() {
+    printf("\n[v6: Handler standalone (no transports added)]\n");
+
+    MIDIHandler h;
+
+    TEST("begin() with no addTransport does not crash");
+    h.begin();
+    PASS();
+
+    TEST("task() with no transports is a no-op");
+    g_fakeMillis = 50000;
+    for (int i = 0; i < 10; i++) h.task();
+    PASS();
+
+    TEST("getQueue() is empty when no transport is feeding");
+    ASSERT(h.getQueue().empty());
+    PASS();
+
+    TEST("sendNoteOn() returns false when no transport accepts");
+    bool sent = h.sendNoteOn(1, 60, 100);
+    ASSERT(!sent);
+    PASS();
+
+    TEST("getActiveNotesCount() == 0 with empty handler");
+    ASSERT_EQ((int)h.getActiveNotesCount(), 0);
+    PASS();
+}
+
+void test_v6_multi_transport_fan_out() {
+    printf("\n[v6: addTransport multi-transport fan-out]\n");
+
+    MIDIHandler h;
+    MockMidiTransport t1, t2, t3;
+    h.addTransport(&t1);
+    h.addTransport(&t2);
+    h.addTransport(&t3);
+    h.begin();
+    g_fakeMillis = 51000;
+
+    TEST("task() pumps every registered transport once");
+    h.task();
+    ASSERT_EQ(t1.taskCount, 1);
+    ASSERT_EQ(t2.taskCount, 1);
+    ASSERT_EQ(t3.taskCount, 1);
+    PASS();
+
+    TEST("inject from transport #1 reaches the handler queue");
+    uint8_t noteon[3] = { 0x90, 60, 100 };
+    t1.inject(noteon, 3);
+    ASSERT_EQ((int)h.getQueue().size(), 1);
+    ASSERT(h.getQueue().back().statusCode == MIDI_NOTE_ON);
+    ASSERT_EQ(h.getQueue().back().noteNumber, 60);
+    PASS();
+
+    TEST("inject from transport #3 reaches the same queue");
+    uint8_t noteoff[3] = { 0x80, 60, 0 };
+    t3.inject(noteoff, 3);
+    ASSERT_EQ((int)h.getQueue().size(), 2);
+    ASSERT(h.getQueue().back().statusCode == MIDI_NOTE_OFF);
+    PASS();
+
+    TEST("sendNoteOn() stops at the first accepting transport");
+    bool sent = h.sendNoteOn(1, 64, 100);
+    ASSERT(sent);
+    ASSERT_EQ(t1.sentCount, 1);
+    ASSERT_EQ(t2.sentCount, 0);  // not called, t1 already accepted
+    ASSERT_EQ(t3.sentCount, 0);
+    PASS();
+}
+
+void test_v6_blename_not_auto_consumed() {
+    printf("\n[v6: MIDIHandlerConfig::bleName not auto-consumed]\n");
+
+    MIDIHandler h;
+    MIDIHandlerConfig cfg;
+    cfg.bleName = "Should be ignored by handler in v6";
+
+    TEST("begin(cfg) with bleName set does not crash");
+    h.begin(cfg);
+    PASS();
+
+    TEST("no transport auto-registered (sendNoteOn returns false)");
+    // In v5 this call would have fanned out to the auto-started BLE
+    // transport. In v6 nothing is registered; the call has no path.
+    bool sent = h.sendNoteOn(1, 60, 100);
+    ASSERT(!sent);
+    PASS();
+
+    TEST("explicit mock transport still works after bleName cfg");
+    MockMidiTransport t;
+    h.addTransport(&t);
+    bool sent2 = h.sendNoteOn(1, 60, 100);
+    ASSERT(sent2);
+    ASSERT_EQ(t.sentCount, 1);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -739,6 +872,9 @@ int main() {
     test_event_metadata();
     test_raw_midi_format();
     test_edge_cases();
+    test_v6_handler_no_transports();
+    test_v6_multi_transport_fan_out();
+    test_v6_blename_not_auto_consumed();
 
     printf("\n================================================\n");
     printf("Results: %d passed, %d failed\n", g_pass, g_fail);
