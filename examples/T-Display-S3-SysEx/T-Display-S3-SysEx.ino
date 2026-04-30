@@ -8,8 +8,11 @@
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: transports are no longer auto-included
 #include "ST7789_Handler.h"
 #include "mapping.h"
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 
 static const unsigned long INIT_DISPLAY_DELAY = 500;
 static const int MAX_DISPLAY_LINES = 11;
@@ -69,6 +72,8 @@ void setup() {
   MIDIHandlerConfig config;
   config.maxSysExSize = 256;
   config.maxSysExEvents = 8;
+  midiHandler.addTransport(&usbHost);  // v6.0: explicit
+  usbHost.begin();                      // v6.0: user owns lifecycle
   midiHandler.begin(config);
 
   display.print("SysEx Monitor ready.\nConnect USB MIDI device.\nBTN1=Identity Request\nBTN2=Clear");

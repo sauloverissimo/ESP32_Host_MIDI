@@ -17,11 +17,13 @@
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <BLEConnection.h>   // v6.0: transports are no longer auto-included
 #include "PianoDisplay.h"
 #include "SynthEngine.h"
 #include "mapping.h"
 
 // ── Global instances ──────────────────────────────────────────────────────────
+BLEConnection bleHost;       // v6.0: explicit BLE peripheral transport
 SynthEngine synth;
 
 // ── Active notes state ────────────────────────────────────────────────────────
@@ -68,6 +70,8 @@ void setup() {
     cfg.maxEvents       = 64;
     cfg.chordTimeWindow = 0;
     cfg.bleName         = "ESP32 BLE Piano";   // Sender scans for this name
+    midiHandler.addTransport(&bleHost);  // v6.0: explicit
+    bleHost.begin("ESP32 BLE Piano");      // v6.0: user owns lifecycle
     midiHandler.begin(cfg);
 
     synth.begin();
@@ -106,8 +110,10 @@ void loop() {
         }
     }
 
-    // Update BLE status every frame
-    info.bleConnected = midiHandler.isBleConnected();
+    // Update BLE status every frame.
+    // v6.0: query the BLEConnection instance directly (MIDIHandler::
+    // isBleConnected was removed when the built-in BLE member was dropped).
+    info.bleConnected = bleHost.isConnected();
 
     uint32_t now = micros();
     if (now - lastFrameUs >= FRAME_US) {

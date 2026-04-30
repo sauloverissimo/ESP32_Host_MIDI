@@ -4,8 +4,13 @@
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: transports are no longer auto-included
+#include <BLEConnection.h>
 #include "ST7789_Handler.h"
 #include "mapping.h"
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
+BLEConnection bleHost;       // v6.0: explicit BLE peripheral
 
 // Delay for displaying initialization messages (ms)
 static const unsigned long INIT_DISPLAY_DELAY = 500;
@@ -21,6 +26,10 @@ void setup() {
   display.print("Display OK...");
   delay(INIT_DISPLAY_DELAY);
 
+  midiHandler.addTransport(&usbHost);  // v6.0: explicit
+  midiHandler.addTransport(&bleHost);
+  usbHost.begin();
+  bleHost.begin("ESP32 Queue");
   midiHandler.begin();
   display.print("MIDI Handler initialized...");
 
