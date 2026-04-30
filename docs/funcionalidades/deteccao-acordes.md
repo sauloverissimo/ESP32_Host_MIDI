@@ -25,10 +25,18 @@ chordIndex:            2           ← novo índice
 Controla a janela de tempo (ms) para agrupar notas:
 
 ```cpp
-MIDIHandlerConfig cfg;
-cfg.chordTimeWindow = 0;   // 0 ms (padrão): novo acorde só quando TODAS as notas são soltas
-cfg.chordTimeWindow = 50;  // 50 ms: janela de tempo (ideal para teclados físicos)
-midiHandler.begin(cfg);
+#include <USBConnection.h>
+USBConnection usbHost;
+
+void setup() {
+    midiHandler.addTransport(&usbHost);  // v6.0+: registre os transports
+    usbHost.begin();
+
+    MIDIHandlerConfig cfg;
+    cfg.chordTimeWindow = 0;   // 0 ms (padrão): novo acorde só quando TODAS as notas são soltas
+    cfg.chordTimeWindow = 50;  // 50 ms: janela de tempo (ideal para teclados físicos)
+    midiHandler.begin(cfg);
+}
 ```
 
 ```mermaid
@@ -102,13 +110,18 @@ std::vector<std::string> multi = midiHandler.getAnswer({"noteName", "velocity"})
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>     // v6.0+: cada transport explícito
 // Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;
 
 void setup() {
     Serial.begin(115200);
 
     MIDIHandlerConfig cfg;
     cfg.chordTimeWindow = 50;  // agrupa notas dentro de 50ms
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin(cfg);
 }
 

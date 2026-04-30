@@ -18,14 +18,24 @@ O `MIDIHandler` pode manter um buffer circular de eventos que persiste além do 
 ### Via MIDIHandlerConfig
 
 ```cpp
-MIDIHandlerConfig cfg;
-cfg.historyCapacity = 500;  // guardar os últimos 500 eventos
-midiHandler.begin(cfg);
+#include <USBConnection.h>      // v6.0+: registre os transports que vai usar
+USBConnection usbHost;
+
+void setup() {
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
+
+    MIDIHandlerConfig cfg;
+    cfg.historyCapacity = 500;  // guardar os últimos 500 eventos
+    midiHandler.begin(cfg);
+}
 ```
 
 ### Via enableHistory() — após begin()
 
 ```cpp
+midiHandler.addTransport(&usbHost);
+usbHost.begin();
 midiHandler.begin();
 midiHandler.enableHistory(500);  // pode ser chamado a qualquer momento
 ```
@@ -138,6 +148,8 @@ MIDIEventData* historyBuffer = nullptr;
 int historySize = 0;
 
 void setup() {
+    midiHandler.addTransport(&usbHost);    // v6.0+: registre os transports
+    usbHost.begin();
     midiHandler.begin();
 
 #if ESP32_HOST_MIDI_HAS_PSRAM
@@ -165,7 +177,9 @@ Coleta uma sessão de improvisação e mostra estatísticas ao final:
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>           // v6.0+: cada transport explícito
 
+USBConnection usbHost;
 std::vector<MIDIEventData> sessao;
 bool gravando = true;
 
@@ -175,6 +189,8 @@ void setup() {
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 20;
     cfg.historyCapacity = 500;
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin(cfg);
 
     Serial.println("Gravando sessão... (pressione botão para parar)");
@@ -185,7 +201,7 @@ void loop() {
 
     if (gravando) {
         for (const auto& ev : midiHandler.getQueue()) {
-            if (ev.status == "NoteOn") {
+            if (ev.statusCode == MIDI_NOTE_ON && ev.velocity7 > 0) {
                 sessao.push_back(ev);
             }
         }
@@ -204,7 +220,7 @@ void analisarSessao() {
 
     // Nota mais tocada
     int contador[128] = {0};
-    for (const auto& ev : sessao) contador[ev.note]++;
+    for (const auto& ev : sessao) contador[ev.noteNumber]++;
 
     int notaMaisTocada = 0;
     for (int i = 1; i < 128; i++) {
@@ -216,7 +232,7 @@ void analisarSessao() {
 
     // Velocidade média
     int somaVel = 0;
-    for (const auto& ev : sessao) somaVel += ev.velocity;
+    for (const auto& ev : sessao) somaVel += ev.velocity7;
     Serial.printf("Velocidade média: %d\n",
         sessao.empty() ? 0 : somaVel / (int)sessao.size());
 }

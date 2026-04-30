@@ -21,24 +21,27 @@ O ESP32 se anuncia como um periférico BLE MIDI 1.0. Dispositivos iOS (GarageBan
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <BLEConnection.h>            // v6.0+: BLE é um transporte explícito
+
+BLEConnection bleHost;                // global
 
 void setup() {
     Serial.begin(115200);
 
-    MIDIHandlerConfig cfg;
-    cfg.bleName = "Meu Sintetizador";  // Nome que aparece no iOS/macOS
-    midiHandler.begin(cfg);
+    midiHandler.addTransport(&bleHost);
+    bleHost.begin("Meu Sintetizador");  // nome aparece no iOS/macOS
+    midiHandler.begin();
 
-    // O BLE começa a anunciar automaticamente
     Serial.println("BLE MIDI aguardando conexão...");
 }
 
 void loop() {
     midiHandler.task();
 
-#if ESP32_HOST_MIDI_HAS_BLE
     static bool wasConnected = false;
-    bool connected = midiHandler.isBleConnected();
+    // v6.0+: consultar diretamente a instância do BLEConnection
+    // (MIDIHandler::isBleConnected foi removido com o member built-in)
+    bool connected = bleHost.isConnected();
 
     if (connected && !wasConnected) {
         Serial.println("✅ BLE MIDI conectado!");
@@ -46,7 +49,6 @@ void loop() {
         Serial.println("❌ BLE MIDI desconectado.");
     }
     wasConnected = connected;
-#endif
 
     for (const auto& ev : midiHandler.getQueue()) {
         char noteBuf[8];
@@ -103,19 +105,20 @@ sequenceDiagram
 
 ## Enviar MIDI via BLE
 
-O BLE MIDI suporta envio completo. Quando você chama `sendNoteOn()`, o dado é enviado via BLE NOTIFY para o dispositivo conectado:
+O BLE MIDI suporta envio completo. Quando você chama `sendNoteOn()`, o handler tenta cada transporte registrado em ordem (fan-out) e retorna `true` no primeiro que aceitar. Se BLE for o primeiro registrado e estiver conectado, vai por ele:
 
 ```cpp
-// Envia para TODOS os transportes (incluindo BLE)
 midiHandler.sendNoteOn(1, 60, 100);   // canal 1, C4, vel 100
 midiHandler.sendNoteOff(1, 60, 0);    // libera C4
 midiHandler.sendControlChange(1, 7, 127);  // volume máximo
-midiHandler.sendPitchBend(1, 0);      // centro (8192 no raw)
+midiHandler.sendPitchBend(1, 0);      // centro (0 na API, 8192 no raw)
 
-// Envio raw BLE (legado — use sendRaw() preferencialmente)
+// Envio raw BLE (legado, use sendRaw() preferencialmente)
 uint8_t msg[] = {0x90, 0x3C, 0x64};  // NoteOn C4 vel=100
 midiHandler.sendBleRaw(msg, 3);
 ```
+
+> Para forçar envio direto via BLE sem o fan-out do handler, chame `bleHost.sendMidiMessage(msg, len)`.
 
 ---
 
@@ -127,15 +130,12 @@ midiHandler.sendBleRaw(msg, 3);
 void loop() {
     midiHandler.task();
 
-#if ESP32_HOST_MIDI_HAS_BLE
-    if (midiHandler.isBleConnected()) {
-        // Enviar apenas se BLE estiver conectado
+    if (bleHost.isConnected()) {     // v6.0+: consulte a instância
         midiHandler.sendNoteOn(1, 60, 100);
         delay(500);
         midiHandler.sendNoteOff(1, 60, 0);
         delay(500);
     }
-#endif
 }
 ```
 

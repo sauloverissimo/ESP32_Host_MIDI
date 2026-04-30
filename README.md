@@ -206,7 +206,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 ║                                              │                      ║
 ║                                              ▼                      ║
 ║                                     sendMidiMessage()               ║
-║                                  (broadcasts to ALL transports)     ║
+║                                  (fan-out: first transport accepts) ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
 
@@ -670,30 +670,42 @@ USB Host and USB Device require **arduino-esp32 ≥ 3.0** (TinyUSB MIDI).
 ### API Reference
 
 ```cpp
-// Setup
-midiHandler.begin();               // start built-in transports (USB, BLE, ESP-NOW)
-midiHandler.begin(cfg);            // with custom config
-midiHandler.addTransport(&t);      // register external transport
+// Setup (v6.0+: every transport is explicit)
+USBConnection usb;                 // include the transports you actually use
+BLEConnection ble;                 //   #include <USBConnection.h>, <BLEConnection.h>, ...
+midiHandler.addTransport(&usb);    // register each transport
+midiHandler.addTransport(&ble);
+usb.begin();                       // user owns each transport's lifecycle
+ble.begin("My Device");
+midiHandler.begin();               // optional: defaults
+midiHandler.begin(cfg);            // or with custom config
 
 // Receive
-const auto& q = midiHandler.getQueue();                        // event ring buffer
+const auto& q = midiHandler.getQueue();                          // event ring buffer
 std::vector<std::string> n = midiHandler.getActiveNotesVector(); // ["C4","E4","G4"]
-std::string chord = midiHandler.getChordName();                 // "Cmaj7"
+size_t count = midiHandler.getActiveNotesCount();                // active note count
+// Chord / interval / scale names come from the optional Gingoduino library
+// (see docs/funcionalidades/gingo-adapter.md), not from MIDIHandler itself.
 
-// Send (broadcasts to ALL transports simultaneously)
+// Send (fan-out: tries every registered transport, returns true on first acceptance)
 midiHandler.sendNoteOn(ch, note, vel);
 midiHandler.sendNoteOff(ch, note, vel);
 midiHandler.sendControlChange(ch, ctrl, val);
 midiHandler.sendProgramChange(ch, prog);
-midiHandler.sendPitchBend(ch, val);          // 0–16383, center = 8192
+midiHandler.sendPitchBend(ch, val);          // -8192..+8191, center = 0
 ```
 
 **MIDIHandlerConfig:**
 ```cpp
 MIDIHandlerConfig cfg;
-cfg.maxEvents      = 20;    // queue capacity
-cfg.enableHistory  = true;  // keep full history
-cfg.chordDetection = true;  // group simultaneous notes
+cfg.maxEvents         = 20;    // queue capacity (1..100)
+cfg.chordTimeWindow   = 50;    // ms grouping for chord detection (0 = legacy)
+cfg.velocityThreshold = 0;     // ignore NoteOn below this velocity (0..127)
+cfg.historyCapacity   = 0;     // PSRAM history buffer (0 = disabled)
+cfg.maxSysExSize      = 512;   // bytes per SysEx (0 = disable SysEx)
+cfg.maxSysExEvents    = 8;     // SysEx queue depth
+// cfg.bleName: legacy field, ignored by MIDIHandler in v6+; pass the
+// device name to BLEConnection::begin() directly.
 ```
 
 **Custom transport interface:**

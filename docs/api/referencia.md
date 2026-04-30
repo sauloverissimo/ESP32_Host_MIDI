@@ -97,7 +97,9 @@ struct MIDIHandlerConfig {
     // Capacidade da fila de SysEx. Mensagens mais antigas são descartadas.
 
     const char* bleName = "ESP32 MIDI BLE";
-    // Nome anunciado pelo periférico BLE MIDI.
+    // legacy v5: o handler passava esse nome ao BLEConnection auto-instanciado.
+    // Em v6+ o handler não auto-instancia transportes; passe o nome direto pra
+    // BLEConnection::begin(name). Campo mantido por compatibilidade binária.
 };
 ```
 
@@ -111,14 +113,16 @@ Singleton global: `extern MIDIHandler midiHandler;`
 
 ```cpp
 void begin();
-// Inicializa com configuração padrão.
-// Registra automaticamente: USBConnection (se S2/S3/P4), BLEConnection (se BT habilitado)
+// Inicializa com configuração padrão. Em v6+ NÃO registra nenhum transporte:
+// o user instancia cada transport (USBConnection, BLEConnection, etc.) e
+// chama addTransport() antes de begin().
 
 void begin(const MIDIHandlerConfig& config);
-// Inicializa com configuração personalizada.
+// Inicializa com configuração personalizada. Mesmo contrato que begin():
+// transports devem ser registrados via addTransport() antes desta chamada.
 
 void addTransport(MIDITransport* transport);
-// Registra um transporte externo (até 4 transportes externos adicionais).
+// Registra um transporte. Suporta até 4 transports.
 // Deve ser chamado ANTES de begin().
 
 void setQueueLimit(int maxEvents);
@@ -249,14 +253,14 @@ struct MIDISysExEvent {
 
 ### Envio de MIDI
 
-> **Nota:** Na v5.2, a API de envio usa canal 1–16. Na v6.0, será migrada para 0–15 (MIDI spec).
+> **Nota:** A API de envio usa canal 1–16 em v5.x e v6.x. A possível migração para 0–15 fica para uma versão futura.
 
-Todos os métodos de envio transmitem para **todos os transportes** que suportam envio:
+Todos os métodos de envio fazem **fan-out**: tentam cada transporte registrado em ordem e retornam `true` no primeiro que aceitar. Não é broadcast simultâneo.
 
 ```cpp
 bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
 // channel: 1–16 | note: 0–127 | velocity: 0–127
-// Retorna true se pelo menos um transporte enviou.
+// Retorna true se algum transporte aceitou.
 
 bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity);
 // velocity tipicamente 0 para NoteOff.
@@ -272,19 +276,20 @@ bool sendPitchBend(uint8_t channel, int value);
 // value: -8192 a +8191 (convertido internamente para 0–16383)
 
 bool sendRaw(const uint8_t* data, size_t length);
-// Envia bytes MIDI crus para todos os transportes.
+// Envia bytes MIDI crus, mesmo padrão fan-out.
 
 bool sendBleRaw(const uint8_t* data, size_t length);
 // Alias de sendRaw() (compatibilidade retroativa).
 ```
 
-### BLE Status
+### BLE Status (v6+: consultar a instância de BLEConnection)
 
 ```cpp
-#if ESP32_HOST_MIDI_HAS_BLE
-bool isBleConnected() const;
-// Retorna true se um dispositivo BLE MIDI estiver conectado.
-#endif
+// v6+: o método MIDIHandler::isBleConnected foi removido junto com o
+// member built-in BLEConnection. Consulte direto na sua instância:
+BLEConnection bleHost;
+// ...
+if (bleHost.isConnected()) { /* BLE central conectado */ }
 ```
 
 ### Debug Callback
@@ -341,11 +346,15 @@ protected:
 
 ## USBConnection
 
-Transporte USB Host. Incluído automaticamente em chips S2/S3/P4.
+Transporte USB Host MIDI 1.0. Em v6+ o user instancia explicitamente.
 
 ```cpp
-// Uso interno — não instancie diretamente.
-// Configuração: Tools > USB Mode → "USB Host"
+#include <USBConnection.h>
+
+USBConnection usbHost;       // global; TinyUSB precisa antes de begin
+midiHandler.addTransport(&usbHost);
+usbHost.begin();             // inicia stack USB Host (FreeRTOS task no core 0)
+// Configuração Arduino IDE: Tools > USB Mode → "USB Host"
 ```
 
 ---
@@ -377,11 +386,17 @@ usb.sendUMPMessage(words, count); // enviar UMP words via OUT endpoint
 
 ## BLEConnection
 
-Transporte BLE MIDI. Incluído automaticamente se `CONFIG_BT_ENABLED`.
+Transporte BLE MIDI peripheral. Em v6+ o user instancia explicitamente.
 
 ```cpp
-// Uso interno — não instancie diretamente.
-// Nome configurado via MIDIHandlerConfig::bleName
+#include <BLEConnection.h>
+
+BLEConnection bleHost;
+midiHandler.addTransport(&bleHost);
+bleHost.begin("Meu ESP32");  // nome anunciado pelo BLE peripheral
+
+// Status:
+if (bleHost.isConnected()) { /* central conectada */ }
 ```
 
 ---
@@ -564,6 +579,7 @@ ESP32_HOST_MIDI_HAS_ETH_MAC // 1 se ESP32-P4 (MAC Ethernet nativo)
 
 - `midiHandler.task()` deve ser chamado em **todo** `loop()`, sem bloqueios longos
 - `addTransport()` deve ser chamado **antes** de `begin()`
-- O máximo de transportes externos é **4** (built-ins não contam)
+- O máximo de transports é **4** (em v6+ não há built-ins; todos contam)
+- Cada transport precisa do seu próprio `begin()`. O `MIDIHandler::begin()` não chama `begin()` em nenhum transport
 - Ring buffers são thread-safe com `portMUX` — seguro para FreeRTOS
 - A fila (`getQueue()`) é válida apenas dentro da iteração — não guarde referências além do loop atual

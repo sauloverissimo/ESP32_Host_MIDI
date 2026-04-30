@@ -12,17 +12,29 @@ struct MIDIHandlerConfig {
     unsigned long chordTimeWindow = 0;  // Janela para detecção de acordes (ms)
     int velocityThreshold = 0;   // Filtro mínimo de velocidade (0 = desabilitado)
     int historyCapacity  = 0;    // Buffer histórico PSRAM (0 = desabilitado)
-    const char* bleName  = "ESP32 MIDI BLE";  // Nome do dispositivo BLE
+    int maxSysExSize     = 512;  // Tamanho máximo de uma SysEx
+    int maxSysExEvents   = 8;    // Profundidade da fila de SysEx
+    const char* bleName  = "ESP32 MIDI BLE";  // legacy v5 (ver nota)
 };
 ```
+
+!!! note "v6.0+: bleName não é mais consumido pelo MIDIHandler"
+    O campo `bleName` continua na struct para compatibilidade de código antigo, mas em v6+ o `MIDIHandler::begin(cfg)` não inicializa nenhum transporte BLE automaticamente. Passe o nome direto pra `BLEConnection::begin(name)` quando registrar o transporte.
 
 ### Uso básico
 
 ```cpp
-MIDIHandlerConfig cfg;
-cfg.maxEvents = 30;
-cfg.bleName = "Meu Sintetizador";
-midiHandler.begin(cfg);
+#include <BLEConnection.h>
+
+BLEConnection bleHost;     // v6.0+: cada transporte é explícito
+
+void setup() {
+    MIDIHandlerConfig cfg;
+    cfg.maxEvents = 30;
+    midiHandler.addTransport(&bleHost);
+    bleHost.begin("Meu Sintetizador");   // nome BLE vai aqui agora
+    midiHandler.begin(cfg);
+}
 ```
 
 ---
@@ -133,15 +145,19 @@ Veja mais em [Histórico PSRAM →](../funcionalidades/historico-psram.md)
 
 ---
 
-## bleName — Nome do Dispositivo BLE
+## bleName — Nome do Dispositivo BLE (legacy)
 
-Define o nome que aparece nos apps iOS/macOS ao escanear BLE MIDI.
+Em v5, `cfg.bleName` era passado pelo `MIDIHandler::begin()` para o transporte BLE auto-instanciado. Em v6+ o `MIDIHandler` não auto-instancia transportes; o nome BLE vai direto pra `BLEConnection::begin(name)`:
 
 ```cpp
-cfg.bleName = "ESP32 MIDI BLE";      // padrão
-cfg.bleName = "Piano ESP32";          // qualquer string
-cfg.bleName = "Studio Hub";           // aparece em GarageBand, AUM, etc.
+// v6+: passe o nome ao BLEConnection diretamente
+BLEConnection bleHost;
+bleHost.begin("Piano ESP32");        // aparece em GarageBand, AUM, etc.
+midiHandler.addTransport(&bleHost);
+midiHandler.begin();
 ```
+
+O campo `cfg.bleName` continua na struct por compatibilidade binária, mas é ignorado pelo handler em v6+.
 
 ---
 
@@ -159,7 +175,9 @@ A biblioteca detecta automaticamente os recursos disponíveis com base no chip a
 
 // BLE disponível (ESP32, S3, C3, C6 — CONFIG_BT_ENABLED)
 #if ESP32_HOST_MIDI_HAS_BLE
-    bool connected = midiHandler.isBleConnected();
+    // v6.0+: consulte a instância de BLEConnection diretamente.
+    // MIDIHandler::isBleConnected() foi removido junto com o member built-in.
+    bool connected = bleHost.isConnected();
 #endif
 
 // PSRAM disponível (CONFIG_SPIRAM ou CONFIG_SPIRAM_SUPPORT)
@@ -189,6 +207,8 @@ void onRawMidi(const uint8_t* raw, size_t rawLen, const uint8_t* midi3) {
 }
 
 void setup() {
+    midiHandler.addTransport(&usbHost);   // v6.0+: registre seus transportes
+    usbHost.begin();
     midiHandler.setRawMidiCallback(onRawMidi);
     midiHandler.begin();
 }
@@ -212,17 +232,25 @@ midiHandler.clearActiveNotesNow();
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>      // v6.0+: cada transporte explícito
+#include <BLEConnection.h>
+
+USBConnection usbHost;
+BLEConnection bleHost;
 
 void setup() {
     Serial.begin(115200);
 
     MIDIHandlerConfig cfg;
-    cfg.maxEvents         = 30;          // fila maior
-    cfg.chordTimeWindow   = 50;          // agrupar notas de acordes
-    cfg.velocityThreshold = 5;           // ignorar ghost notes
-    cfg.historyCapacity   = 500;         // guardar histórico em PSRAM
-    cfg.bleName           = "Meu ESP32"; // nome no BLE
+    cfg.maxEvents         = 30;     // fila maior
+    cfg.chordTimeWindow   = 50;     // agrupar notas de acordes
+    cfg.velocityThreshold = 5;      // ignorar ghost notes
+    cfg.historyCapacity   = 500;    // guardar histórico em PSRAM
 
+    midiHandler.addTransport(&usbHost);
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();
+    bleHost.begin("Meu ESP32");     // nome BLE direto no transport
     midiHandler.begin(cfg);
 }
 ```

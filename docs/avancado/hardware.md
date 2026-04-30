@@ -171,7 +171,8 @@ CS   → GPIO (qualquer disponível)
 
 #if ESP32_HOST_MIDI_HAS_BLE
     // BLE disponível — ESP32, S3, C3, C6, H2
-    bool connected = midiHandler.isBleConnected();
+    // v6.0+: consulte a instância de BLEConnection diretamente
+    bool connected = bleHost.isConnected();
 #endif
 
 #if ESP32_HOST_MIDI_HAS_PSRAM

@@ -54,10 +54,17 @@ O exemplo completo está em [`examples/T-Display-S3-SysEx/`](https://github.com/
 O ponto central é a configuração do SysEx:
 
 ```cpp
-MIDIHandlerConfig config;
-config.maxSysExSize = 256;    // máximo de bytes por mensagem
-config.maxSysExEvents = 8;    // quantas mensagens na fila
-midiHandler.begin(config);
+#include <USBConnection.h>      // v6.0+: cada transport explícito
+USBConnection usbHost;
+
+void setup() {
+    MIDIHandlerConfig config;
+    config.maxSysExSize = 256;    // máximo de bytes por mensagem
+    config.maxSysExEvents = 8;    // quantas mensagens na fila
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
+    midiHandler.begin(config);
+}
 ```
 
 E a leitura da fila no loop:
