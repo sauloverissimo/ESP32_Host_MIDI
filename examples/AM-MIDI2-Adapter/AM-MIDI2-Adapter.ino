@@ -25,9 +25,11 @@
 
 // ---- 2. ESP32_Host_MIDI + Adapter ----------------------------------------
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>     // v6.0: transports are no longer auto-included
 #include "../../src/MIDI2Adapter.h"
 
 // ---- Instâncias -----------------------------------------------------------
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 umpProcessor umpp;           // processador AM_MIDI2.0Lib — callbacks aqui
 MIDI2Adapter adapter(umpp);  // ponte entre midiHandler e umpp
 
@@ -135,6 +137,8 @@ void setup() {
     MIDIHandlerConfig cfg;
     cfg.maxEvents    = 20;
     cfg.maxSysExSize = 256;
+    midiHandler.addTransport(&usbHost);  // v6.0: explicit
+    usbHost.begin();                      // v6.0: user owns lifecycle
     midiHandler.begin(cfg);
 
     // ---- Conectar o adapter ----------------------------------------------

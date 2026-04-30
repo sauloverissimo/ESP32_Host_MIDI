@@ -19,6 +19,9 @@
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>  // v6.0: transports are no longer auto-included
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 
 static bool testDone = false;
 static int passed = 0;
@@ -124,6 +127,8 @@ void setup() {
     delay(1000);
     Serial.println("USB-Host-Send-Test: waiting for USB MIDI device...");
 
+    midiHandler.addTransport(&usbHost);  // v6.0: explicit
+    usbHost.begin();                      // v6.0: user owns lifecycle
     midiHandler.begin();
 }
 
