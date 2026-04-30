@@ -23,13 +23,18 @@
 #include <Arduino.h>
 #define ESP32_HOST_MIDI_NO_USB_HOST  // Use USB Device mode, not Host
 #include <ESP32_Host_MIDI.h>
+#include <BLEConnection.h>           // v6.0: transports are no longer auto-included
 #include "../../src/USBDeviceConnection.h"
 #include "mapping.h"
 #include "ST7789_Handler.h"
 
-// MUST be global — TinyUSB registers the USB descriptor on construction,
+// MUST be global. TinyUSB registers the USB descriptor on construction,
 // before USB.begin() is called. The name comes from mapping.h.
 USBDeviceConnection usbMIDI(USB_MIDI_DEVICE_NAME);
+
+// v6.0: BLE transport is also explicit. v5 auto-started BLE inside
+// midiHandler.begin(); v6 leaves the user in charge.
+BLEConnection bleHost;
 
 static int    lastEventIndex = -1;
 static int    inCount        = 0;
@@ -81,11 +86,16 @@ void setup() {
 
     display.init();
 
-    // Register USB Device transport (BLE is registered automatically by begin()).
+    // v6.0: register both transports explicitly. USB Device first,
+    // then BLE peripheral. Each transport owns its own begin().
     midiHandler.addTransport(&usbMIDI);
+    midiHandler.addTransport(&bleHost);
 
     // Start USB stack (enumerates on the host as a MIDI device).
     usbMIDI.begin();
+
+    // Start BLE peripheral, advertising the same name as USB Device.
+    bleHost.begin(USB_MIDI_DEVICE_NAME);
 
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 40;
@@ -102,7 +112,10 @@ void loop() {
     if (millis() - lastStatusCheck >= 2000) {
         lastStatusCheck = millis();
 
-        bool ble = midiHandler.isBleConnected();
+        // v6.0: query BLE state directly on the BLEConnection instance.
+        // MIDIHandler::isBleConnected was removed when the built-in BLE
+        // member was dropped.
+        bool ble = bleHost.isConnected();
         if (ble != lastBLE) {
             lastBLE = ble;
             display.setBLE(ble);
