@@ -1,5 +1,8 @@
 #include "USBMIDI2Connection.h"
 #include <string.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 // UMP Stream Message constants (MT 0x0F)
 static const uint8_t  UMP_MT_STREAM            = 0x0F;
@@ -164,6 +167,58 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
         lastError = "MIDI2: claim failed (iface=" + String(cand.ifaceNumber)
                   + " alt=" + String(cand.altSetting) + " err=" + String(err) + ")";
         return false;
+    }
+
+    // Force-resend SET_INTERFACE via EP0 control transfer.
+    //
+    // Per ESP-IDF docs, usb_host_interface_claim already issues SET_INTERFACE
+    // when the requested alt differs from the active one. In practice some
+    // device combinations (notably libDaisy STM32H7 + TinyUSB MIDI 2.0 PR
+    // #3571 device class) silently stay on Alt 0 (USB-MIDI 1.0 CIN) while
+    // the host believes it has switched to Alt 1 (USB-MIDI 2.0 UMP). The
+    // result: bulk IN transfers come back populated with CIN packets that
+    // _onReceiveUMP misinterprets as UMP words with reserved MT nibbles.
+    //
+    // Sending the request explicitly closes the gap. SET_INTERFACE on FS USB
+    // is a single 8-byte SETUP with no data stage; under 1 ms in practice.
+    // We wait up to 200 ms for the transfer callback before freeing the
+    // transfer to avoid use-after-free, then wait another 50 ms for the
+    // device-side class driver to fully repoint its TX path before we start
+    // submitting bulk reads.
+    {
+        static SemaphoreHandle_t s_setifSem = nullptr;
+        if (s_setifSem == nullptr) s_setifSem = xSemaphoreCreateBinary();
+
+        usb_transfer_t* setifT = nullptr;
+        if (usb_host_transfer_alloc(8, 0, &setifT) == ESP_OK && setifT != nullptr) {
+            setifT->device_handle    = deviceHandle;
+            setifT->bEndpointAddress = 0x00;
+            setifT->num_bytes        = 8;
+            setifT->timeout_ms       = 200;
+            setifT->context          = (void*)s_setifSem;
+            setifT->callback         = [](usb_transfer_t* t) {
+                SemaphoreHandle_t sem = (SemaphoreHandle_t)t->context;
+                if (sem) xSemaphoreGive(sem);
+            };
+            // SETUP: bmRequestType=0x01 (host->device, standard, interface),
+            // bRequest=0x0B (SET_INTERFACE), wValue=alt, wIndex=iface, wLength=0.
+            setifT->data_buffer[0] = 0x01;
+            setifT->data_buffer[1] = 0x0B;
+            setifT->data_buffer[2] = cand.altSetting;
+            setifT->data_buffer[3] = 0x00;
+            setifT->data_buffer[4] = cand.ifaceNumber;
+            setifT->data_buffer[5] = 0x00;
+            setifT->data_buffer[6] = 0x00;
+            setifT->data_buffer[7] = 0x00;
+
+            if (usb_host_transfer_submit_control(clientHandle, setifT) == ESP_OK) {
+                xSemaphoreTake(s_setifSem, pdMS_TO_TICKS(200));
+            }
+            usb_host_transfer_free(setifT);
+        }
+        // Settle window: allow the device-side class driver to repoint its
+        // bulk TX path to the new alt before we start reading.
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 
     // Allocate IN transfer (receive)

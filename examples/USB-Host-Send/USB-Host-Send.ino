@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>  // v6.0: transports are no longer auto-included
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 
 #define PEDAL_PIN 4
 #define OUT_PIN5 5 // piano detectado
@@ -42,6 +45,8 @@ void setup() {
   digitalWrite(OUT_PIN6, LOW);
   digitalWrite(OUT_PIN7, LOW);
 
+  midiHandler.addTransport(&usbHost);  // v6.0: explicit
+  usbHost.begin();                      // v6.0: user owns lifecycle
   midiHandler.begin();
   hostIniciado = true;
   momentoInicioHost = millis();

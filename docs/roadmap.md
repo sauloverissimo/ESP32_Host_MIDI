@@ -102,6 +102,27 @@ public:
 
 ## Changelog
 
+### v6.0.0 (breaking change)
+
+Refactor estrutural: separação clara entre transport layer (USB Host, BLE, ESP-NOW, RTP-MIDI, etc.) e handler layer (MIDIHandler), além de bug fixes que vinham se acumulando em pontos de divergência arduino-esp32 v2.x/v3.x.
+
+**Breaking changes**
+
+- `MIDIHandler` não tem mais transports built-in. As classes `USBConnection` e `BLEConnection` deixam de ser members privados; user code instancia cada transport explicitamente e registra via `addTransport()`.
+- `MIDIHandler::isBleConnected()` removido. Consultar a instância de `BLEConnection` direto via `isConnected()`.
+- `ESP32_Host_MIDI.h` (umbrella) deixa de auto-incluir `USBConnection.h` e `BLEConnection.h`. Cada transport tem seu próprio header e o user inclui só os que usa.
+- `MIDIHandlerConfig::bleName` deixa de ser usado pelo `MIDIHandler` (era passado pro transport BLE auto-instanciado). Passar nome diretamente em `BLEConnection::begin(name)`.
+- Campos deprecated do `MIDIEventData` removidos (struct vira POD, ~32 bytes em vez de ~160+ bytes). Usar `statusCode`, `channel0`, `noteNumber`, `velocity7`/`velocity16`, `pitchBend14`/`pitchBend32`. Detalhes em `docs/migration-v6.md`.
+
+**Fixes**
+
+- `BLEConnection`: gates condicionais `ESP_ARDUINO_VERSION_MAJOR` para os 3 pontos de divergência v2.x BluedroidArduino vs v3.x NimBLE-Arduino: `BLEDevice::init` (std::string vs String), `BLECharacteristic::getValue` (idem), e o descriptor `BLE2902` (obrigatório em v2.x onde o wrapper Arduino não expõe a CCCD auto-criada, deprecated em v3.x).
+- `USBMIDI2Connection`: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de `usb_host_interface_claim`. Algumas combinações device-side (libDaisy STM32H7 + TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 mesmo com claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que `_onReceiveUMP` interpretava como UMP inválido. Validado em hardware com Daisy Seed `feat/midi2`: pré-fix CIN MIDI 1.0 chegava como UMP malformado, pós-fix UMP MT 0x4 nativo (velocity 16-bit, CC/PB/CP/PP 32-bit) chega corretamente.
+
+**Examples migrados pro padrão v6 explícito**
+
+USB Host: `AM-MIDI2-Adapter`, `T-Display-S3-Gingoduino`, `T-Display-S3-Piano-Debug`, `T-Display-S3-SysEx`, `USB-Host-Send`, `USB-Host-Send-Test`. USB Host + BLE: `T-Display-S3-Piano`, `T-Display-S3-Queue`. BLE only: `T-Display-S3-BLE-Receiver`. Examples que já usavam `addTransport` explícito (Ethernet-MIDI, P4-Dual-UART-MIDI, RTP-MIDI-WiFi, T-Display-S3-OSC, T-Display-S3-AMoled-MIDI2-UMP, UART-MIDI-Basic, T-Display-S3-USB-Device) não precisaram mudar.
+
 ### v5.2.0
 - MIDIStatus enum com status bytes MIDI reais (0x80–0xE0)
 - Novos campos spec-compliant: statusCode, channel0 (0–15), noteNumber, velocity7, velocity16, pitchBend14, pitchBend32

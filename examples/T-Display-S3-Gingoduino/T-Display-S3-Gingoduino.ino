@@ -16,8 +16,11 @@
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0: transports are no longer auto-included
 #include <GingoAdapter.h>
 #include "ST7789_Handler.h"
+
+USBConnection usbHost;       // v6.0: explicit USB Host transport
 
 using namespace gingoduino;
 
@@ -71,6 +74,8 @@ void setup() {
     config.chordTimeWindow = 50;
     config.bleName = "ESP32 Gingoduino";
 
+    midiHandler.addTransport(&usbHost);  // v6.0: explicit
+    usbHost.begin();                      // v6.0: user owns lifecycle
     midiHandler.begin(config);
 
     display.print("MIDI + Gingoduino\nReady!\n\nPlay notes...");

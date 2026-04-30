@@ -47,15 +47,10 @@ void MIDIHandler::begin(const MIDIHandlerConfig& cfg) {
   this->config = cfg;
   this->maxEvents = cfg.maxEvents;
 
-#if ESP32_HOST_MIDI_HAS_USB && !defined(ESP32_HOST_MIDI_NO_USB_HOST)
-  registerTransport(&usbTransport);
-  usbTransport.begin();
-#endif
-
-#if ESP32_HOST_MIDI_HAS_BLE
-  registerTransport(&bleTransport);
-  bleTransport.begin(std::string(cfg.bleName));
-#endif
+  // v6.0: MIDIHandler::begin no longer auto-instantiates USB Host or BLE
+  // transports. User code is responsible for constructing each transport,
+  // registering it via addTransport(), and calling its own begin(). See
+  // docs/migration-v6.md.
 
   if (cfg.historyCapacity > 0) {
     enableHistory(cfg.historyCapacity);
@@ -781,9 +776,6 @@ bool MIDIHandler::sendSysEx(const uint8_t* data, size_t length) {
   return true;
 }
 
-#if ESP32_HOST_MIDI_HAS_BLE
-bool MIDIHandler::isBleConnected() const {
-  return bleTransport.isConnected();
-}
-#endif
+// v6.0: MIDIHandler::isBleConnected() removed. Query the BLEConnection
+// instance directly via its isConnected() method.
 
