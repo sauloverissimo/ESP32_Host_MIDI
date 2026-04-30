@@ -180,7 +180,7 @@ bool BLEClientConnection::sendMidiMessage(const uint8_t* data, size_t length) {
     if (xSemaphoreTake(sendMutex, pdMS_TO_TICKS(100)) != pdTRUE) return false;
 
     bool sent = false;
-    if (_connected && pRemoteChar->canWrite()) {
+    if (_connected && (pRemoteChar->canWrite() || pRemoteChar->canWriteNoResponse())) {
         pRemoteChar->writeValue(packet, 2 + midiLen, false);
         sent = true;
     }
