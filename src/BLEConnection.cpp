@@ -1,5 +1,16 @@
 #include "BLEConnection.h"
 
+// BLE stack drift between arduino-esp32 v2.x (BluedroidArduino) and
+// arduino-esp32 v3.x (NimBLE-Arduino) needs three #if branches inside
+// begin() below. v2.x also requires the explicit BLE2902 CCCD descriptor
+// because the BluedroidArduino wrapper does not expose the auto-created
+// CCCD via the Arduino API; clients (iOS, macOS, DAWs) cannot subscribe
+// to notifications without it. v3.x flags BLE2902 as deprecated and
+// auto-creates the CCCD when NOTIFY is set, so the include is gated.
+#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
+  #include <BLE2902.h>
+#endif
+
 BLEConnection::BLEConnection()
     : pServer(nullptr), pCharacteristic(nullptr),
       pBleCallback(nullptr), pServerCallback(nullptr),
@@ -25,7 +36,14 @@ void BLEConnection::begin(const std::string& deviceName) {
 
     sendMutex = xSemaphoreCreateMutex();
 
+    // BLEDevice::init signature differs by stack:
+    //   v2.x BluedroidArduino : init(std::string)
+    //   v3.x NimBLE-Arduino   : init(String)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
     BLEDevice::init(String(deviceName.c_str()));
+#else
+    BLEDevice::init(deviceName);
+#endif
     pServer = BLEDevice::createServer();
 
     // Server callbacks: handle connect/disconnect and restart advertising automatically.
@@ -55,15 +73,22 @@ void BLEConnection::begin(const std::string& deviceName) {
     BLEService* pService = pServer->createService(BLE_MIDI_SERVICE_UUID);
 
     // BLE MIDI spec requires READ + NOTIFY + WRITE_NR.
-    // The CCCD (0x2902) descriptor is added automatically by the underlying stack
-    // (NimBLE in arduino-esp32 3.x; BlueDroid in 2.x) whenever NOTIFY/INDICATE is set,
-    // so we no longer add it manually (BLE2902 is deprecated and will be removed).
     pCharacteristic = pService->createCharacteristic(
         BLE_MIDI_CHARACTERISTIC_UUID,
         BLECharacteristic::PROPERTY_READ    |
         BLECharacteristic::PROPERTY_NOTIFY  |
         BLECharacteristic::PROPERTY_WRITE_NR
     );
+
+    // CCCD (0x2902) descriptor handling, v2.x vs v3.x split:
+    //   v2.x BluedroidArduino : Arduino wrapper does NOT expose the auto-
+    //     created CCCD; clients (iOS, macOS, Bitwig, Logic) cannot subscribe
+    //     to notifications without an explicit BLE2902 descriptor. Keep it.
+    //   v3.x NimBLE-Arduino   : auto-creates the CCCD whenever NOTIFY is set
+    //     and flags addDescriptor(BLE2902) as [[deprecated]]; omit it.
+#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
+    pCharacteristic->addDescriptor(new BLE2902());
+#endif
 
     // Receive callback: strips the 2-byte BLE MIDI header and enqueues raw MIDI bytes.
     // BLE MIDI packet format: [header][timestamp][midi_bytes...]
@@ -73,7 +98,15 @@ void BLEConnection::begin(const std::string& deviceName) {
         BLEConnection* bleCon;
         BLECallback(BLEConnection* con) : bleCon(con) {}
         void onWrite(BLECharacteristic* characteristic) override {
+            // getValue() return type differs by stack:
+            //   v2.x BluedroidArduino : returns std::string
+            //   v3.x NimBLE-Arduino   : returns Arduino String
+            // Both expose .length() and .c_str() with the signatures we use.
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
             String rxValue = characteristic->getValue();
+#else
+            std::string rxValue = characteristic->getValue();
+#endif
             size_t len = rxValue.length();
             // Minimum valid BLE MIDI packet: header + timestamp + 1 MIDI byte = 3 bytes
             if (len >= 3) {
