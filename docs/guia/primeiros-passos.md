@@ -17,17 +17,26 @@ Este sketch imprime todos os eventos MIDI recebidos via USB Host ou BLE no Seria
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0+: cada transporte é explícito
+#include <BLEConnection.h>
 // Arduino IDE: Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;   // (1) instâncias globais (TinyUSB precisa antes de USB.begin)
+BLEConnection bleHost;
 
 void setup() {
     Serial.begin(115200);
-    midiHandler.begin();  // (1)
+    midiHandler.addTransport(&usbHost);   // (2) registra cada transporte
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();                       // (3) o user controla o lifecycle
+    bleHost.begin("ESP32 MIDI BLE");
+    midiHandler.begin();                   // (4)
 }
 
 void loop() {
-    midiHandler.task();   // (2)
+    midiHandler.task();                    // (5)
 
-    for (const auto& ev : midiHandler.getQueue()) {  // (3)
+    for (const auto& ev : midiHandler.getQueue()) {  // (6)
         char noteBuf[8];
         Serial.printf("%-12s %-5s ch=%d  vel=%d\n",
             MIDIHandler::statusName(ev.statusCode),    // "NoteOn" | "NoteOff" | "ControlChange"...
@@ -40,9 +49,12 @@ void loop() {
 
 **Anotações:**
 
-1. `begin()` inicializa automaticamente USB Host (se o chip suportar) e BLE (se habilitado)
-2. `task()` deve ser chamado em todo `loop()` — ele drena os ring buffers de todos os transportes
-3. `getQueue()` retorna a fila de eventos desde a última chamada de `task()`
+1. Em v6+ os transportes (`USBConnection`, `BLEConnection`, `UARTConnection`, etc.) são instanciados explicitamente. Inclua só os headers que vai usar.
+2. `addTransport(&t)` registra cada um no `MIDIHandler` antes do `begin()`.
+3. Cada transporte controla seu próprio `begin()`: `usbHost.begin()` (sem nome), `bleHost.begin("nome")`, `uart.begin(...)`.
+4. `midiHandler.begin()` aplica config e prepara o queue. Não inicia transportes nenhum.
+5. `task()` deve ser chamado em todo `loop()`, drena os ring buffers de todos os transportes registrados.
+6. `getQueue()` retorna a fila de eventos desde a última chamada de `task()`.
 
 ---
 
@@ -111,7 +123,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ## Passo 3 — Enviar MIDI de Volta
 
-Todos os métodos de envio transmitem **simultaneamente** para todos os transportes ativos:
+Os métodos de envio fazem **fan-out**: tentam cada transporte registrado em ordem e retornam `true` no primeiro que aceitar. Não é broadcast simultâneo.
 
 ```cpp
 // NoteOn: canal 1, nota C4 (60), velocidade 100
@@ -159,11 +171,11 @@ void loop() {
 void loop() {
     midiHandler.task();
 
-#if ESP32_HOST_MIDI_HAS_BLE
-    if (midiHandler.isBleConnected()) {
+    // v6.0+: consultar a instância de BLEConnection diretamente.
+    // MIDIHandler::isBleConnected() foi removido junto com o member built-in.
+    if (bleHost.isConnected()) {
         Serial.println("BLE MIDI conectado!");
     }
-#endif
 }
 ```
 
@@ -179,7 +191,12 @@ void loop() {
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>
+#include <BLEConnection.h>
 // Arduino IDE: Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;
+BLEConnection bleHost;
 
 void setup() {
     Serial.begin(115200);
@@ -189,6 +206,10 @@ void setup() {
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 20;         // capacidade da fila
     cfg.chordTimeWindow = 50;   // ms para agrupar acordes
+    midiHandler.addTransport(&usbHost);
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();
+    bleHost.begin("ESP32 MIDI BLE");
     midiHandler.begin(cfg);
 
     Serial.println("Pronto! Conecte um teclado USB ou use BLE.");
@@ -222,7 +243,7 @@ void loop() {
 
 ---
 
-## Fluxo de Inicialização
+## Fluxo de Inicialização (v6.0+)
 
 ```mermaid
 sequenceDiagram
@@ -231,18 +252,21 @@ sequenceDiagram
     participant USB as USBConnection
     participant BLE as BLEConnection
 
-    SKETCH->>HANDLER: midiHandler.begin()
-    HANDLER->>HANDLER: Lê MIDIHandlerConfig
-    HANDLER->>USB: usbTransport.begin()
+    SKETCH->>USB: USBConnection usbHost; (global)
+    SKETCH->>BLE: BLEConnection bleHost; (global)
+    SKETCH->>HANDLER: addTransport(&usbHost)
+    SKETCH->>HANDLER: addTransport(&bleHost)
+    SKETCH->>USB: usbHost.begin()
     Note over USB: Inicia FreeRTOS task\nno Core 0
-    HANDLER->>BLE: bleTransport.begin(bleName)
+    SKETCH->>BLE: bleHost.begin("nome")
     Note over BLE: Inicia stack BLE\ne advertising
+    SKETCH->>HANDLER: midiHandler.begin(cfg)
     HANDLER-->>SKETCH: Pronto
 
     loop Cada loop()
         SKETCH->>HANDLER: midiHandler.task()
-        HANDLER->>USB: usb.task()
-        HANDLER->>BLE: ble.task()
+        HANDLER->>USB: usbHost.task()
+        HANDLER->>BLE: bleHost.task()
         USB-->>HANDLER: Eventos do ring buffer
         BLE-->>HANDLER: Eventos do ring buffer
         HANDLER-->>SKETCH: getQueue() com eventos

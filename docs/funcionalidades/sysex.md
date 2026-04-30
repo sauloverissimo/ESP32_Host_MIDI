@@ -54,10 +54,17 @@ SysEx usa sua própria `std::deque<MIDISysExEvent>`, completamente separada da f
 ## Configuração
 
 ```cpp
-MIDIHandlerConfig config;
-config.maxSysExSize   = 512;  // máximo de bytes por mensagem (inclui F0 e F7)
-config.maxSysExEvents = 8;    // quantas mensagens manter na fila
-midiHandler.begin(config);
+#include <USBConnection.h>      // v6.0+: registre os transportes que vai usar
+USBConnection usbHost;
+
+void setup() {
+    MIDIHandlerConfig config;
+    config.maxSysExSize   = 512;  // máximo de bytes por mensagem (inclui F0 e F7)
+    config.maxSysExEvents = 8;    // quantas mensagens manter na fila
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
+    midiHandler.begin(config);
+}
 ```
 
 | Parâmetro | Default | Descrição |
@@ -105,7 +112,8 @@ midiHandler.setSysExCallback([](const uint8_t* data, size_t len) {
 ### Envio
 
 ```cpp
-// Enviar SysEx — transmite para todos os transportes
+// Enviar SysEx, broadcast pra todos os transports registrados
+// (sendSysEx itera todos e envia em cada um)
 const uint8_t identityReq[] = { 0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7 };
 bool ok = midiHandler.sendSysEx(identityReq, sizeof(identityReq));
 // Retorna false se a mensagem não começar com F0 ou não terminar com F7

@@ -43,15 +43,24 @@ flowchart TD
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // v6.0+: transportes são explícitos
+#include <BLEConnection.h>
 // Arduino IDE: Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;
+BLEConnection bleHost;
 
 void setup() {
     Serial.begin(115200);
-    midiHandler.begin();  // inicializa USB Host + BLE automaticamente
+    midiHandler.addTransport(&usbHost);  // registre cada transporte que vai usar
+    midiHandler.addTransport(&bleHost);
+    usbHost.begin();                      // user controla cada lifecycle
+    bleHost.begin("Meu Device");
+    midiHandler.begin();
 }
 
 void loop() {
-    midiHandler.task();  // processa todos os transportes
+    midiHandler.task();  // processa todos os transportes registrados
 
     for (const auto& ev : midiHandler.getQueue()) {
         char noteBuf[8];

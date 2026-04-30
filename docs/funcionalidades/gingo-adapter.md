@@ -53,11 +53,16 @@ flowchart LR
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>     // v6.0+: cada transport explícito
 #include "src/GingoAdapter.h"  // requer Gingoduino ≥ v0.2.2
 // Tools > USB Mode → "USB Host"
 
+USBConnection usbHost;
+
 void setup() {
     Serial.begin(115200);
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin();
 }
 
@@ -155,9 +160,14 @@ if (GingoAdapter::identifyProgression("C", SCALE_MAJOR, branches, 3, &resultado)
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>      // v6.0+: cada transport explícito
 #include "src/GingoAdapter.h"
 
+USBConnection usbHost;
+
 void setup() {
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin();
     // inicializar display aqui
 }

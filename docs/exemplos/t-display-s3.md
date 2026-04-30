@@ -69,9 +69,11 @@ examples/T-Display-S3-Piano/
 #include "src/GingoAdapter.h"   // Detecção de acordes
 #include "ST7789_Handler.h"
 #include "mapping.h"
+#include <USBConnection.h>      // v6.0+: cada transport explícito
 // Tools > USB Mode → "USB Host"
 
 ST7789_Handler display;
+USBConnection  usbHost;
 
 void setup() {
     Serial.begin(115200);
@@ -81,6 +83,8 @@ void setup() {
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 20;
     cfg.chordTimeWindow = 50;
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin(cfg);
 }
 

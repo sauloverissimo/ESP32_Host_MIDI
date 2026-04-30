@@ -45,11 +45,16 @@ Tools → USB Mode → "USB Host"
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>      // v6.0+: USB Host é um transporte explícito
 // Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;          // global
 
 void setup() {
     Serial.begin(115200);
-    midiHandler.begin();  // USB Host iniciado automaticamente
+    midiHandler.addTransport(&usbHost);  // registra antes de begin()
+    usbHost.begin();                      // inicia stack USB Host
+    midiHandler.begin();
 }
 
 void loop() {
@@ -66,7 +71,7 @@ void loop() {
 }
 ```
 
-Nenhuma configuração adicional é necessária — o transporte USB é built-in.
+Em v5 o `MIDIHandler::begin()` instanciava `USBConnection` automaticamente. Em v6+ todo transporte é explícito; veja [Migration Guide](../migration-v6.md).
 
 ---
 

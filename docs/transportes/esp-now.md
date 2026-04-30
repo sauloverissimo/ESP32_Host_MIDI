@@ -153,18 +153,23 @@ sequenceDiagram
 ```cpp
 #include <ESP32_Host_MIDI.h>
 #include "src/ESPNowConnection.h"
+#include <USBConnection.h>     // v6.0+: cada transport explícito
+#include <BLEConnection.h>
 
+USBConnection    usbHost;
+BLEConnection    bleHost;
 ESPNowConnection espNow;
 
 void setup() {
-    // ESP-NOW
-    espNow.begin(11);
+    midiHandler.addTransport(&usbHost);
+    midiHandler.addTransport(&bleHost);
     midiHandler.addTransport(&espNow);
 
-    // USB Host + BLE iniciados automaticamente
-    MIDIHandlerConfig cfg;
-    cfg.bleName = "Jam Node";
-    midiHandler.begin(cfg);
+    usbHost.begin();
+    bleHost.begin("Jam Node");
+    espNow.begin(11);
+
+    midiHandler.begin();
 
     // Agora teclado USB + BLE + ESP-NOW estão todos ativos!
 }
