@@ -1,22 +1,11 @@
 # ESP32\_Host\_MIDI
 
 <p align="center">
-  <img src="examples/T-Display-S3-Piano/images/pianno-MIDI-25.jpeg" width="280" alt="Piano Visualizer" />
-  <img src="examples/T-Display-S3-Gingoduino/images/gingo-duino-integration.jpeg" width="280" alt="Chord Detection" />
-  <img src="examples/T-Display-S3-BLE-Receiver/images/BLE.jpeg" width="280" alt="BLE MIDI Receiver" />
-</p>
-
-<p align="center">
   <!-- MIDI protocols -->
   <img src="https://img.shields.io/badge/MIDI-1.0-009B77?style=flat-square" />
   <img src="https://img.shields.io/badge/USB-MIDI-0076A8?style=flat-square&logo=usb&logoColor=white" />
   <img src="https://img.shields.io/badge/BLE-MIDI-0082FC?style=flat-square&logo=bluetooth&logoColor=white" />
   <img src="https://img.shields.io/badge/Apple-MIDI%20%2F%20RTP-555555?style=flat-square&logo=apple&logoColor=white" />
-  <br/>
-  <!-- Platforms -->
-  <img src="https://img.shields.io/badge/iOS-Compatible-007AFF?style=flat-square&logo=apple&logoColor=white" />
-  <img src="https://img.shields.io/badge/macOS-Compatible-000000?style=flat-square&logo=apple&logoColor=white" />
-  <img src="https://img.shields.io/badge/Windows-Compatible-0078D4?style=flat-square&logo=windows&logoColor=white" />
   <br/>
   <!-- Ecosystem -->
   <img src="https://img.shields.io/badge/Arduino-IDE%20%7C%20CLI-00979D?style=flat-square&logo=arduino&logoColor=white" />
