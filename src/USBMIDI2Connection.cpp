@@ -173,11 +173,12 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
     //
     // Per ESP-IDF docs, usb_host_interface_claim already issues SET_INTERFACE
     // when the requested alt differs from the active one. In practice some
-    // device combinations (notably libDaisy STM32H7 + TinyUSB MIDI 2.0 PR
-    // #3571 device class) silently stay on Alt 0 (USB-MIDI 1.0 CIN) while
-    // the host believes it has switched to Alt 1 (USB-MIDI 2.0 UMP). The
-    // result: bulk IN transfers come back populated with CIN packets that
-    // _onReceiveUMP misinterprets as UMP words with reserved MT nibbles.
+    // device combinations (observed with at least one MIDI 2.0 device built
+    // on the TinyUSB MIDI 2.0 PR #3571 class driver) silently stay on Alt 0
+    // (USB-MIDI 1.0 CIN) while the host believes it has switched to Alt 1
+    // (USB-MIDI 2.0 UMP). The result: bulk IN transfers come back populated
+    // with CIN packets that _onReceiveUMP misinterprets as UMP words with
+    // reserved MT nibbles.
     //
     // Sending the request explicitly closes the gap. SET_INTERFACE on FS USB
     // is a single 8-byte SETUP with no data stage; under 1 ms in practice.

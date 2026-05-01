@@ -117,7 +117,7 @@ Refactor estrutural: separação clara entre transport layer (USB Host, BLE, ESP
 **Fixes**
 
 - `BLEConnection`: gates condicionais `ESP_ARDUINO_VERSION_MAJOR` para os 3 pontos de divergência v2.x BluedroidArduino vs v3.x NimBLE-Arduino: `BLEDevice::init` (std::string vs String), `BLECharacteristic::getValue` (idem), e o descriptor `BLE2902` (obrigatório em v2.x onde o wrapper Arduino não expõe a CCCD auto-criada, deprecated em v3.x).
-- `USBMIDI2Connection`: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de `usb_host_interface_claim`. Algumas combinações device-side (libDaisy STM32H7 + TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 mesmo com claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que `_onReceiveUMP` interpretava como UMP inválido. Validado em hardware com Daisy Seed `feat/midi2`: pré-fix CIN MIDI 1.0 chegava como UMP malformado, pós-fix UMP MT 0x4 nativo (velocity 16-bit, CC/PB/CP/PP 32-bit) chega corretamente.
+- `USBMIDI2Connection`: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de `usb_host_interface_claim`. Algumas combinações device-side (observadas com ao menos um dispositivo MIDI 2.0 baseado no driver de classe TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 mesmo com claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que `_onReceiveUMP` interpretava como UMP inválido. Validado em hardware com um dispositivo MIDI 2.0: pré-fix CIN MIDI 1.0 chegava como UMP malformado, pós-fix UMP MT 0x4 nativo (velocity 16-bit, CC/PB/CP/PP 32-bit) chega corretamente.
 
 **Examples migrados pro padrão v6 explícito**
 
