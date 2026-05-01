@@ -29,9 +29,7 @@
 
 ---
 
-## English
-
-**The universal MIDI hub for ESP32 — 9 transports, one API.**
+**The universal MIDI hub for ESP32**
 
 ESP32\_Host\_MIDI turns your ESP32 into a full-featured, multi-protocol MIDI hub. Connect a USB keyboard, receive notes from an iPhone via Bluetooth, bridge your DAW over WiFi with RTP-MIDI (Apple MIDI), control Max/MSP via OSC, reach 40-year-old synths through a DIN-5 serial cable, and link multiple ESP32 boards wirelessly with ESP-NOW — **all simultaneously, all through the same clean event API.**
 
