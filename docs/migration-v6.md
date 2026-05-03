@@ -13,6 +13,13 @@ depending on what your firmware uses.
 
 The two are documented in turn below.
 
+> **v6.0.1 patch note (no migration required).** v6.0.0 shipped two
+> latent BLE regressions on arduino-esp32 v3.x that broke iOS and
+> macOS BLE-MIDI client discovery and notification subscribe. v6.0.1
+> fixes both inside `BLEConnection.cpp` without API changes; existing
+> v6.0.0 sketches just need to bump the library pin. See the v6.0.1
+> entry in `docs/roadmap.md` for the technical writeup.
+
 ---
 
 ## Part 1: Transport architecture (new in v6.0)
@@ -105,11 +112,12 @@ if (bleHost.isConnected()) { ... }
 Coupling forced compilation of USB Host and BLE drivers into firmware
 that did not use them. That made trivial Arduino IDE / PlatformIO
 toolchain quirks (BLE std::string vs Arduino String, the BLE2902 CCCD
-descriptor's deprecation, the USB-MIDI 2.0 alt-switch race) cascade
-into build failures or runtime regressions for users who never
-touched the relevant code paths. The decoupling makes each transport
-pay its own cost only when explicitly used, and the library API stops
-pretending those two transports are special among the nine available.
+descriptor required by Bluedroid but flagged deprecated by NimBLE,
+the USB-MIDI 2.0 alt-switch race) cascade into build failures or
+runtime regressions for users who never touched the relevant code
+paths. The decoupling makes each transport pay its own cost only when
+explicitly used, and the library API stops pretending those two
+transports are special among the nine available.
 
 ---
 

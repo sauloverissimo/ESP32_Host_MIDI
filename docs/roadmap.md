@@ -102,6 +102,15 @@ public:
 
 ## Changelog
 
+### v6.0.1
+
+Patch release que corrige duas regressões de BLE introduzidas pelo refactor v6.0.0. Sem breaking changes.
+
+**Fixes**
+
+- `BLEConnection`: descriptor `BLE2902` volta a ser adicionado incondicionalmente (era gated por `ESP_ARDUINO_VERSION_MAJOR >= 3` em v6.0.0). A premissa do gate estava errada: assumia que arduino-esp32 v3.x ship NimBLE-Arduino (que auto-cria CCCD), mas arduino-esp32 v3.1.x ainda ship o BLE library do Neil Kolban / Dariusz Krempa, que é Bluedroid. Sem o `BLE2902` explícito, clientes BLE-MIDI (iOS GarageBand / midimittr / MIDI Wrench, macOS, BlueZ + bleak, DAWs) conectam mas não conseguem subscrever NOTIFY. Confirmado em hardware no ESP32-C6 + iPhone GarageBand.
+- `BLEConnection`: `setScanResponse(true)` em vez de `false`. Em arduino-esp32 v3.x o Bluedroid auto-inclui TX Power + Peripheral Connection Interval AD types na primary advertisement; somando flags + nome + UUID 128-bit BLE-MIDI a payload estoura o limite legacy de 31 bytes e o UUID é silenciosamente descartado. iOS BLE MIDI apps filtram scan results pela presença do UUID `03B80E5A`, então o device fica invisível. Com scan response ligado, UUID fica na primária e o nome vai pro SCAN_RSP. arduino-esp32 v2.x não auto-incluía esses AD types, então o bug ficava latente.
+
 ### v6.0.0 (breaking change)
 
 Refactor estrutural: separação clara entre transport layer (USB Host, BLE, ESP-NOW, RTP-MIDI, etc.) e handler layer (MIDIHandler), além de bug fixes que vinham se acumulando em pontos de divergência arduino-esp32 v2.x/v3.x.
@@ -116,7 +125,7 @@ Refactor estrutural: separação clara entre transport layer (USB Host, BLE, ESP
 
 **Fixes**
 
-- `BLEConnection`: gates condicionais `ESP_ARDUINO_VERSION_MAJOR` para os 3 pontos de divergência v2.x BluedroidArduino vs v3.x NimBLE-Arduino: `BLEDevice::init` (std::string vs String), `BLECharacteristic::getValue` (idem), e o descriptor `BLE2902` (obrigatório em v2.x onde o wrapper Arduino não expõe a CCCD auto-criada, deprecated em v3.x).
+- `BLEConnection`: gates condicionais `ESP_ARDUINO_VERSION_MAJOR` para 2 pontos de divergência confirmados entre arduino-esp32 v2.x e v3.x: `BLEDevice::init` (espera `std::string` em v2.x e `String` em v3.x) e `BLECharacteristic::getValue` (mesma divergência no tipo retornado). Um terceiro gate, em torno do descriptor `BLE2902`, foi adicionado com a premissa de que arduino-esp32 v3.x usa NimBLE-Arduino (que auto-cria CCCD); essa premissa se mostrou errada (arduino-esp32 v3.1.x ainda usa Bluedroid) e foi revertida em v6.0.1.
 - `USBMIDI2Connection`: emite SET_INTERFACE explícito via control transfer no EP0 logo depois de `usb_host_interface_claim`. Algumas combinações device-side (observadas com ao menos um dispositivo MIDI 2.0 baseado no driver de classe TinyUSB MIDI 2.0 PR #3571) ficavam presas no Alt 0 mesmo com claim retornando ESP_OK; o IN bulk vinha com pacotes CIN que `_onReceiveUMP` interpretava como UMP inválido. Validado em hardware com um dispositivo MIDI 2.0: pré-fix CIN MIDI 1.0 chegava como UMP malformado, pós-fix UMP MT 0x4 nativo (velocity 16-bit, CC/PB/CP/PP 32-bit) chega corretamente.
 
 **Examples migrados pro padrão v6 explícito**

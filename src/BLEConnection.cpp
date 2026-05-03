@@ -1,15 +1,21 @@
 #include "BLEConnection.h"
 
-// BLE stack drift between arduino-esp32 v2.x (BluedroidArduino) and
-// arduino-esp32 v3.x (NimBLE-Arduino) needs three #if branches inside
-// begin() below. v2.x also requires the explicit BLE2902 CCCD descriptor
-// because the BluedroidArduino wrapper does not expose the auto-created
-// CCCD via the Arduino API; clients (iOS, macOS, DAWs) cannot subscribe
-// to notifications without it. v3.x flags BLE2902 as deprecated and
-// auto-creates the CCCD when NOTIFY is set, so the include is gated.
-#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
-  #include <BLE2902.h>
-#endif
+// CCCD descriptor handling.
+//
+// The BLE library shipped with arduino-esp32 is Neil Kolban / Dariusz Krempa
+// BluedroidArduino on BOTH v2.x and v3.x as of v3.1.x — the migration to
+// NimBLE-Arduino is planned for a later v3.x release but has not landed in
+// arduino-esp32 v3.1.3 (the current pin under pioarduino@53.03.13). The
+// previous v6.0.0 gate `ESP_ARDUINO_VERSION_MAJOR >= 3` confused the Arduino
+// core version with the BLE stack identity and silently dropped BLE2902 on
+// v3.x users who are still on Bluedroid, breaking notification subscribe
+// from iOS / macOS / DAWs.
+//
+// Always include BLE2902. In Bluedroid the explicit CCCD is mandatory for
+// clients to subscribe to notifications. In NimBLE-Arduino addDescriptor(
+// BLE2902) is flagged [[deprecated]] but remains a working compatibility
+// no-op; the build stays green and the behaviour is correct on either stack.
+#include <BLE2902.h>
 
 BLEConnection::BLEConnection()
     : pServer(nullptr), pCharacteristic(nullptr),
@@ -80,15 +86,12 @@ void BLEConnection::begin(const std::string& deviceName) {
         BLECharacteristic::PROPERTY_WRITE_NR
     );
 
-    // CCCD (0x2902) descriptor handling, v2.x vs v3.x split:
-    //   v2.x BluedroidArduino : Arduino wrapper does NOT expose the auto-
-    //     created CCCD; clients (iOS, macOS, Bitwig, Logic) cannot subscribe
-    //     to notifications without an explicit BLE2902 descriptor. Keep it.
-    //   v3.x NimBLE-Arduino   : auto-creates the CCCD whenever NOTIFY is set
-    //     and flags addDescriptor(BLE2902) as [[deprecated]]; omit it.
-#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
+    // CCCD (0x2902) descriptor: explicit on every stack we currently ship.
+    // BluedroidArduino requires it (no auto-create, no exposure of the
+    // implicit CCCD via the Arduino wrapper); NimBLE-Arduino accepts it as
+    // a deprecated compatibility shim. See file-top comment for why the
+    // previous ESP_ARDUINO_VERSION_MAJOR gate was incorrect.
     pCharacteristic->addDescriptor(new BLE2902());
-#endif
 
     // Receive callback: strips the 2-byte BLE MIDI header and enqueues raw MIDI bytes.
     // BLE MIDI packet format: [header][timestamp][midi_bytes...]
@@ -124,7 +127,17 @@ void BLEConnection::begin(const std::string& deviceName) {
 
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(BLE_MIDI_SERVICE_UUID);
-    pAdvertising->setScanResponse(false);
+    // Enable scan response so the 128-bit BLE-MIDI service UUID stays in
+    // the primary advertisement payload while the device name moves to the
+    // SCAN_RSP. With setScanResponse(false) on arduino-esp32 v3.x the
+    // primary payload fills up with name + auto-included TX power +
+    // Peripheral Connection Interval AD types and Bluedroid silently drops
+    // the 128-bit UUID. iOS BLE-MIDI apps (GarageBand, midimittr, MIDI
+    // Wrench, Apollo MIDI, etc.) filter scan results by the BLE-MIDI
+    // service UUID, so when it is missing the device is invisible to them.
+    // arduino-esp32 v2.x did not auto-include the extra AD types and the
+    // UUID happened to fit, masking this latent bug.
+    pAdvertising->setScanResponse(true);
     BLEDevice::startAdvertising();
 }
 
