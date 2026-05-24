@@ -6,8 +6,15 @@ ESP32\_Host\_MIDI transforma o seu ESP32 em um hub MIDI multi-protocolo completo
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>
 
-void setup() { midiHandler.begin(); }
+USBConnection usbHost;
+
+void setup() {
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
+    midiHandler.begin();
+}
 
 void loop() {
     midiHandler.task();
@@ -116,19 +123,28 @@ ESP32-A  ─────  WiFi UDP ("UMP2" + Word0 + Word1)  ─────► 
 
 ## Início Rápido
 
+Desde a v6.0 os transportes são explícitos: inclua os headers que você usa, declare cada transporte, registre com `addTransport()` e chame o `begin()` dele. Veja [`docs/migration-v6.md`](docs/migration-v6.md) se estiver migrando da v5.x.
+
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // inclua apenas os transportes que vai usar
+
+USBConnection usbHost;
 
 void setup() {
     Serial.begin(115200);
+
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin();
 }
 
 void loop() {
     midiHandler.task();
-    for (const auto& ev : midiHandler.getQueue())
+    for (const auto& ev : midiHandler.getQueue()) {
         char noteBuf[8];
         Serial.println(MIDIHandler::noteWithOctave(ev.noteNumber, noteBuf, sizeof(noteBuf)));
+    }
 }
 ```
 

@@ -35,8 +35,15 @@ ESP32\_Host\_MIDI turns your ESP32 into a full-featured, multi-protocol MIDI hub
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>
 
-void setup() { midiHandler.begin(); }
+USBConnection usbHost;
+
+void setup() {
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
+    midiHandler.begin();
+}
 
 void loop() {
     midiHandler.task();
@@ -107,12 +114,20 @@ All transports share a single `MIDIHandler` event queue and the same send API. M
 
 ### Quick Start
 
+Since v6.0 transports are explicit: include the headers you need, declare each transport, register it with `addTransport()`, and call its `begin()`. See [`docs/migration-v6.md`](docs/migration-v6.md) if you are upgrading from v5.x.
+
 ```cpp
 #include <ESP32_Host_MIDI.h>
+#include <USBConnection.h>   // include only the transports you use
 // Arduino IDE: Tools > USB Mode → "USB Host"
+
+USBConnection usbHost;
 
 void setup() {
     Serial.begin(115200);
+
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin();
 }
 
