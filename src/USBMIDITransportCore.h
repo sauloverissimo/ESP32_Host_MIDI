@@ -186,6 +186,102 @@ inline void appendStreamText(char* dest, uint8_t& destLen, uint8_t maxLen,
     dest[destLen] = '\0';
 }
 
+// ── UMP Stream Messages (MT 0x0F) ───────────────────────────────────────────
+
+static const uint8_t  UMP_MT_STREAM             = 0x0F;
+static const uint16_t STREAM_ENDPOINT_DISCOVERY = 0x000;
+static const uint16_t STREAM_ENDPOINT_INFO      = 0x001;
+static const uint16_t STREAM_DEVICE_INFO        = 0x002;
+static const uint16_t STREAM_EP_NAME            = 0x003;
+static const uint16_t STREAM_PROD_INSTANCE_ID   = 0x004;
+static const uint16_t STREAM_CONFIG_REQUEST     = 0x005;
+static const uint16_t STREAM_CONFIG_NOTIFY      = 0x006;
+static const uint16_t STREAM_FB_DISCOVERY       = 0x010;
+static const uint16_t STREAM_FB_INFO            = 0x011;
+static const uint16_t STREAM_FB_NAME            = 0x012;
+
+// Discovery message builders (fill a 4-word UMP Stream message).
+inline void buildEndpointDiscovery(uint32_t msg[4], uint8_t verMajor, uint8_t verMinor) {
+    msg[0] = ((uint32_t)UMP_MT_STREAM << 28) | ((uint32_t)STREAM_ENDPOINT_DISCOVERY << 16)
+           | ((uint32_t)verMajor << 8) | (uint32_t)verMinor;
+    msg[1] = 0xFF;  // filter: request all info
+    msg[2] = 0; msg[3] = 0;
+}
+inline void buildStreamConfigRequest(uint32_t msg[4], uint8_t protocol) {
+    msg[0] = ((uint32_t)UMP_MT_STREAM << 28) | ((uint32_t)STREAM_CONFIG_REQUEST << 16)
+           | ((uint32_t)protocol << 8);
+    msg[1] = 0; msg[2] = 0; msg[3] = 0;
+}
+inline void buildFunctionBlockDiscovery(uint32_t msg[4]) {
+    msg[0] = ((uint32_t)UMP_MT_STREAM << 28) | ((uint32_t)STREAM_FB_DISCOVERY << 16)
+           | (0xFF << 8)   // fbIdx = 0xFF (request all)
+           | 0xFF;         // filter = all info
+    msg[1] = 0; msg[2] = 0; msg[3] = 0;
+}
+
+// ── Negotiation state machine ───────────────────────────────────────────────
+//
+// Pure model of the UMP endpoint-discovery handshake. The transport layer feeds
+// each incoming Stream Message to negStep() and performs the returned action.
+
+enum class NegState : uint8_t {
+    Idle, AwaitEndpointInfo, AwaitStreamConfig, AwaitFBInfo, Done
+};
+enum class NegAction : uint8_t {
+    None, SendStreamConfigRequest, SendFBDiscovery, Complete
+};
+struct NegEngine {
+    NegState state = NegState::Idle;
+    uint8_t  numFunctionBlocks = 0;
+    bool     supportsMIDI2 = false;
+    uint8_t  currentProtocol = 0;
+    uint8_t  fbCount = 0;
+    uint8_t  fbExpected = 0;
+    uint8_t  configProtocol = 0;  // protocol to request after Endpoint Info
+};
+
+// Feed one Stream Message (4 words). Updates the engine and returns the action
+// the transport layer must perform (send a packet / complete / nothing).
+inline NegAction negStep(NegEngine& e, const uint32_t* words) {
+    uint16_t status = (words[0] >> 16) & 0x3FF;
+    switch (status) {
+    case STREAM_ENDPOINT_INFO:
+        e.numFunctionBlocks = (words[1] >> 24) & 0xFF;
+        e.supportsMIDI2     = (words[1] >> 9) & 0x01;
+        if (e.state == NegState::AwaitEndpointInfo) {
+            e.configProtocol = e.supportsMIDI2 ? 0x02 : 0x01;
+            e.state = NegState::AwaitStreamConfig;
+            return NegAction::SendStreamConfigRequest;
+        }
+        break;
+    case STREAM_CONFIG_NOTIFY:
+        e.currentProtocol = (words[0] >> 8) & 0xFF;
+        if (e.state == NegState::AwaitStreamConfig) {
+            e.fbCount = 0;
+            e.fbExpected = e.numFunctionBlocks;
+            if (e.fbExpected > 0) {
+                e.state = NegState::AwaitFBInfo;
+                return NegAction::SendFBDiscovery;
+            }
+            e.state = NegState::Done;
+            return NegAction::Complete;
+        }
+        break;
+    case STREAM_FB_INFO:
+        if (e.state == NegState::AwaitFBInfo) {
+            e.fbCount++;
+            if (e.fbCount >= e.fbExpected) {
+                e.state = NegState::Done;
+                return NegAction::Complete;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    return NegAction::None;
+}
+
 }} // namespace usbmidi::core
 
 #endif // USB_MIDI_TRANSPORT_CORE_H

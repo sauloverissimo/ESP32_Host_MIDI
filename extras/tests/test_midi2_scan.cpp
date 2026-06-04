@@ -416,32 +416,22 @@ void test_ump_dispatch() {
 void test_stream_message_build() {
     printf("\n[UMP Stream Message building]\n");
 
-    // Endpoint Discovery: MT=0xF, status=0x000, ver=1.1, filter in word1
+    // Validate the REAL builders from the transport core.
+    uint32_t msg[4];
+
     TEST("Endpoint Discovery word0 format");
-    uint32_t msg[4] = {};
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x000 << 16)
-           | ((uint32_t)1 << 8)
-           | (uint32_t)1;
-    msg[1] = 0xFF;
+    usbmidi::core::buildEndpointDiscovery(msg, 1, 1);
     ASSERT(msg[0] == 0xF0000101);
     ASSERT(msg[1] == 0x000000FF);
     PASS();
 
-    // Stream Config Request: MT=0xF, status=0x005, protocol=0x02
     TEST("Stream Config Request word0 format");
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x005 << 16)
-           | ((uint32_t)0x02 << 8);
+    usbmidi::core::buildStreamConfigRequest(msg, 0x02);
     ASSERT(msg[0] == 0xF0050200);
     PASS();
 
-    // Function Block Discovery: MT=0xF, status=0x010, fbIdx=0xFF, filter=0xFF
     TEST("Function Block Discovery word0 format");
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x010 << 16)
-           | (0xFF << 8)
-           | 0xFF;
+    usbmidi::core::buildFunctionBlockDiscovery(msg);
     ASSERT(msg[0] == 0xF010FFFF);
     PASS();
 }
@@ -735,77 +725,42 @@ void test_stream_text() {
 // Tests — Full negotiation state machine sequence
 // ---------------------------------------------------------------------------
 
-// Simulates the full negotiation sequence by manually walking through
-// _processStreamMessage parsing at each stage.
+// Drives the REAL negotiation engine (usbmidi::core::NegEngine + negStep) so the
+// tests validate the shipping state machine, not a copy.
 
-// State machine enum (mirrors USBMIDI2Connection)
-enum NegotiationState : uint8_t {
-    NegIdle, NegAwaitEndpointInfo, NegAwaitStreamConfig, NegAwaitFBInfo, NegDone
-};
-
-struct NegSim {
-    NegotiationState state;
-    uint8_t numFunctionBlocks;
-    bool supportsMIDI2;
-    uint8_t currentProtocol;
-    uint8_t fbCount;
-    uint8_t fbExpected;
-
-    void processStream(const uint32_t* words) {
-        uint16_t status = (words[0] >> 16) & 0x3FF;
-        switch (status) {
-        case 0x001: // Endpoint Info
-            numFunctionBlocks = (words[1] >> 24) & 0xFF;
-            supportsMIDI2 = (words[1] >> 9) & 0x01;
-            if (state == NegAwaitEndpointInfo)
-                state = NegAwaitStreamConfig;
-            break;
-        case 0x006: // Stream Config Notify
-            currentProtocol = (words[0] >> 8) & 0xFF;
-            if (state == NegAwaitStreamConfig) {
-                fbCount = 0;
-                fbExpected = numFunctionBlocks;
-                if (fbExpected > 0) {
-                    state = NegAwaitFBInfo;
-                } else {
-                    state = NegDone;
-                }
-            }
-            break;
-        case 0x011: // FB Info
-            fbCount++;
-            if (state == NegAwaitFBInfo && fbCount >= fbExpected)
-                state = NegDone;
-            break;
-        }
-    }
-};
+using usbmidi::core::NegEngine;
+using usbmidi::core::NegState;
+using usbmidi::core::NegAction;
+using usbmidi::core::negStep;
 
 void test_negotiation_full_sequence() {
     printf("\n[Negotiation — full happy-path sequence]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
     // Step 1: Device sends Endpoint Info (2 FBs, supports MIDI 2.0)
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)2 << 24) | (1 << 9) | (1 << 8) | 1;
-    neg.processStream(epInfo);
+    NegAction a1 = negStep(neg, epInfo);
 
-    TEST("after EP Info → NegAwaitStreamConfig");
-    ASSERT(neg.state == NegAwaitStreamConfig);
+    TEST("after EP Info → request config, AwaitStreamConfig");
+    ASSERT(a1 == NegAction::SendStreamConfigRequest);
+    ASSERT(neg.state == NegState::AwaitStreamConfig);
     ASSERT(neg.numFunctionBlocks == 2);
     ASSERT(neg.supportsMIDI2 == true);
+    ASSERT(neg.configProtocol == 0x02);
     PASS();
 
     // Step 2: Device confirms MIDI 2.0 protocol
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
+    NegAction a2 = negStep(neg, config);
 
-    TEST("after Config Notify → NegAwaitFBInfo");
-    ASSERT(neg.state == NegAwaitFBInfo);
+    TEST("after Config Notify → FB discovery, AwaitFBInfo");
+    ASSERT(a2 == NegAction::SendFBDiscovery);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.currentProtocol == 0x02);
     ASSERT(neg.fbExpected == 2);
     PASS();
@@ -814,21 +769,23 @@ void test_negotiation_full_sequence() {
     uint32_t fb1[4] = {};
     fb1[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb1[1] = ((uint32_t)0 << 24) | ((uint32_t)4 << 16);
-    neg.processStream(fb1);
+    NegAction a3 = negStep(neg, fb1);
 
-    TEST("after 1st FB Info → still NegAwaitFBInfo");
-    ASSERT(neg.state == NegAwaitFBInfo);
+    TEST("after 1st FB Info → still AwaitFBInfo");
+    ASSERT(a3 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.fbCount == 1);
     PASS();
 
-    // Step 4: Second FB Info → negotiation done
+    // Step 4: Second FB Info → negotiation complete
     uint32_t fb2[4] = {};
     fb2[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (1 << 8) | 1;
     fb2[1] = ((uint32_t)4 << 24) | ((uint32_t)2 << 16);
-    neg.processStream(fb2);
+    NegAction a4 = negStep(neg, fb2);
 
-    TEST("after 2nd FB Info → NegDone");
-    ASSERT(neg.state == NegDone);
+    TEST("after 2nd FB Info → Done + Complete");
+    ASSERT(a4 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbCount == 2);
     PASS();
 }
@@ -836,22 +793,21 @@ void test_negotiation_full_sequence() {
 void test_negotiation_zero_fbs() {
     printf("\n[Negotiation — device with 0 function blocks]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // EP Info says 0 FBs
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)0 << 24) | (1 << 9) | (1 << 8);
-    neg.processStream(epInfo);
+    negStep(neg, epInfo);
 
-    // Config Notify
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
+    NegAction a = negStep(neg, config);
 
-    TEST("0 FBs → NegDone immediately after Config");
-    ASSERT(neg.state == NegDone);
+    TEST("0 FBs → Complete + Done immediately after Config");
+    ASSERT(a == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbExpected == 0);
     PASS();
 }
@@ -859,24 +815,24 @@ void test_negotiation_zero_fbs() {
 void test_negotiation_midi1_fallback() {
     printf("\n[Negotiation — MIDI 1.0 fallback when no MIDI 2.0 support]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
     // EP Info: supports MIDI 1.0 only (bit9=0, bit8=1)
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)1 << 24) | (0 << 9) | (1 << 8);
-    neg.processStream(epInfo);
+    negStep(neg, epInfo);
 
-    TEST("detects no MIDI 2.0 support");
+    TEST("detects no MIDI 2.0 support, requests MIDI 1.0 protocol");
     ASSERT(neg.supportsMIDI2 == false);
-    ASSERT(neg.state == NegAwaitStreamConfig);
+    ASSERT(neg.state == NegState::AwaitStreamConfig);
+    ASSERT(neg.configProtocol == 0x01);
     PASS();
 
-    // Config Notify with MIDI 1.0
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x01 << 8);
-    neg.processStream(config);
+    negStep(neg, config);
 
     TEST("MIDI 1.0 protocol confirmed");
     ASSERT(neg.currentProtocol == 0x01);
@@ -886,26 +842,28 @@ void test_negotiation_midi1_fallback() {
 void test_negotiation_out_of_order() {
     printf("\n[Negotiation — out-of-order messages ignored]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // FB Info arrives before EP Info — should not crash or advance state
+    // FB Info arrives before EP Info — should not advance state
     uint32_t fb[4] = {};
     fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb[1] = 0;
-    neg.processStream(fb);
+    NegAction a1 = negStep(neg, fb);
 
     TEST("FB Info before EP Info — state unchanged");
-    ASSERT(neg.state == NegAwaitEndpointInfo);
+    ASSERT(a1 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitEndpointInfo);
     PASS();
 
     // Config Notify before EP Info — should not advance
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
+    NegAction a2 = negStep(neg, config);
 
     TEST("Config Notify before EP Info — state unchanged");
-    ASSERT(neg.state == NegAwaitEndpointInfo);
+    ASSERT(a2 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitEndpointInfo);
     PASS();
 }
 
@@ -1081,7 +1039,7 @@ void test_device_gone_reset() {
     // Simulate the reset that _onDeviceGone performs
     struct DeviceState {
         bool midi2Active;
-        NegotiationState negState;
+        NegState negState;
         uint8_t fbCount, fbExpected, gtbCount;
         char epName[64];
         uint8_t epNameLen;
@@ -1091,7 +1049,7 @@ void test_device_gone_reset() {
 
         void reset() {
             midi2Active = false;
-            negState = NegIdle;
+            negState = NegState::Idle;
             fbCount = 0;
             fbExpected = 0;
             gtbCount = 0;
@@ -1104,7 +1062,7 @@ void test_device_gone_reset() {
     // Set up "connected" state
     DeviceState ds;
     ds.midi2Active = true;
-    ds.negState = NegDone;
+    ds.negState = NegState::Done;
     ds.fbCount = 3;
     ds.fbExpected = 3;
     ds.gtbCount = 2;
@@ -1120,8 +1078,8 @@ void test_device_gone_reset() {
     ASSERT(ds.midi2Active == false);
     PASS();
 
-    TEST("negotiation state reset to NegIdle");
-    ASSERT(ds.negState == NegIdle);
+    TEST("negotiation state reset to NegState::Idle");
+    ASSERT(ds.negState == NegState::Idle);
     PASS();
 
     TEST("fbCount reset to 0");

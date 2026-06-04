@@ -4,18 +4,9 @@
 #include <freertos/semphr.h>
 #include <freertos/task.h>
 
-// UMP Stream Message constants (MT 0x0F)
-static const uint8_t  UMP_MT_STREAM            = 0x0F;
-static const uint16_t STREAM_ENDPOINT_DISCOVERY = 0x000;
-static const uint16_t STREAM_ENDPOINT_INFO      = 0x001;
-static const uint16_t STREAM_DEVICE_INFO        = 0x002;
-static const uint16_t STREAM_EP_NAME            = 0x003;
-static const uint16_t STREAM_PROD_INSTANCE_ID   = 0x004;
-static const uint16_t STREAM_CONFIG_REQUEST     = 0x005;
-static const uint16_t STREAM_CONFIG_NOTIFY      = 0x006;
-static const uint16_t STREAM_FB_DISCOVERY       = 0x010;
-static const uint16_t STREAM_FB_INFO            = 0x011;
-static const uint16_t STREAM_FB_NAME            = 0x012;
+// UMP Stream Message constants, builders and the negotiation state machine live
+// in USBMIDITransportCore.h.
+using namespace usbmidi::core;
 
 // GTB descriptor type (USB class-specific). GTB parsing constants live in
 // USBMIDITransportCore.h alongside parseGTB().
@@ -69,10 +60,9 @@ void USBMIDI2Connection::_onDeviceGone() {
         _outTransfer = nullptr;
     }
     _midi2Active = false;
-    _negotiationState = NegIdle;
+    _neg = NegEngine{};
     memset(&_epInfo, 0, sizeof(_epInfo));
     _fbCount = 0;
-    _fbExpected = 0;
     _gtbCount = 0;
     _epName[0] = '\0'; _epNameLen = 0;
     _prodId[0] = '\0'; _prodIdLen = 0;
@@ -190,48 +180,40 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
 // as responses arrive in _onReceiveUMP → _processStreamMessage.
 
 void USBMIDI2Connection::_startNegotiation() {
-    _negotiationState = NegAwaitEndpointInfo;
+    _neg = NegEngine{};
+    _neg.state = NegState::AwaitEndpointInfo;
     _negTimeout = millis() + NEG_TIMEOUT_MS;
     _sendEndpointDiscovery();
 }
 
 void USBMIDI2Connection::retryNegotiation() {
-    if (!isReady || !_midi2Active || _negotiationState == NegDone)
+    if (!isReady || !_midi2Active || _neg.state == NegState::Done)
         return;
     _startNegotiation();
 }
 
 void USBMIDI2Connection::_sendEndpointDiscovery() {
-    // MT=0xF, status=0x000 (Endpoint Discovery), UMP version, filter=0xFF (all)
-    uint32_t msg[4] = {};
-    msg[0] = ((uint32_t)UMP_MT_STREAM << 28)
-           | ((uint32_t)STREAM_ENDPOINT_DISCOVERY << 16)
-           | ((uint32_t)UMP_VER_MAJOR << 8)
-           | (uint32_t)UMP_VER_MINOR;
-    msg[1] = 0xFF;  // filter: request all info
+    uint32_t msg[4];
+    buildEndpointDiscovery(msg, UMP_VER_MAJOR, UMP_VER_MINOR);
     sendUMPMessage(msg, 4);
 }
 
 void USBMIDI2Connection::_sendStreamConfigRequest(uint8_t protocol) {
-    // MT=0xF, status=0x005 (Stream Config Request), protocol in byte 2
-    uint32_t msg[4] = {};
-    msg[0] = ((uint32_t)UMP_MT_STREAM << 28)
-           | ((uint32_t)STREAM_CONFIG_REQUEST << 16)
-           | ((uint32_t)protocol << 8);
+    uint32_t msg[4];
+    buildStreamConfigRequest(msg, protocol);
     sendUMPMessage(msg, 4);
 }
 
 void USBMIDI2Connection::_sendFunctionBlockDiscovery() {
-    // MT=0xF, status=0x010 (FB Discovery), fbIdx=0xFF (all), filter=0xFF (all)
-    uint32_t msg[4] = {};
-    msg[0] = ((uint32_t)UMP_MT_STREAM << 28)
-           | ((uint32_t)STREAM_FB_DISCOVERY << 16)
-           | (0xFF << 8)   // fbIdx = 0xFF (request all)
-           | 0xFF;         // filter = all info
+    uint32_t msg[4];
+    buildFunctionBlockDiscovery(msg);
     sendUMPMessage(msg, 4);
 }
 
 // ── _processStreamMessage — handle MT 0x0F responses from device ────────────
+//
+// Populates the public info structs from each notification, then advances the
+// pure negotiation state machine (negStep) and performs the returned action.
 
 void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
     uint16_t status = (words[0] >> 16) & 0x3FF;
@@ -239,26 +221,17 @@ void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
     switch (status) {
 
     case STREAM_ENDPOINT_INFO:
-        // Endpoint Info Notification
-        _epInfo.umpVersionMajor      = (words[0] >> 8) & 0xFF;
-        _epInfo.umpVersionMinor      = words[0] & 0xFF;
-        _epInfo.numFunctionBlocks    = (words[1] >> 24) & 0xFF;
+        _epInfo.umpVersionMajor       = (words[0] >> 8) & 0xFF;
+        _epInfo.umpVersionMinor       = words[0] & 0xFF;
+        _epInfo.numFunctionBlocks     = (words[1] >> 24) & 0xFF;
         _epInfo.supportsMIDI2Protocol = (words[1] >> 9) & 0x01;
         _epInfo.supportsMIDI1Protocol = (words[1] >> 8) & 0x01;
-        _epInfo.supportsRxJR         = (words[1] >> 1) & 0x01;
-        _epInfo.supportsTxJR         = words[1] & 0x01;
-
-        if (_negotiationState == NegAwaitEndpointInfo) {
-            // Request MIDI 2.0 Protocol if supported, else MIDI 1.0
-            uint8_t proto = _epInfo.supportsMIDI2Protocol ? 0x02 : 0x01;
-            _negotiationState = NegAwaitStreamConfig;
-            _negTimeout = millis() + NEG_TIMEOUT_MS;
-            _sendStreamConfigRequest(proto);
-        }
+        _epInfo.supportsRxJR          = (words[1] >> 1) & 0x01;
+        _epInfo.supportsTxJR          = words[1] & 0x01;
         break;
 
-    case STREAM_DEVICE_INFO:
-        // Device Identity Notification — stored for future use
+    case STREAM_CONFIG_NOTIFY:
+        _epInfo.currentProtocol = (words[0] >> 8) & 0xFF;
         break;
 
     case STREAM_EP_NAME: {
@@ -273,52 +246,37 @@ void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
         break;
     }
 
-    case STREAM_CONFIG_NOTIFY:
-        // Stream Configuration Notification
-        _epInfo.currentProtocol = (words[0] >> 8) & 0xFF;
-
-        if (_negotiationState == NegAwaitStreamConfig) {
-            // Proceed to Function Block discovery
-            _fbCount = 0;
-            _fbExpected = _epInfo.numFunctionBlocks;
-            if (_fbExpected > 0) {
-                _negotiationState = NegAwaitFBInfo;
-                _negTimeout = millis() + NEG_TIMEOUT_MS;
-                _sendFunctionBlockDiscovery();
-            } else {
-                _negotiationState = NegDone;
-            }
-        }
-        break;
-
-    case STREAM_FB_INFO: {
-        // Function Block Info Notification
+    case STREAM_FB_INFO:
         if (_fbCount < MAX_FUNCTION_BLOCKS) {
             FunctionBlockInfo& fb = _fbInfo[_fbCount];
-            fb.index           = (words[0] >> 8) & 0x7F;
-            fb.active          = (words[0] >> 15) & 0x01;
-            fb.direction       = words[0] & 0x03;
-            fb.firstGroup      = (words[1] >> 24) & 0xFF;
-            fb.groupLength     = (words[1] >> 16) & 0xFF;
-            fb.midiCISupport   = (words[1] >> 8) & 0xFF;
-            fb.isMIDI1         = (words[0] >> 2) & 0x03;
+            fb.index            = (words[0] >> 8) & 0x7F;
+            fb.active           = (words[0] >> 15) & 0x01;
+            fb.direction        = words[0] & 0x03;
+            fb.firstGroup       = (words[1] >> 24) & 0xFF;
+            fb.groupLength      = (words[1] >> 16) & 0xFF;
+            fb.midiCISupport    = (words[1] >> 8) & 0xFF;
+            fb.isMIDI1          = (words[0] >> 2) & 0x03;
             fb.maxSysEx8Streams = words[1] & 0xFF;
             _fbCount++;
         }
-
-        if (_negotiationState == NegAwaitFBInfo) {
-            if (_fbCount >= _fbExpected) {
-                _negotiationState = NegDone;
-            }
-        }
-        break;
-    }
-
-    case STREAM_FB_NAME:
-        // Function Block Name — not stored currently (would need per-FB string array)
         break;
 
     default:
+        break;
+    }
+
+    // Advance the negotiation state machine and perform the resulting action.
+    switch (negStep(_neg, words)) {
+    case NegAction::SendStreamConfigRequest:
+        _negTimeout = millis() + NEG_TIMEOUT_MS;
+        _sendStreamConfigRequest(_neg.configProtocol);
+        break;
+    case NegAction::SendFBDiscovery:
+        _negTimeout = millis() + NEG_TIMEOUT_MS;
+        _sendFunctionBlockDiscovery();
+        break;
+    case NegAction::None:
+    case NegAction::Complete:
         break;
     }
 }

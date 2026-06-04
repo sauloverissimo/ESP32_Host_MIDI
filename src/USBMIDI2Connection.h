@@ -36,7 +36,7 @@ public:
     bool isMIDI2() const { return _midi2Active; }
 
     // True when Protocol Negotiation completed successfully.
-    bool isNegotiated() const { return _negotiationState == NegDone; }
+    bool isNegotiated() const { return _neg.state == usbmidi::core::NegState::Done; }
 
     // Send raw UMP words to the device via OUT endpoint.
     // Returns true if the transfer was submitted successfully.
@@ -91,21 +91,13 @@ private:
     bool _midi2Active;
     usb_transfer_t* _outTransfer = nullptr;
 
-    // Protocol Negotiation state machine
-    enum NegotiationState : uint8_t {
-        NegIdle,              // Not started or MIDI 1.0 mode
-        NegAwaitEndpointInfo, // Sent Endpoint Discovery, awaiting response
-        NegAwaitStreamConfig, // Sent Stream Config Request, awaiting notification
-        NegAwaitFBInfo,       // Sent Function Block Discovery, awaiting responses
-        NegDone,              // Negotiation complete
-    };
-    NegotiationState _negotiationState = NegIdle;
+    // Protocol Negotiation state machine (pure model in the transport core)
+    usbmidi::core::NegEngine _neg;
     unsigned long _negTimeout = 0;
 
     EndpointInfo _epInfo = {};
     FunctionBlockInfo _fbInfo[MAX_FUNCTION_BLOCKS] = {};
     uint8_t _fbCount = 0;
-    uint8_t _fbExpected = 0;
 
     GroupTerminalBlock _gtb[MAX_GTB] = {};
     uint8_t _gtbCount = 0;
