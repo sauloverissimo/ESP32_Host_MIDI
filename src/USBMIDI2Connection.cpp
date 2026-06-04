@@ -91,26 +91,25 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
     // with CIN packets that _onReceiveUMP misinterprets as UMP words with
     // reserved MT nibbles.
     //
-    // Sending the request explicitly closes the gap. SET_INTERFACE on FS USB
-    // is a single 8-byte SETUP with no data stage; under 1 ms in practice.
-    // We wait up to 200 ms for the transfer callback before freeing the
-    // transfer to avoid use-after-free, then wait another 50 ms for the
-    // device-side class driver to fully repoint its TX path before we start
-    // submitting bulk reads.
+    // The request is submitted asynchronously: the control transfer frees
+    // itself in its own completion callback, exactly like the GTB descriptor
+    // read below. It is NEVER freed in-flight. (A prior version waited on a
+    // semaphore inside this callback context and then freed the transfer; since
+    // _clientEventCallback runs inside usb_host_client_handle_events on the USB
+    // task, the completion callback could not run until this returned, so the
+    // wait always timed out and the transfer was freed while still queued, and
+    // the later completion callback dereferenced freed memory.) A short settle
+    // delay lets the device-side class driver repoint its TX path before reads.
     {
-        static SemaphoreHandle_t s_setifSem = nullptr;
-        if (s_setifSem == nullptr) s_setifSem = xSemaphoreCreateBinary();
-
         usb_transfer_t* setifT = nullptr;
         if (usb_host_transfer_alloc(8, 0, &setifT) == ESP_OK && setifT != nullptr) {
             setifT->device_handle    = deviceHandle;
             setifT->bEndpointAddress = 0x00;
             setifT->num_bytes        = 8;
             setifT->timeout_ms       = 200;
-            setifT->context          = (void*)s_setifSem;
+            setifT->context          = nullptr;
             setifT->callback         = [](usb_transfer_t* t) {
-                SemaphoreHandle_t sem = (SemaphoreHandle_t)t->context;
-                if (sem) xSemaphoreGive(sem);
+                usb_host_transfer_free(t);
             };
             // SETUP: bmRequestType=0x01 (host->device, standard, interface),
             // bRequest=0x0B (SET_INTERFACE), wValue=alt, wIndex=iface, wLength=0.
@@ -123,10 +122,10 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
             setifT->data_buffer[6] = 0x00;
             setifT->data_buffer[7] = 0x00;
 
-            if (usb_host_transfer_submit_control(clientHandle, setifT) == ESP_OK) {
-                xSemaphoreTake(s_setifSem, pdMS_TO_TICKS(200));
+            if (usb_host_transfer_submit_control(clientHandle, setifT) != ESP_OK) {
+                // Not queued: safe to free here (the callback will not run).
+                usb_host_transfer_free(setifT);
             }
-            usb_host_transfer_free(setifT);
         }
         // Settle window: allow the device-side class driver to repoint its
         // bulk TX path to the new alt before we start reading.
