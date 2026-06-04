@@ -1031,6 +1031,39 @@ void test_ump_carryover() {
 }
 
 // ---------------------------------------------------------------------------
+// Tests — internal stream-message filter
+// ---------------------------------------------------------------------------
+
+void test_internal_stream_filter() {
+    printf("\n[Internal stream-message filter]\n");
+    using usbmidi::core::isInternalStreamMessage;
+
+    // Endpoint Info (MT 0x0F, status 0x001) is internal negotiation.
+    uint32_t epInfo[4] = { 0xF0010101, 0x02000601, 0, 0 };
+    TEST("Endpoint Info is internal");
+    ASSERT(isInternalStreamMessage(epInfo) == true);
+    PASS();
+
+    // FB Info (status 0x011) is internal.
+    uint32_t fbInfo[4] = { 0xF0118000, 0x00040000, 0, 0 };
+    TEST("Function Block Info is internal");
+    ASSERT(isInternalStreamMessage(fbInfo) == true);
+    PASS();
+
+    // MIDI 2.0 Channel Voice (MT 0x4) is NOT a stream message.
+    uint32_t cv[2] = { 0x40903C00, 0xFFFF0000 };
+    TEST("MIDI 2.0 CVM is not internal");
+    ASSERT(isInternalStreamMessage(cv) == false);
+    PASS();
+
+    // MIDI 1.0 in UMP (MT 0x2) is NOT internal.
+    uint32_t cv1[1] = { 0x20903C64 };
+    TEST("MIDI 1.0 CVM is not internal");
+    ASSERT(isInternalStreamMessage(cv1) == false);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // Tests — sendUMPMessage edge cases (logic only, no USB hardware)
 // ---------------------------------------------------------------------------
 
@@ -1563,6 +1596,7 @@ int main() {
     test_ump_demux_incomplete();
     test_ump_demux_all_mts();
     test_ump_carryover();
+    test_internal_stream_filter();
     test_send_ump_edges();
     test_device_gone_reset();
     test_multi_interface();

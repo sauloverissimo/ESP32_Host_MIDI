@@ -325,6 +325,17 @@ inline NegAction negStep(NegEngine& e, const uint32_t* words) {
     return NegAction::None;
 }
 
+// True for MT 0x0F stream messages the host consumes internally: the defined
+// discovery/config statuses (0x000..0x006 and 0x010..0x012) plus the reserved
+// gap (0x007..0x00F), all treated as host-internal so none reaches the user UMP
+// callback as if it were music. Defined statuses: Endpoint Discovery/Info,
+// Device Info, EP Name, Product Id, Stream Config Req/Notify, FB Disc/Info/Name.
+inline bool isInternalStreamMessage(const uint32_t* words) {
+    if (((words[0] >> 28) & 0x0F) != UMP_MT_STREAM) return false;
+    uint16_t status = (words[0] >> 16) & 0x3FF;
+    return status <= STREAM_FB_NAME;
+}
+
 }} // namespace usbmidi::core
 
 #endif // USB_MIDI_TRANSPORT_CORE_H

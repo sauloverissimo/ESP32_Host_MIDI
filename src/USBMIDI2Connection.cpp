@@ -309,12 +309,12 @@ void USBMIDI2Connection::_onReceiveUMP(usb_transfer_t* transfer) {
             uint8_t pktWords = usbmidi::core::umpWordCount(mt);
             if (i + pktWords > count) break;  // safety: only whole packets are emitted
 
-            if (mt == 0x0F && pktWords == 4) {
-                // Stream Message — handle internally for negotiation
+            if (usbmidi::core::isInternalStreamMessage(&out[i])) {
+                // Internal negotiation message — consume, do not forward to the app.
                 self->_processStreamMessage(&out[i]);
+            } else {
+                self->dispatchUMPData(&out[i], pktWords);
             }
-
-            self->dispatchUMPData(&out[i], pktWords);
             i += pktWords;
         }
     } else if (transfer->status != 0) {
