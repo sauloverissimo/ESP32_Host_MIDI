@@ -106,6 +106,86 @@ inline uint8_t umpWordCount(uint8_t mt) {
     }
 }
 
+// ── Group Terminal Blocks ───────────────────────────────────────────────────
+
+static const uint8_t GTB_HEADER_SUBTYPE = 0x01;
+static const uint8_t GTB_BLOCK_SUBTYPE  = 0x02;
+static const uint8_t GTB_BLOCK_DESC_LEN = 13;
+
+struct GTBlock {
+    uint8_t  id;
+    uint8_t  type;           // 0=bidirectional, 1=input-only, 2=output-only
+    uint8_t  firstGroup;
+    uint8_t  numGroups;
+    uint8_t  protocol;       // 0x01=MIDI1, 0x02=MIDI2, 0x00=unknown
+    uint16_t maxInputBW;
+    uint16_t maxOutputBW;
+};
+
+// Parse a GTB GET_DESCRIPTOR response body (header + N block entries).
+// Fills out[] up to maxOut and returns the number of blocks parsed.
+inline uint8_t parseGTB(const uint8_t* data, uint16_t len, GTBlock* out, uint8_t maxOut) {
+    // GTB Header: bLength(1) + bDescriptorType(1) + bDescriptorSubtype(1) + wTotalLength(2)
+    if (len < 5) return 0;
+    if (data[2] != GTB_HEADER_SUBTYPE) return 0;
+
+    uint16_t totalLen = data[3] | ((uint16_t)data[4] << 8);
+    if (totalLen > len) totalLen = len;
+
+    uint16_t offset = data[0];  // skip header (bLength bytes)
+    uint8_t count = 0;
+
+    while (offset + GTB_BLOCK_DESC_LEN <= totalLen && count < maxOut) {
+        const uint8_t* blk = data + offset;
+        if (blk[0] < GTB_BLOCK_DESC_LEN) break;
+        if (blk[2] != GTB_BLOCK_SUBTYPE) { offset += blk[0]; continue; }
+
+        GTBlock& g = out[count];
+        g.id          = blk[3];
+        g.type        = blk[4];
+        g.firstGroup  = blk[5];
+        g.numGroups   = blk[6];
+        // blk[7] = iBlockItem (string descriptor index — skip)
+        g.protocol    = blk[8];
+        g.maxInputBW  = blk[9]  | ((uint16_t)blk[10] << 8);
+        g.maxOutputBW = blk[11] | ((uint16_t)blk[12] << 8);
+        count++;
+
+        offset += blk[0];
+    }
+    return count;
+}
+
+// ── Stream text accumulation (Endpoint Name, Product Instance ID) ────────────
+//
+// UMP Stream text messages use a form field: 0=complete, 1=start, 2=continue,
+// 3=end. Text bytes are packed in word0[15:8], word0[7:0], then word1..word3.
+inline void appendStreamText(char* dest, uint8_t& destLen, uint8_t maxLen,
+                             const uint32_t* words, uint8_t form) {
+    // Start or Complete resets the buffer
+    if (form == 0 || form == 1) {
+        destLen = 0;
+    }
+
+    uint8_t text[14];
+    uint8_t n = 0;
+    uint8_t b;
+
+    b = (words[0] >> 8) & 0xFF; if (b) text[n++] = b;
+    b = words[0] & 0xFF;        if (b) text[n++] = b;
+    for (uint8_t w = 1; w <= 3; w++) {
+        for (int shift = 24; shift >= 0; shift -= 8) {
+            b = (words[w] >> shift) & 0xFF;
+            if (b) text[n++] = b;
+        }
+    }
+
+    for (uint8_t i = 0; i < n && destLen < maxLen; i++) {
+        dest[destLen++] = (char)text[i];
+    }
+    dest[destLen] = '\0';
+}
+
 }} // namespace usbmidi::core
 
 #endif // USB_MIDI_TRANSPORT_CORE_H

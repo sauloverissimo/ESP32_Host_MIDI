@@ -17,11 +17,9 @@ static const uint16_t STREAM_FB_DISCOVERY       = 0x010;
 static const uint16_t STREAM_FB_INFO            = 0x011;
 static const uint16_t STREAM_FB_NAME            = 0x012;
 
-// GTB descriptor type (USB class-specific)
+// GTB descriptor type (USB class-specific). GTB parsing constants live in
+// USBMIDITransportCore.h alongside parseGTB().
 static const uint8_t CS_GR_TRM_BLOCK = 0x26;
-static const uint8_t GTB_HEADER_SUBTYPE = 0x01;
-static const uint8_t GTB_BLOCK_SUBTYPE  = 0x02;
-static const uint8_t GTB_BLOCK_DESC_LEN = 13;
 
 // UMP version we report as Host
 static const uint8_t UMP_VER_MAJOR = 1;
@@ -408,30 +406,7 @@ void USBMIDI2Connection::_onSendComplete(usb_transfer_t* transfer) {
 void USBMIDI2Connection::_appendStreamText(char* dest, uint8_t& destLen,
                                            uint8_t maxLen,
                                            const uint32_t* words, uint8_t form) {
-    // Start or Complete resets the buffer
-    if (form == 0 || form == 1) {
-        destLen = 0;
-    }
-
-    // Extract text bytes from the 128-bit packet
-    uint8_t text[14];
-    uint8_t n = 0;
-    uint8_t b;
-
-    b = (words[0] >> 8) & 0xFF; if (b) text[n++] = b;
-    b = words[0] & 0xFF;        if (b) text[n++] = b;
-    for (uint8_t w = 1; w <= 3; w++) {
-        for (int shift = 24; shift >= 0; shift -= 8) {
-            b = (words[w] >> shift) & 0xFF;
-            if (b) text[n++] = b;
-        }
-    }
-
-    // Append to destination
-    for (uint8_t i = 0; i < n && destLen < maxLen; i++) {
-        dest[destLen++] = (char)text[i];
-    }
-    dest[destLen] = '\0';
+    usbmidi::core::appendStreamText(dest, destLen, maxLen, words, form);
 }
 
 // ── GTB — Group Terminal Block descriptors (USB class-specific request) ─────
@@ -493,33 +468,5 @@ void USBMIDI2Connection::_onGTBResponse(usb_transfer_t* transfer) {
 }
 
 void USBMIDI2Connection::_parseGTBResponse(const uint8_t* data, uint16_t len) {
-    // GTB Header: bLength(1) + bDescriptorType(1) + bDescriptorSubtype(1) + wTotalLength(2)
-    if (len < 5) return;
-    if (data[2] != GTB_HEADER_SUBTYPE) return;
-
-    uint16_t totalLen = data[3] | ((uint16_t)data[4] << 8);
-    if (totalLen > len) totalLen = len;
-
-    // Parse GTB block entries after the header
-    uint16_t offset = data[0];  // skip header (bLength bytes)
-    _gtbCount = 0;
-
-    while (offset + GTB_BLOCK_DESC_LEN <= totalLen && _gtbCount < MAX_GTB) {
-        const uint8_t* blk = data + offset;
-        if (blk[0] < GTB_BLOCK_DESC_LEN) break;
-        if (blk[2] != GTB_BLOCK_SUBTYPE) { offset += blk[0]; continue; }
-
-        GroupTerminalBlock& g = _gtb[_gtbCount];
-        g.id          = blk[3];
-        g.type        = blk[4];
-        g.firstGroup  = blk[5];
-        g.numGroups   = blk[6];
-        // blk[7] = iBlockItem (string descriptor index — skip)
-        g.protocol    = blk[8];
-        g.maxInputBW  = blk[9]  | ((uint16_t)blk[10] << 8);
-        g.maxOutputBW = blk[11] | ((uint16_t)blk[12] << 8);
-        _gtbCount++;
-
-        offset += blk[0];
-    }
+    _gtbCount = usbmidi::core::parseGTB(data, len, _gtb, MAX_GTB);
 }

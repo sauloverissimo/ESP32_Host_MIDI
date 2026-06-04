@@ -596,44 +596,10 @@ void test_ump_packet_sizes() {
 // Tests — GTB descriptor parsing
 // ---------------------------------------------------------------------------
 
-// Extracted parseGTBResponse logic for native testing
-struct GroupTerminalBlock {
-    uint8_t  id;
-    uint8_t  type;
-    uint8_t  firstGroup;
-    uint8_t  numGroups;
-    uint8_t  protocol;
-    uint16_t maxInputBW;
-    uint16_t maxOutputBW;
-};
-
-static const uint8_t MAX_GTB = 8;
-static const uint8_t GTB_HEADER_SUBTYPE = 0x01;
-static const uint8_t GTB_BLOCK_SUBTYPE  = 0x02;
-static const uint8_t GTB_BLOCK_DESC_LEN = 13;
-
-static uint8_t parseGTB(const uint8_t* data, uint16_t len,
-                        GroupTerminalBlock* out, uint8_t maxOut) {
-    if (len < 5) return 0;
-    if (data[2] != GTB_HEADER_SUBTYPE) return 0;
-    uint16_t totalLen = data[3] | ((uint16_t)data[4] << 8);
-    if (totalLen > len) totalLen = len;
-    uint16_t offset = data[0];
-    uint8_t count = 0;
-    while (offset + GTB_BLOCK_DESC_LEN <= totalLen && count < maxOut) {
-        const uint8_t* blk = data + offset;
-        if (blk[0] < GTB_BLOCK_DESC_LEN) break;
-        if (blk[2] != GTB_BLOCK_SUBTYPE) { offset += blk[0]; continue; }
-        GroupTerminalBlock& g = out[count];
-        g.id = blk[3]; g.type = blk[4]; g.firstGroup = blk[5]; g.numGroups = blk[6];
-        g.protocol = blk[8];
-        g.maxInputBW = blk[9] | ((uint16_t)blk[10] << 8);
-        g.maxOutputBW = blk[11] | ((uint16_t)blk[12] << 8);
-        count++;
-        offset += blk[0];
-    }
-    return count;
-}
+// GTB parsing validates the REAL parseGTB/GTBlock from USBMIDITransportCore.h.
+using GroupTerminalBlock = usbmidi::core::GTBlock;
+using usbmidi::core::parseGTB;
+static const uint8_t MAX_GTB = 8;  // local test array size
 
 void test_gtb_parsing() {
     printf("\n[GTB descriptor parsing]\n");
@@ -708,26 +674,8 @@ void test_gtb_parsing() {
 // Tests — Stream text accumulation
 // ---------------------------------------------------------------------------
 
-// Extracted _appendStreamText logic for native testing
-static void appendStreamText(char* dest, uint8_t& destLen, uint8_t maxLen,
-                             const uint32_t* words, uint8_t form) {
-    if (form == 0 || form == 1) destLen = 0;
-    uint8_t text[14];
-    uint8_t n = 0;
-    uint8_t b;
-    b = (words[0] >> 8) & 0xFF; if (b) text[n++] = b;
-    b = words[0] & 0xFF;        if (b) text[n++] = b;
-    for (uint8_t w = 1; w <= 3; w++) {
-        for (int shift = 24; shift >= 0; shift -= 8) {
-            b = (words[w] >> shift) & 0xFF;
-            if (b) text[n++] = b;
-        }
-    }
-    for (uint8_t i = 0; i < n && destLen < maxLen; i++) {
-        dest[destLen++] = (char)text[i];
-    }
-    dest[destLen] = '\0';
-}
+// Stream text accumulation validates the REAL appendStreamText from the core.
+using usbmidi::core::appendStreamText;
 
 void test_stream_text() {
     printf("\n[Stream text accumulation]\n");

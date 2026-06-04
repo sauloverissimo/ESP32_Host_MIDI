@@ -69,15 +69,7 @@ public:
         uint8_t  maxSysEx8Streams;
     };
 
-    struct GroupTerminalBlock {
-        uint8_t  id;
-        uint8_t  type;           // 0=bidirectional, 1=input-only, 2=output-only
-        uint8_t  firstGroup;
-        uint8_t  numGroups;
-        uint8_t  protocol;       // 0x01=MIDI1, 0x02=MIDI2, 0x00=unknown
-        uint16_t maxInputBW;
-        uint16_t maxOutputBW;
-    };
+    using GroupTerminalBlock = usbmidi::core::GTBlock;
 
     static const uint8_t MAX_FUNCTION_BLOCKS = 8;
     static const uint8_t MAX_GTB = 8;
