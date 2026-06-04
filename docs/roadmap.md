@@ -111,6 +111,7 @@ Melhorias de confiabilidade no transporte USB Host MIDI 2.0 (UMP). Aditivo, sem 
 - `USBMIDI2Connection`: pacotes UMP partidos entre dois bulk transfers são remontados via buffer de carry-over, em vez de descartar a metade já lida. Cobre o caso de um transfer cheio (512 bytes) terminar no meio de um pacote.
 - `USBMIDI2Connection`: mensagens internas de descoberta (UMP Stream, MT 0x0F) deixam de ser repassadas ao callback de UMP do usuário; são consumidas pelo host.
 - `USBMIDI2Connection`: a descoberta passa a ser somente leitura (Endpoint Info e Function Block Info). O host não envia mais Stream Configuration Request, que comandava troca de protocolo no device.
+- `USBMIDI2Connection`: o control transfer de SET_INTERFACE é liberado no próprio callback de conclusão, de forma assíncrona, em vez de esperar um semáforo dentro do contexto do event handler. Garante que o transfer nunca seja liberado enquanto ainda enfileirado. Validado em hardware no ESP32-S3 com um device USB MIDI 2.0 que faz EP0 STALL durante a enumeração.
 
 **Internal**
 
