@@ -12,6 +12,10 @@
 #include <cstring>
 #include "stub/Arduino.h"
 #include "../../src/MIDITransport.h"
+#include "../../src/USBMIDITransportCore.h"
+
+using usbmidi::core::AltCandidate;
+using usbmidi::core::findBestAlt;
 
 // ---------------------------------------------------------------------------
 // Minimal test framework (same as test_native.cpp)
@@ -24,89 +28,9 @@ static int g_pass = 0, g_fail = 0;
 #define ASSERT(e)  do { if (!(e)) { printf("FAIL — " #e " (line %d)\n", __LINE__); ++g_fail; return; } } while(0)
 
 // ---------------------------------------------------------------------------
-// AltCandidate + _findBestAlt — extracted from USBMIDI2Connection
+// AltCandidate + findBestAlt are the REAL ones from USBMIDITransportCore.h
+// (included above), so these tests validate the shipping code, not a copy.
 // ---------------------------------------------------------------------------
-
-struct AltCandidate {
-    uint8_t  ifaceNumber;
-    uint8_t  altSetting;
-    bool     isMIDI2;
-    uint8_t  epInAddress;
-    uint16_t epInMaxPacket;
-    uint8_t  epInInterval;
-    uint8_t  epOutAddress;
-    uint16_t epOutMaxPacket;
-};
-
-static bool findBestAlt(const uint8_t* p, uint16_t totalLen, AltCandidate& best) {
-    AltCandidate midi1 = {}, midi2 = {};
-    bool found1 = false, found2 = false;
-
-    uint16_t i = 0;
-    while (i < totalLen) {
-        if (i + 1 >= totalLen) break;
-        uint8_t dlen  = p[i];
-        uint8_t dtype = p[i + 1];
-        if (dlen < 2 || (i + dlen) > totalLen) break;
-
-        if (dtype == 0x04 && dlen >= 9) {
-            uint8_t ifNum    = p[i + 2];
-            uint8_t altSet   = p[i + 3];
-            uint8_t numEP    = p[i + 4];
-            uint8_t ifClass  = p[i + 5];
-            uint8_t ifSubCls = p[i + 6];
-
-            if (ifClass == 0x01 && ifSubCls == 0x03) {
-                AltCandidate cand = {};
-                cand.ifaceNumber = ifNum;
-                cand.altSetting  = altSet;
-
-                uint16_t j = i + dlen;
-                while (j < totalLen) {
-                    if (j + 1 >= totalLen) break;
-                    uint8_t blen  = p[j];
-                    uint8_t btype = p[j + 1];
-                    if (blen < 2 || (j + blen) > totalLen) break;
-                    if (btype == 0x04) break;
-
-                    if (btype == 0x24 && blen >= 5 && p[j + 2] == 0x01) {
-                        uint16_t bcdMSC = p[j + 3] | ((uint16_t)p[j + 4] << 8);
-                        cand.isMIDI2 = (bcdMSC >= 0x0200);
-                    }
-
-                    if (btype == 0x05 && blen >= 7 && numEP > 0) {
-                        uint8_t  epAddr = p[j + 2];
-                        uint16_t maxPkt = p[j + 4] | ((uint16_t)p[j + 5] << 8);
-                        uint8_t  bInt   = p[j + 6];
-                        if (maxPkt == 0)  maxPkt = 64;
-                        if (maxPkt > 512) maxPkt = 512;
-                        if (epAddr & 0x80) {
-                            cand.epInAddress   = epAddr;
-                            cand.epInMaxPacket = maxPkt;
-                            cand.epInInterval  = bInt ? bInt : 1;
-                        } else {
-                            cand.epOutAddress   = epAddr;
-                            cand.epOutMaxPacket = maxPkt;
-                        }
-                    }
-
-                    j += blen;
-                }
-
-                if (cand.epInAddress != 0) {
-                    if (cand.isMIDI2) { midi2 = cand; found2 = true; }
-                    else               { midi1 = cand; found1 = true; }
-                }
-            }
-        }
-
-        i += dlen;
-    }
-
-    if (found2) { best = midi2; return true; }
-    if (found1) { best = midi1; return true; }
-    return false;
-}
 
 // ---------------------------------------------------------------------------
 // UMP Stream Message constants (same as USBMIDI2Connection.cpp)
@@ -636,19 +560,8 @@ void test_parse_fb_info() {
 void test_ump_packet_sizes() {
     printf("\n[UMP packet sizes by message type]\n");
 
-    // Returns word count for a given MT
-    auto pktWords = [](uint8_t mt) -> uint8_t {
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7:
-                return 1;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA:
-                return 2;
-            case 0xB: case 0xC:
-                return 3;
-            default:
-                return 4;
-        }
-    };
+    // Use the REAL word-count function from the transport core.
+    auto pktWords = usbmidi::core::umpWordCount;
 
     TEST("MT 0x0 (Utility) = 1 word");
     ASSERT(pktWords(0x0) == 1);
@@ -1071,13 +984,7 @@ void test_ump_demux_mixed() {
     uint8_t totalWords = 7;
     while (i < totalWords && pktCount < 8) {
         uint8_t mt = (buf[i] >> 28) & 0x0F;
-        uint8_t pw;
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: pw = 1; break;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: pw = 2; break;
-            case 0xB: case 0xC: pw = 3; break;
-            default: pw = 4; break;
-        }
+        uint8_t pw = usbmidi::core::umpWordCount(mt);
         if (i + pw > totalWords) break;
         packets[pktCount++] = { mt, pw, i };
         i += pw;
@@ -1118,13 +1025,7 @@ void test_ump_demux_incomplete() {
     uint8_t i = 0, pktCount = 0;
     while (i < 3) {
         uint8_t mt = (buf[i] >> 28) & 0x0F;
-        uint8_t pw;
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: pw = 1; break;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: pw = 2; break;
-            case 0xB: case 0xC: pw = 3; break;
-            default: pw = 4; break;
-        }
+        uint8_t pw = usbmidi::core::umpWordCount(mt);
         if (i + pw > 3) break;
         pktCount++;
         i += pw;
@@ -1138,14 +1039,7 @@ void test_ump_demux_incomplete() {
 void test_ump_demux_all_mts() {
     printf("\n[UMP demux — all 16 message types]\n");
 
-    auto pktWords = [](uint8_t mt) -> uint8_t {
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: return 1;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: return 2;
-            case 0xB: case 0xC: return 3;
-            default: return 4;
-        }
-    };
+    auto pktWords = usbmidi::core::umpWordCount;
 
     TEST("MT 0x1 (System) = 1 word");
     ASSERT(pktWords(0x1) == 1);

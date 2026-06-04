@@ -2,6 +2,7 @@
 #define USB_MIDI2_CONNECTION_H
 
 #include "USBConnection.h"
+#include "USBMIDITransportCore.h"
 
 // USBMIDI2Connection — USB Host with MIDI 2.0/UMP negotiation.
 //
@@ -123,19 +124,8 @@ private:
     char _prodId[MAX_NAME_LEN] = {};
     uint8_t _prodIdLen = 0;
 
-    struct AltCandidate {
-        uint8_t  ifaceNumber;
-        uint8_t  altSetting;
-        bool     isMIDI2;        // bcdMSC == 0x0200
-        uint8_t  epInAddress;    // IN endpoint (0 = none found)
-        uint16_t epInMaxPacket;
-        uint8_t  epInInterval;
-        uint8_t  epOutAddress;   // OUT endpoint (0 = none found)
-        uint16_t epOutMaxPacket;
-    };
+    using AltCandidate = usbmidi::core::AltCandidate;
 
-    static bool _findBestAlt(const uint8_t* desc, uint16_t totalLen,
-                             AltCandidate& best);
     bool _claimAndSetup(const AltCandidate& cand);
 
     // Protocol Negotiation helpers
