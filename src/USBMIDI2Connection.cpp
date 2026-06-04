@@ -61,6 +61,7 @@ void USBMIDI2Connection::_onDeviceGone() {
     }
     _midi2Active = false;
     _neg = NegEngine{};
+    _umpCarry = UMPCarry{};
     memset(&_epInfo, 0, sizeof(_epInfo));
     _fbCount = 0;
     _gtbCount = 0;
@@ -293,28 +294,32 @@ void USBMIDI2Connection::_onReceiveUMP(usb_transfer_t* transfer) {
 
     if (transfer->status == 0 && transfer->actual_num_bytes >= 4) {
         const uint32_t* words = reinterpret_cast<const uint32_t*>(transfer->data_buffer);
-        uint8_t count = transfer->actual_num_bytes / 4;
+        uint16_t inCount = transfer->actual_num_bytes / 4;
 
-        // Process UMP words — intercept Stream Messages (MT 0x0F) for negotiation,
-        // dispatch everything else to user callback.
-        uint8_t i = 0;
+        // Reassemble UMP packets that may be split across bulk transfers.
+        uint16_t count = usbmidi::core::umpReassemble(
+            words, inCount, self->_umpCarry, self->_umpOut, usbmidi::core::UMP_OUT_WORDS);
+        const uint32_t* out = self->_umpOut;
+
+        // Process whole UMP packets — intercept Stream Messages (MT 0x0F) for
+        // negotiation, dispatch everything else to the user callback.
+        uint16_t i = 0;
         while (i < count) {
-            uint8_t mt = (words[i] >> 28) & 0x0F;
-
-            // Determine packet size in words based on message type
+            uint8_t mt = (out[i] >> 28) & 0x0F;
             uint8_t pktWords = usbmidi::core::umpWordCount(mt);
-
-            if (i + pktWords > count) break;  // incomplete packet
+            if (i + pktWords > count) break;  // safety: only whole packets are emitted
 
             if (mt == 0x0F && pktWords == 4) {
                 // Stream Message — handle internally for negotiation
-                self->_processStreamMessage(&words[i]);
+                self->_processStreamMessage(&out[i]);
             }
 
-            // Dispatch all UMP words to user (including stream messages)
-            self->dispatchUMPData(&words[i], pktWords);
+            self->dispatchUMPData(&out[i], pktWords);
             i += pktWords;
         }
+    } else if (transfer->status != 0) {
+        // Error: drop any partial so it is not stitched across the error boundary.
+        self->_umpCarry = usbmidi::core::UMPCarry{};
     }
 
     if (self->isReady) {

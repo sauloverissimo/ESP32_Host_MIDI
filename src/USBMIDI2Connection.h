@@ -95,6 +95,10 @@ private:
     usbmidi::core::NegEngine _neg;
     unsigned long _negTimeout = 0;
 
+    // UMP reassembly across bulk transfers (carry-over of split packets)
+    usbmidi::core::UMPCarry _umpCarry = {};
+    uint32_t _umpOut[usbmidi::core::UMP_OUT_WORDS] = {};
+
     EndpointInfo _epInfo = {};
     FunctionBlockInfo _fbInfo[MAX_FUNCTION_BLOCKS] = {};
     uint8_t _fbCount = 0;

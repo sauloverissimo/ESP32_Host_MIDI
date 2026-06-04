@@ -106,6 +106,49 @@ inline uint8_t umpWordCount(uint8_t mt) {
     }
 }
 
+// ── UMP reassembly across bulk transfers ────────────────────────────────────
+//
+// USB MIDI 2.0 (Alt 1) delivers raw UMP words over the bulk IN endpoint. A UMP
+// packet (1..4 words) may be split across two transfers. umpReassemble() holds
+// the partial tail in a carry buffer and prepends it to the next transfer, so
+// no word is lost at a transfer boundary.
+
+// Max UMP words a single bulk-IN transfer can carry (512-byte clamp / 4).
+static const uint16_t UMP_MAX_TRANSFER_WORDS = 128;
+// Worst-case complete words emitted in one call = up to 3 carried words that
+// complete alongside a full transfer of single-word packets. out[] must be this big.
+static const uint16_t UMP_OUT_WORDS = 3 + UMP_MAX_TRANSFER_WORDS;
+
+struct UMPCarry { uint32_t words[3]; uint8_t count; }; // max partial = 3 words
+
+// Prepend carry, emit complete packets to out[], store the trailing partial back
+// into carry. Returns the number of words written to out[]. Never reads past
+// inCount, never writes past outMax, never drops a word.
+inline uint16_t umpReassemble(const uint32_t* in, uint16_t inCount,
+                              UMPCarry& carry, uint32_t* out, uint16_t outMax) {
+    uint32_t buf[3 + UMP_MAX_TRANSFER_WORDS];
+    const uint16_t cap = (uint16_t)(sizeof(buf) / sizeof(buf[0]));
+    uint16_t n = 0;
+    for (uint8_t i = 0; i < carry.count && n < cap; ++i) buf[n++] = carry.words[i];
+    for (uint16_t i = 0; i < inCount && n < cap; ++i)    buf[n++] = in[i];
+    carry.count = 0;
+
+    uint16_t i = 0, w = 0;
+    while (i < n) {
+        uint8_t mt = (buf[i] >> 28) & 0x0F;
+        uint8_t pw = umpWordCount(mt);
+        if (i + pw > n) {                 // partial tail -> carry
+            uint8_t rem = (uint8_t)(n - i);
+            for (uint8_t k = 0; k < rem && k < 3; ++k) carry.words[k] = buf[i + k];
+            carry.count = rem;
+            break;
+        }
+        for (uint8_t k = 0; k < pw && w < outMax; ++k) out[w++] = buf[i + k];
+        i += pw;
+    }
+    return w;
+}
+
 // ── Group Terminal Blocks ───────────────────────────────────────────────────
 
 static const uint8_t GTB_HEADER_SUBTYPE = 0x01;

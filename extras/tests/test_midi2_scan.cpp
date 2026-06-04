@@ -985,6 +985,52 @@ void test_ump_demux_all_mts() {
 }
 
 // ---------------------------------------------------------------------------
+// Tests — UMP carry-over across transfers
+// ---------------------------------------------------------------------------
+
+void test_ump_carryover() {
+    printf("\n[UMP carry-over across transfers]\n");
+    using usbmidi::core::UMPCarry;
+    using usbmidi::core::umpReassemble;
+
+    UMPCarry carry = {};
+    uint32_t out[8];
+
+    // Transfer A ends mid-packet: a complete 1-word Utility + word0 of a 2-word MT 0x4
+    uint32_t a[2] = { 0x00000000, 0x40903C00 };
+    uint16_t nA = umpReassemble(a, 2, carry, out, 8);
+    TEST("transfer A emits only the complete 1-word packet");
+    ASSERT(nA == 1);
+    ASSERT(out[0] == 0x00000000);
+    ASSERT(carry.count == 1);          // word0 of MT 0x4 held back
+    ASSERT(carry.words[0] == 0x40903C00);
+    PASS();
+
+    // Transfer B starts with the missing word1
+    uint32_t b[1] = { 0xFFFF0000 };
+    uint16_t nB = umpReassemble(b, 1, carry, out, 8);
+    TEST("transfer B completes the held packet");
+    ASSERT(nB == 2);
+    ASSERT(out[0] == 0x40903C00);
+    ASSERT(out[1] == 0xFFFF0000);
+    ASSERT(carry.count == 0);
+    PASS();
+
+    // Full-size transfer (128 words) with a 2-word packet split at the tail:
+    // no word may be lost (guards the buf-sizing blocker).
+    UMPCarry c2 = {};
+    uint32_t big[128]; uint32_t out2[usbmidi::core::UMP_OUT_WORDS];
+    for (int i = 0; i < 127; ++i) big[i] = 0x00000000;      // 127 Utility (1w each)
+    big[127] = 0x40903C00;                                   // word0 of a 2-word MT 0x4 -> tail partial
+    uint16_t nBig = umpReassemble(big, 128, c2, out2, usbmidi::core::UMP_OUT_WORDS);
+    TEST("128-word transfer keeps the split packet, loses nothing");
+    ASSERT(nBig == 127);            // 127 complete Utility words emitted
+    ASSERT(c2.count == 1);          // the trailing word0 held for next transfer
+    ASSERT(c2.words[0] == 0x40903C00);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // Tests — sendUMPMessage edge cases (logic only, no USB hardware)
 // ---------------------------------------------------------------------------
 
@@ -1516,6 +1562,7 @@ int main() {
     test_ump_demux_mixed();
     test_ump_demux_incomplete();
     test_ump_demux_all_mts();
+    test_ump_carryover();
     test_send_ump_edges();
     test_device_gone_reset();
     test_multi_interface();
