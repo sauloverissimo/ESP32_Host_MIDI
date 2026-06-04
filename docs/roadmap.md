@@ -102,6 +102,20 @@ public:
 
 ## Changelog
 
+### v6.1.0
+
+Melhorias de confiabilidade no transporte USB Host MIDI 2.0 (UMP). Aditivo, sem breaking changes. A lógica de transporte (seleção de Alt, dimensionamento de pacote UMP, parse de GTB, máquina de descoberta) foi extraída para `USBMIDITransportCore.h`, um módulo puro que os testes nativos exercitam diretamente.
+
+**Fixes**
+
+- `USBMIDI2Connection`: pacotes UMP partidos entre dois bulk transfers são remontados via buffer de carry-over, em vez de descartar a metade já lida. Cobre o caso de um transfer cheio (512 bytes) terminar no meio de um pacote.
+- `USBMIDI2Connection`: mensagens internas de descoberta (UMP Stream, MT 0x0F) deixam de ser repassadas ao callback de UMP do usuário; são consumidas pelo host.
+- `USBMIDI2Connection`: a descoberta passa a ser somente leitura (Endpoint Info e Function Block Info). O host não envia mais Stream Configuration Request, que comandava troca de protocolo no device.
+
+**Internal**
+
+- Novo `USBMIDITransportCore.h` (header puro, sem dependência de Arduino/USB) com `findBestAlt`, `umpWordCount`, `umpReassemble`, `parseGTB`, `appendStreamText`, builders de descoberta e a máquina de estados de descoberta. Testes nativos validam o código real, não cópias.
+
 ### v6.0.1
 
 Patch release que corrige duas regressões de BLE introduzidas pelo refactor v6.0.0. Sem breaking changes.
