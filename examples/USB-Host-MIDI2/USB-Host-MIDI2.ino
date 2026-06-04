@@ -1,4 +1,5 @@
-// USB-Host-MIDI2 — ESP32_Host_MIDI USB Host MIDI 2.0 (UMP) example
+// ESP32_Host_MIDI / USB-Host-MIDI2
+// USB Host MIDI 2.0 (UMP): receive and decode UMP from a USB MIDI device.
 //
 // Receives Universal MIDI Packets from a connected USB MIDI 2.0 device and
 // prints each packet to Serial, decoding MIDI 2.0 Channel Voice and MIDI 1.0
