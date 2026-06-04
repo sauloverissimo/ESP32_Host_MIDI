@@ -250,11 +250,6 @@ inline void buildEndpointDiscovery(uint32_t msg[4], uint8_t verMajor, uint8_t ve
     msg[1] = 0xFF;  // filter: request all info
     msg[2] = 0; msg[3] = 0;
 }
-inline void buildStreamConfigRequest(uint32_t msg[4], uint8_t protocol) {
-    msg[0] = ((uint32_t)UMP_MT_STREAM << 28) | ((uint32_t)STREAM_CONFIG_REQUEST << 16)
-           | ((uint32_t)protocol << 8);
-    msg[1] = 0; msg[2] = 0; msg[3] = 0;
-}
 inline void buildFunctionBlockDiscovery(uint32_t msg[4]) {
     msg[0] = ((uint32_t)UMP_MT_STREAM << 28) | ((uint32_t)STREAM_FB_DISCOVERY << 16)
            | (0xFF << 8)   // fbIdx = 0xFF (request all)
@@ -268,23 +263,27 @@ inline void buildFunctionBlockDiscovery(uint32_t msg[4]) {
 // each incoming Stream Message to negStep() and performs the returned action.
 
 enum class NegState : uint8_t {
-    Idle, AwaitEndpointInfo, AwaitStreamConfig, AwaitFBInfo, Done
+    Idle, AwaitEndpointInfo, AwaitFBInfo, Done
 };
 enum class NegAction : uint8_t {
-    None, SendStreamConfigRequest, SendFBDiscovery, Complete
+    None, SendFBDiscovery, Complete
 };
 struct NegEngine {
     NegState state = NegState::Idle;
     uint8_t  numFunctionBlocks = 0;
     bool     supportsMIDI2 = false;
-    uint8_t  currentProtocol = 0;
+    uint8_t  currentProtocol = 0;  // informational; set only on an unsolicited 0x006
     uint8_t  fbCount = 0;
     uint8_t  fbExpected = 0;
-    uint8_t  configProtocol = 0;  // protocol to request after Endpoint Info
 };
 
 // Feed one Stream Message (4 words). Updates the engine and returns the action
 // the transport layer must perform (send a packet / complete / nothing).
+//
+// Read-only discovery only: on Endpoint Info the host goes straight to Function
+// Block Discovery (no Stream Config Request, which would command a protocol
+// switch). A Stream Config Notify (0x006) may still arrive unsolicited; it is
+// recorded but never gates progress.
 inline NegAction negStep(NegEngine& e, const uint32_t* words) {
     uint16_t status = (words[0] >> 16) & 0x3FF;
     switch (status) {
@@ -292,14 +291,6 @@ inline NegAction negStep(NegEngine& e, const uint32_t* words) {
         e.numFunctionBlocks = (words[1] >> 24) & 0xFF;
         e.supportsMIDI2     = (words[1] >> 9) & 0x01;
         if (e.state == NegState::AwaitEndpointInfo) {
-            e.configProtocol = e.supportsMIDI2 ? 0x02 : 0x01;
-            e.state = NegState::AwaitStreamConfig;
-            return NegAction::SendStreamConfigRequest;
-        }
-        break;
-    case STREAM_CONFIG_NOTIFY:
-        e.currentProtocol = (words[0] >> 8) & 0xFF;
-        if (e.state == NegState::AwaitStreamConfig) {
             e.fbCount = 0;
             e.fbExpected = e.numFunctionBlocks;
             if (e.fbExpected > 0) {
@@ -309,6 +300,10 @@ inline NegAction negStep(NegEngine& e, const uint32_t* words) {
             e.state = NegState::Done;
             return NegAction::Complete;
         }
+        break;
+    case STREAM_CONFIG_NOTIFY:
+        // Unsolicited protocol notification: record, do not gate progress.
+        e.currentProtocol = (words[0] >> 8) & 0xFF;
         break;
     case STREAM_FB_INFO:
         if (e.state == NegState::AwaitFBInfo) {

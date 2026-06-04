@@ -199,12 +199,6 @@ void USBMIDI2Connection::_sendEndpointDiscovery() {
     sendUMPMessage(msg, 4);
 }
 
-void USBMIDI2Connection::_sendStreamConfigRequest(uint8_t protocol) {
-    uint32_t msg[4];
-    buildStreamConfigRequest(msg, protocol);
-    sendUMPMessage(msg, 4);
-}
-
 void USBMIDI2Connection::_sendFunctionBlockDiscovery() {
     uint32_t msg[4];
     buildFunctionBlockDiscovery(msg);
@@ -268,10 +262,6 @@ void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
 
     // Advance the negotiation state machine and perform the resulting action.
     switch (negStep(_neg, words)) {
-    case NegAction::SendStreamConfigRequest:
-        _negTimeout = millis() + NEG_TIMEOUT_MS;
-        _sendStreamConfigRequest(_neg.configProtocol);
-        break;
     case NegAction::SendFBDiscovery:
         _negTimeout = millis() + NEG_TIMEOUT_MS;
         _sendFunctionBlockDiscovery();

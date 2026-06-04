@@ -10,11 +10,12 @@
 // Alt 1 (bcdMSC 2.00) in the device's configuration descriptor.
 // Prefers Alt 1 when available.
 //
-// After selecting Alt 1, performs the mandatory UMP Endpoint Discovery
-// and Protocol Negotiation sequence (UMP Stream Messages, MT 0x0F):
+// After selecting Alt 1, performs read-only UMP discovery (Stream Messages,
+// MT 0x0F):
 //   1. Endpoint Discovery Request → receives Endpoint Info
-//   2. Stream Configuration Request (MIDI 2.0 Protocol)
-//   3. Function Block Discovery Request → receives FB Info
+//   2. Function Block Discovery Request → receives FB Info
+// The host does not send a Stream Configuration Request (which would command a
+// protocol switch); it relies on the descriptor and discovery responses.
 //
 // In MIDI 2.0 mode, bulk IN data is dispatched as raw UMP words via
 // dispatchUMPData(). In MIDI 1.0 mode, behaviour is identical to the
@@ -35,7 +36,9 @@ public:
     // True when the connected device negotiated MIDI 2.0 (Alt 1).
     bool isMIDI2() const { return _midi2Active; }
 
-    // True when Protocol Negotiation completed successfully.
+    // True when discovery completed (Endpoint Info + all Function Block Info
+    // received). Does not imply a protocol switch was commanded; the host only
+    // reads discovery, it does not request a protocol change.
     bool isNegotiated() const { return _neg.state == usbmidi::core::NegState::Done; }
 
     // Send raw UMP words to the device via OUT endpoint.
@@ -55,7 +58,9 @@ public:
         bool     supportsMIDI1Protocol;
         bool     supportsRxJR;
         bool     supportsTxJR;
-        uint8_t  currentProtocol;  // 0x01=MIDI1, 0x02=MIDI2
+        uint8_t  currentProtocol;  // informational; set only if the device emits
+                                   // an unsolicited Stream Config Notify (0x006).
+                                   // 0x01=MIDI1, 0x02=MIDI2, 0=not reported
     };
 
     struct FunctionBlockInfo {
@@ -120,7 +125,6 @@ private:
     void _startNegotiation();
     void _processStreamMessage(const uint32_t* words);
     void _sendEndpointDiscovery();
-    void _sendStreamConfigRequest(uint8_t protocol);
     void _sendFunctionBlockDiscovery();
 
     // Group Terminal Block reading (USB class-specific GET_DESCRIPTOR)

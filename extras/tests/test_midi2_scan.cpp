@@ -425,11 +425,6 @@ void test_stream_message_build() {
     ASSERT(msg[1] == 0x000000FF);
     PASS();
 
-    TEST("Stream Config Request word0 format");
-    usbmidi::core::buildStreamConfigRequest(msg, 0x02);
-    ASSERT(msg[0] == 0xF0050200);
-    PASS();
-
     TEST("Function Block Discovery word0 format");
     usbmidi::core::buildFunctionBlockDiscovery(msg);
     ASSERT(msg[0] == 0xF010FFFF);
@@ -739,52 +734,40 @@ void test_negotiation_full_sequence() {
     NegEngine neg;
     neg.state = NegState::AwaitEndpointInfo;
 
-    // Step 1: Device sends Endpoint Info (2 FBs, supports MIDI 2.0)
+    // Endpoint Info (2 FBs, MIDI 2.0) -> go straight to FB discovery (no Config)
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)2 << 24) | (1 << 9) | (1 << 8) | 1;
     NegAction a1 = negStep(neg, epInfo);
 
-    TEST("after EP Info → request config, AwaitStreamConfig");
-    ASSERT(a1 == NegAction::SendStreamConfigRequest);
-    ASSERT(neg.state == NegState::AwaitStreamConfig);
+    TEST("after EP Info → FB discovery, AwaitFBInfo");
+    ASSERT(a1 == NegAction::SendFBDiscovery);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.numFunctionBlocks == 2);
     ASSERT(neg.supportsMIDI2 == true);
-    ASSERT(neg.configProtocol == 0x02);
-    PASS();
-
-    // Step 2: Device confirms MIDI 2.0 protocol
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    NegAction a2 = negStep(neg, config);
-
-    TEST("after Config Notify → FB discovery, AwaitFBInfo");
-    ASSERT(a2 == NegAction::SendFBDiscovery);
-    ASSERT(neg.state == NegState::AwaitFBInfo);
-    ASSERT(neg.currentProtocol == 0x02);
     ASSERT(neg.fbExpected == 2);
     PASS();
 
-    // Step 3: First FB Info
+    // First FB Info
     uint32_t fb1[4] = {};
     fb1[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb1[1] = ((uint32_t)0 << 24) | ((uint32_t)4 << 16);
-    NegAction a3 = negStep(neg, fb1);
+    NegAction a2 = negStep(neg, fb1);
 
     TEST("after 1st FB Info → still AwaitFBInfo");
-    ASSERT(a3 == NegAction::None);
+    ASSERT(a2 == NegAction::None);
     ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.fbCount == 1);
     PASS();
 
-    // Step 4: Second FB Info → negotiation complete
+    // Second FB Info → complete
     uint32_t fb2[4] = {};
     fb2[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (1 << 8) | 1;
     fb2[1] = ((uint32_t)4 << 24) | ((uint32_t)2 << 16);
-    NegAction a4 = negStep(neg, fb2);
+    NegAction a3 = negStep(neg, fb2);
 
     TEST("after 2nd FB Info → Done + Complete");
-    ASSERT(a4 == NegAction::Complete);
+    ASSERT(a3 == NegAction::Complete);
     ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbCount == 2);
     PASS();
@@ -796,16 +779,13 @@ void test_negotiation_zero_fbs() {
     NegEngine neg;
     neg.state = NegState::AwaitEndpointInfo;
 
+    // EP Info says 0 FBs -> complete immediately, no Config step
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)0 << 24) | (1 << 9) | (1 << 8);
-    negStep(neg, epInfo);
+    NegAction a = negStep(neg, epInfo);
 
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    NegAction a = negStep(neg, config);
-
-    TEST("0 FBs → Complete + Done immediately after Config");
+    TEST("0 FBs → Complete + Done right after Endpoint Info");
     ASSERT(a == NegAction::Complete);
     ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbExpected == 0);
@@ -813,29 +793,32 @@ void test_negotiation_zero_fbs() {
 }
 
 void test_negotiation_midi1_fallback() {
-    printf("\n[Negotiation — MIDI 1.0 fallback when no MIDI 2.0 support]\n");
+    printf("\n[Negotiation — MIDI 1.0 device still completes via discovery]\n");
 
     NegEngine neg;
     neg.state = NegState::AwaitEndpointInfo;
 
-    // EP Info: supports MIDI 1.0 only (bit9=0, bit8=1)
+    // EP Info: supports MIDI 1.0 only (bit9=0, bit8=1), 1 FB
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)1 << 24) | (0 << 9) | (1 << 8);
-    negStep(neg, epInfo);
+    NegAction a1 = negStep(neg, epInfo);
 
-    TEST("detects no MIDI 2.0 support, requests MIDI 1.0 protocol");
+    TEST("no MIDI 2.0 support still goes to FB discovery (no Config Request)");
     ASSERT(neg.supportsMIDI2 == false);
-    ASSERT(neg.state == NegState::AwaitStreamConfig);
-    ASSERT(neg.configProtocol == 0x01);
+    ASSERT(a1 == NegAction::SendFBDiscovery);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     PASS();
 
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x01 << 8);
-    negStep(neg, config);
+    // Single FB Info → done
+    uint32_t fb[4] = {};
+    fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
+    fb[1] = 0;
+    NegAction a2 = negStep(neg, fb);
 
-    TEST("MIDI 1.0 protocol confirmed");
-    ASSERT(neg.currentProtocol == 0x01);
+    TEST("reaches Done after its FB Info");
+    ASSERT(a2 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     PASS();
 }
 
@@ -845,25 +828,60 @@ void test_negotiation_out_of_order() {
     NegEngine neg;
     neg.state = NegState::AwaitEndpointInfo;
 
-    // FB Info arrives before EP Info — should not advance state
+    // FB Info before EP Info -> no advance
     uint32_t fb[4] = {};
     fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb[1] = 0;
     NegAction a1 = negStep(neg, fb);
 
-    TEST("FB Info before EP Info — state unchanged");
+    TEST("FB Info before EP Info → None, state unchanged");
     ASSERT(a1 == NegAction::None);
     ASSERT(neg.state == NegState::AwaitEndpointInfo);
     PASS();
 
-    // Config Notify before EP Info — should not advance
+    // Unsolicited Config Notify before EP Info -> no advance
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
     NegAction a2 = negStep(neg, config);
 
-    TEST("Config Notify before EP Info — state unchanged");
+    TEST("Config Notify before EP Info → None, state unchanged");
     ASSERT(a2 == NegAction::None);
     ASSERT(neg.state == NegState::AwaitEndpointInfo);
+    PASS();
+}
+
+void test_negotiation_unsolicited_config_notify() {
+    printf("\n[Negotiation — unsolicited Config Notify is non-blocking]\n");
+
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
+
+    // EP Info with 1 FB -> AwaitFBInfo
+    uint32_t epInfo[4] = {};
+    epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
+    epInfo[1] = ((uint32_t)1 << 24) | (1 << 9) | (1 << 8);
+    negStep(neg, epInfo);
+
+    // Unsolicited Config Notify mid-discovery: records protocol, does not gate
+    uint32_t config[4] = {};
+    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
+    NegAction a = negStep(neg, config);
+
+    TEST("Config Notify in AwaitFBInfo → None, protocol recorded");
+    ASSERT(a == NegAction::None);
+    ASSERT(neg.currentProtocol == 0x02);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
+    PASS();
+
+    // FB Info still completes
+    uint32_t fb[4] = {};
+    fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
+    fb[1] = 0;
+    NegAction a2 = negStep(neg, fb);
+
+    TEST("FB Info still reaches Done");
+    ASSERT(a2 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     PASS();
 }
 
@@ -1592,6 +1610,7 @@ int main() {
     test_negotiation_zero_fbs();
     test_negotiation_midi1_fallback();
     test_negotiation_out_of_order();
+    test_negotiation_unsolicited_config_notify();
     test_ump_demux_mixed();
     test_ump_demux_incomplete();
     test_ump_demux_all_mts();
