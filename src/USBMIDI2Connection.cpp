@@ -16,9 +16,6 @@ static const uint8_t CS_GR_TRM_BLOCK = 0x26;
 static const uint8_t UMP_VER_MAJOR = 1;
 static const uint8_t UMP_VER_MINOR = 1;
 
-// Timeout for each negotiation step (ms)
-static const unsigned long NEG_TIMEOUT_MS = 2000;
-
 // ── Constructor ──────────────────────────────────────────────────────────────
 
 USBMIDI2Connection::USBMIDI2Connection()
@@ -160,7 +157,9 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
         _outTransfer->bEndpointAddress = cand.epOutAddress;
         _outTransfer->num_bytes        = 0;
         _outTransfer->context          = this;
-        _outTransfer->callback         = _onSendComplete;
+        // Base completion handler clears _outTransferBusy, so the MIDI 1.0
+        // send path (USBConnection::sendMidiMessage) works through this class.
+        _outTransfer->callback         = USBConnection::_onSendComplete;
     }
 
     _claimedIfaceNumber = cand.ifaceNumber;
@@ -171,18 +170,19 @@ bool USBMIDI2Connection::_claimAndSetup(const AltCandidate& cand) {
 
 // ── Protocol Negotiation — UMP Stream Messages (MT 0x0F) ────────────────────
 //
-// After selecting Alt 1, the Host performs:
+// After selecting Alt 1, the Host performs read-only discovery:
 //   1. Send Endpoint Discovery Request → device responds with Endpoint Info
-//   2. Send Stream Config Request (protocol=0x02) → device confirms
-//   3. Send Function Block Discovery → device responds with FB Info(s)
+//   2. Send Function Block Discovery → device responds with FB Info(s)
 //
-// All stream messages are 128-bit (4 words). The state machine advances
-// as responses arrive in _onReceiveUMP → _processStreamMessage.
+// The host does NOT send a Stream Config Request (which would command a protocol
+// switch); it only reads what the device advertises. All stream messages are
+// 128-bit (4 words). The state machine advances as responses arrive in
+// _onReceiveUMP → _processStreamMessage. If a device stalls mid-handshake (never
+// returns all FB Info), call retryNegotiation() to restart from the top.
 
 void USBMIDI2Connection::_startNegotiation() {
     _neg = NegEngine{};
     _neg.state = NegState::AwaitEndpointInfo;
-    _negTimeout = millis() + NEG_TIMEOUT_MS;
     _sendEndpointDiscovery();
 }
 
@@ -215,9 +215,18 @@ void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
     switch (status) {
 
     case STREAM_ENDPOINT_INFO:
+        // Endpoint Info opens a discovery burst: reset the accumulators that
+        // collect the responses, so a re-announce or retryNegotiation() does not
+        // append to (or overflow) the previous run's Function Block list / names.
+        _fbCount    = 0;
+        _epNameLen  = 0;
+        _prodIdLen  = 0;
+        _epName[0]  = '\0';
+        _prodId[0]  = '\0';
         _epInfo.umpVersionMajor       = (words[0] >> 8) & 0xFF;
         _epInfo.umpVersionMinor       = words[0] & 0xFF;
-        _epInfo.numFunctionBlocks     = (words[1] >> 24) & 0xFF;
+        // bit 31 = Static Function Blocks flag; count is the 7-bit field [30:24].
+        _epInfo.numFunctionBlocks     = (words[1] >> 24) & 0x7F;
         _epInfo.supportsMIDI2Protocol = (words[1] >> 9) & 0x01;
         _epInfo.supportsMIDI1Protocol = (words[1] >> 8) & 0x01;
         _epInfo.supportsRxJR          = (words[1] >> 1) & 0x01;
@@ -262,7 +271,6 @@ void USBMIDI2Connection::_processStreamMessage(const uint32_t* words) {
     // Advance the negotiation state machine and perform the resulting action.
     switch (negStep(_neg, words)) {
     case NegAction::SendFBDiscovery:
-        _negTimeout = millis() + NEG_TIMEOUT_MS;
         _sendFunctionBlockDiscovery();
         break;
     case NegAction::None:
@@ -335,12 +343,6 @@ bool USBMIDI2Connection::sendUMPMessage(const uint32_t* words, uint8_t count) {
 
     esp_err_t err = usb_host_transfer_submit(_outTransfer);
     return (err == ESP_OK);
-}
-
-// ── _onSendComplete — OUT transfer completion ───────────────────────────────
-
-void USBMIDI2Connection::_onSendComplete(usb_transfer_t* transfer) {
-    (void)transfer;
 }
 
 // ── _appendStreamText — accumulate text from multi-packet stream messages ───

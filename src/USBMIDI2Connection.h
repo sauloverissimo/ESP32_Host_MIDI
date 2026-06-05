@@ -94,11 +94,12 @@ protected:
 
 private:
     bool _midi2Active;
-    usb_transfer_t* _outTransfer = nullptr;
+    // OUT transfer (_outTransfer) and its busy flag live in the base
+    // USBConnection; both the MIDI 1.0 (sendMidiMessage) and MIDI 2.0
+    // (sendUMPMessage) send paths share them.
 
     // Protocol Negotiation state machine (pure model in the transport core)
     usbmidi::core::NegEngine _neg;
-    unsigned long _negTimeout = 0;
 
     // UMP reassembly across bulk transfers (carry-over of split packets)
     usbmidi::core::UMPCarry _umpCarry = {};
@@ -138,9 +139,6 @@ private:
 
     // Bulk IN callback for UMP mode — reads raw uint32_t words, no CIN.
     static void _onReceiveUMP(usb_transfer_t* transfer);
-
-    // Bulk OUT completion callback.
-    static void _onSendComplete(usb_transfer_t* transfer);
 };
 
 #endif // USB_MIDI2_CONNECTION_H

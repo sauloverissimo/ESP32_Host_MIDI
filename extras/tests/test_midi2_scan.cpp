@@ -40,7 +40,6 @@ static const uint8_t  UMP_MT_STREAM            = 0x0F;
 static const uint16_t STREAM_ENDPOINT_DISCOVERY = 0x000;
 static const uint16_t STREAM_ENDPOINT_INFO      = 0x001;
 static const uint16_t STREAM_DEVICE_INFO        = 0x002;
-static const uint16_t STREAM_CONFIG_REQUEST     = 0x005;
 static const uint16_t STREAM_CONFIG_NOTIFY      = 0x006;
 static const uint16_t STREAM_FB_DISCOVERY       = 0x010;
 static const uint16_t STREAM_FB_INFO            = 0x011;
@@ -789,6 +788,42 @@ void test_negotiation_zero_fbs() {
     ASSERT(a == NegAction::Complete);
     ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbExpected == 0);
+    PASS();
+}
+
+void test_negotiation_static_fbs() {
+    printf("\n[Negotiation — device advertising Static Function Blocks (bit 31)]\n");
+
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
+
+    // Endpoint Info with the Static Function Blocks flag (bit 31) set and a
+    // 7-bit count of 2. The count must be masked with 0x7F: bit 31 must not
+    // leak into numFunctionBlocks (a 0xFF mask would yield 130 and the handshake
+    // would never complete because fbCount can never reach it).
+    uint32_t epInfo[4] = {};
+    epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
+    epInfo[1] = (1u << 31) | ((uint32_t)2 << 24) | (1 << 9) | (1 << 8) | 1;
+    negStep(neg, epInfo);
+
+    TEST("Static FB bit ignored: numFunctionBlocks == 2 (not 130)");
+    ASSERT(neg.numFunctionBlocks == 2);
+    ASSERT(neg.fbExpected == 2);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
+    PASS();
+
+    // Two FB Info responses → Done, proving the count was masked correctly.
+    uint32_t fb1[4] = {};
+    fb1[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
+    negStep(neg, fb1);
+    uint32_t fb2[4] = {};
+    fb2[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (1 << 8) | 1;
+    NegAction a = negStep(neg, fb2);
+
+    TEST("completes after exactly 2 FB Info despite Static FB bit");
+    ASSERT(a == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
+    ASSERT(neg.fbCount == 2);
     PASS();
 }
 
@@ -1608,6 +1643,7 @@ int main() {
     test_stream_text();
     test_negotiation_full_sequence();
     test_negotiation_zero_fbs();
+    test_negotiation_static_fbs();
     test_negotiation_midi1_fallback();
     test_negotiation_out_of_order();
     test_negotiation_unsolicited_config_notify();

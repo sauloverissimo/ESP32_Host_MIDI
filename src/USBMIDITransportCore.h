@@ -288,7 +288,9 @@ inline NegAction negStep(NegEngine& e, const uint32_t* words) {
     uint16_t status = (words[0] >> 16) & 0x3FF;
     switch (status) {
     case STREAM_ENDPOINT_INFO:
-        e.numFunctionBlocks = (words[1] >> 24) & 0xFF;
+        // word1 bit 31 is the "Static Function Blocks" flag; the function-block
+        // count is the 7-bit field [30:24], so mask with 0x7F (not 0xFF).
+        e.numFunctionBlocks = (words[1] >> 24) & 0x7F;
         e.supportsMIDI2     = (words[1] >> 9) & 0x01;
         if (e.state == NegState::AwaitEndpointInfo) {
             e.fbCount = 0;
