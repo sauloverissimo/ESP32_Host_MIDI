@@ -117,10 +117,10 @@ void setup() {
     delay(500);
     Serial.println("\n=== ESP32_Host_MIDI + AM_MIDI2.0Lib ===");
 
-    // ---- Register AM_MIDI2.0Lib callbacks --------------------------------
-    umpp.channelVoiceMessage = onChannelVoice;
-    umpp.systemMessage       = onSystemMessage;
-    umpp.sendOutSysex        = onSysex;
+    // ---- Register AM_MIDI2.0Lib callbacks (setter API) -------------------
+    umpp.setCVM(onChannelVoice);
+    umpp.setSystem(onSystemMessage);
+    umpp.setSysEx(onSysex);
 
     // ---- Initialize midiHandler ------------------------------------------
     MIDIHandlerConfig cfg;
