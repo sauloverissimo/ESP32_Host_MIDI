@@ -17,7 +17,7 @@
 
 UARTConnection uartMIDI;
 
-// Last processed event index — used to detect new events in the queue.
+// Last processed event index, used to detect new events in the queue.
 static int lastEventIndex = -1;
 
 void setup() {
