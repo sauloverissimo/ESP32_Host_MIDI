@@ -1,24 +1,14 @@
-// UART-MIDI-Basic — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / UART-MIDI-Basic
+// Receive (and optionally send) MIDI 1.0 over a UART / DIN-5 port.
 //
-// Receives MIDI messages from a DIN-5 (5-pin) MIDI cable via UART and
-// prints them to the Serial monitor (115200 baud).
-// Optionally sends a NoteOn/NoteOff pair every 2 seconds over MIDI OUT.
+// Requires: none beyond the board.
+// Arduino IDE: Board ESP32-S3 (or any ESP32) · Serial 115200
 //
-// Hardware (MIDI IN):
-//   DIN-5 pin 5 ──── 220Ω ──── optocoupler anode  (e.g. 6N138 or TLP2361)
-//   DIN-5 pin 2 ──── GND
-//   Optocoupler output ──── MIDI_RX_PIN
-//
-// Hardware (MIDI OUT, optional):
-//   MIDI_TX_PIN ──── 220Ω ──── DIN-5 pin 5
-//   3.3V        ──── 220Ω ──── DIN-5 pin 4
-//   DIN-5 pin 2 ──── GND
-//
-// Adjust the pin defines below to match your board.
+// Wiring is in the README. Adjust the pin defines below to match your board.
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
-#include "../../src/UARTConnection.h"  // or just "UARTConnection.h" if library is installed
+#include <UARTConnection.h>
 
 // ---- Pin configuration ------------------------------------------------
 #define MIDI_RX_PIN   18   // GPIO connected to optocoupler output (MIDI IN)
@@ -33,7 +23,7 @@ static int lastEventIndex = -1;
 void setup() {
     Serial.begin(115200);
     delay(300);
-    Serial.println("UART MIDI Basic — starting");
+    Serial.println("UART MIDI Basic - starting");
 
     // Open the MIDI serial port and register as an external transport.
     uartMIDI.begin(Serial1, MIDI_RX_PIN, MIDI_TX_PIN);

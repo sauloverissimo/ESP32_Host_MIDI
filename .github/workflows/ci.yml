@@ -76,3 +76,4 @@ jobs:
             - source-path: ./
           sketch-paths: |
             - examples/P4-Dual-UART-MIDI
+            - examples/UART-MIDI-Basic
