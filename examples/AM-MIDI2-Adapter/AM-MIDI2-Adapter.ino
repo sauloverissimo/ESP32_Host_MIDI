@@ -8,7 +8,7 @@
 //
 // Requires: AM_MIDI2.0Lib (Arduino Library Manager: "AM_MIDI2.0Lib";
 // PlatformIO: midi2-dev/AM_MIDI2.0Lib).
-// Arduino IDE: Board ESP32-S3 (USB) or any ESP32 (BLE) · Serial 115200
+// Arduino IDE: Board ESP32-S3 (USB) or any ESP32 (BLE) | Serial 115200
 
 // ---- 1. AM_MIDI2.0Lib first (required include order) ---------------------
 #include <umpProcessor.h>

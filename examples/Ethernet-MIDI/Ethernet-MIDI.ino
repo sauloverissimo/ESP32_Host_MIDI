@@ -6,7 +6,7 @@
 // keyboard to the DAW over Ethernet. Wiring and setup are in the README.
 //
 // Requires: AppleMIDI (lathoub, v3.x) + Ethernet libraries.
-// Arduino IDE: Board ESP32-S3 (USB host) or ESP32-P4 · Serial 115200
+// Arduino IDE: Board ESP32-S3 (USB host) or ESP32-P4 | Serial 115200
 
 #include <Arduino.h>
 #include <SPI.h>

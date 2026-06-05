@@ -2,7 +2,7 @@
 // Receive (and optionally send) MIDI 1.0 over a UART / DIN-5 port.
 //
 // Requires: none beyond the board.
-// Arduino IDE: Board ESP32-S3 (or any ESP32) · Serial 115200
+// Arduino IDE: Board ESP32-S3 (or any ESP32) | Serial 115200
 //
 // Wiring is in the README. Adjust the pin defines below to match your board.
 

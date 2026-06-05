@@ -2,7 +2,7 @@
 // USB host MIDI 1.0: detect a connected keyboard, then send notes and CC to it.
 //
 // Requires: none beyond the board.
-// Arduino IDE: Board ESP32-S3 (USB host) · USB Mode: Hardware CDC and JTAG
+// Arduino IDE: Board ESP32-S3 (USB host) | USB Mode: Hardware CDC and JTAG
 //
 // Status LEDs: OUT_PIN5 = piano detected, OUT_PIN6 = activity blink,
 // OUT_PIN7 = host started. A pedal on PEDAL_PIN sends sustain (CC64).

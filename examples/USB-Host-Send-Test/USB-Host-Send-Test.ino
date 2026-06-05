@@ -9,7 +9,7 @@
 // Stop, Active Sensing, System Reset).
 //
 // Requires: none beyond the board.
-// Arduino IDE: Board ESP32-S3 (USB host) · USB Mode: Hardware CDC and JTAG · Serial 115200
+// Arduino IDE: Board ESP32-S3 (USB host) | USB Mode: Hardware CDC and JTAG | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>

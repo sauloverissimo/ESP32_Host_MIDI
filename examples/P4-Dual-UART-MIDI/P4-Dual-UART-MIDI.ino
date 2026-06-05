@@ -6,7 +6,7 @@
 // (use an ESP32-C6 module for wireless). Wiring is in the README.
 //
 // Requires: none beyond the board.
-// Arduino IDE: Board ESP32-P4 · Serial 115200
+// Arduino IDE: Board ESP32-P4 | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>

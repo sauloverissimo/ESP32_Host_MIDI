@@ -7,7 +7,7 @@
 // sequence and play/stop. Setup and wiring are in the README.
 //
 // Requires: AppleMIDI (lathoub, v3.x), MIDI Library (Francois Best), LovyanGFX.
-// Arduino IDE: Board T-Display-S3 (ESP32-S3) · Partition Scheme: Huge App (3MB) · Serial 115200
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Partition Scheme: Huge App (3MB) | Serial 115200
 
 #include <Arduino.h>
 #include <WiFi.h>
