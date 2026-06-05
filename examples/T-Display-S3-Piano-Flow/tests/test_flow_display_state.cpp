@@ -47,6 +47,38 @@ int main() {
         CHECK(!st.active(60), "note released");
         CHECK(st.lastDurationMs()==500, "duration 500ms");
     }
+    // event log: a C major triad logs three NOTE_ON, one chord group, rising
+    // event order; the paired note-off logs a NOTE_OFF carrying the duration.
+    {
+        FlowDisplayState st;
+        for (uint8_t n : {60,64,67}) { uint32_t w[2]={on0(n),0x80000000u}; st.ingest(w,2,0); }
+        st.poll();
+        CHECK(st.logCount()==3, "log has 3 note-ons");
+        CHECK(st.logAt(0).kind==gingo::NOTE_ON && st.logAt(0).note==60, "log[0] ON 60");
+        CHECK(st.logAt(1).note==64 && st.logAt(2).note==67, "log[1..2] = 64,67");
+        CHECK(st.logAt(0).velocity==0x8000 && st.logAt(0).group==0 && st.logAt(0).channel==0,
+              "log captures velocity/group/channel");
+        CHECK(st.logAt(0).chordIdx==st.logAt(2).chordIdx, "same chord group");
+        CHECK(st.logAt(0).evIdx < st.logAt(2).evIdx, "event order rises");
+
+        uint32_t wof[2]={off0(60),0u}; st.ingest(wof,2,400); st.poll();
+        CHECK(st.logCount()==4, "log has 4 events");
+        CHECK(st.logAt(3).kind==gingo::NOTE_OFF && st.logAt(3).note==60, "log[3] OFF 60");
+        CHECK(st.logAt(3).noteIdx==st.logAt(0).noteIdx, "off pairs the on (noteIdx)");
+        CHECK(st.logAt(3).durationMs==400, "off carries duration 400ms");
+    }
+    // log ring overflow: more than LOG_CAP events keep only the last LOG_CAP,
+    // and the oldest retained advances (a window over the newest events).
+    {
+        FlowDisplayState st;
+        const int N = FlowDisplayState::LOG_CAP + 10;
+        for (int i = 0; i < N; ++i) {
+            uint8_t n = (uint8_t)(40 + (i % 30));
+            uint32_t w[2]={on0(n),0x80000000u}; st.ingest(w,2,(uint32_t)i); st.poll();
+        }
+        CHECK(st.logCount()==FlowDisplayState::LOG_CAP, "log capped at LOG_CAP");
+        CHECK(st.logAt(st.logCount()-1).evIdx > st.logAt(0).evIdx, "window holds newest");
+    }
 
     printf(fails ? "FAILED %d\n" : "ALL TESTS PASSED\n", fails);
     return fails ? 1 : 0;

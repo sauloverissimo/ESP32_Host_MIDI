@@ -75,8 +75,13 @@ static LGFX_Sprite screen(&tft);
 // ── Colours ──────────────────────────────────────────────────────────────────
 #define COL_BG       0x0841
 #define COL_HEADER   0x07FF   // cyan
-#define COL_NOTEON   0x07E0   // bright green - flow held set
+#define COL_NOTEON   0x07E0   // bright green - note on
+#define COL_NOTEOFF  0xFFE0   // yellow - note off
 #define COL_INFO     0xBDF7   // light grey
+
+// ── View toggle (piano headline vs scrolling processed-event log) ─────────────
+enum View { VIEW_PIANO, VIEW_LOG };
+static View g_view = VIEW_PIANO;
 
 // ── UMP callback - MIDI 2.0 device (Alt 1) ────────────────────────────────────
 // One whole UMP packet per call, no CIN, no conversion. Straight into the flow.
@@ -140,15 +145,18 @@ static void drawMiniPiano(const bool notes[128]) {
     }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
-static void render() {
+// ── Source label ──────────────────────────────────────────────────────────────
+static const char* sourceLabel() {
+    return !g_connected ? "no device" : usb.isMIDI2() ? "MIDI 2.0" : "MIDI 1.0";
+}
+
+// ── Piano view: held notes, chord with inversion, duration, mini-piano ─────────
+static void renderPiano() {
     screen.fillScreen(COL_BG);
     screen.setFont(&fonts::Font0);
 
     // Source line: which protocol the connected device negotiated.
-    const char* src = !g_connected ? "no device"
-                    : usb.isMIDI2() ? "MIDI 2.0"
-                                    : "MIDI 1.0";
+    const char* src = sourceLabel();
     screen.setTextColor(usb.isMIDI2() ? COL_HEADER : COL_INFO, COL_BG);
     char hdr[24];
     snprintf(hdr, sizeof hdr, "src  %s", src);
@@ -185,7 +193,74 @@ static void render() {
     bool held[128];
     for (int n = 0; n < 128; n++) held[n] = g_flow.active(n);
     drawMiniPiano(held);
+}
 
+// ── Log view: the processed events scrolling, newest at the bottom ─────────────
+// Each line is one interpreted event with the interpreter's indices: e=event
+// order, nt=note pairing, ch=chord group; note-off carries the duration. This
+// is the live interpretation - what the flow made of the incoming stream.
+static void formatLogLine(const FlowDisplayState::LogEntry& e, char* buf, size_t cap,
+                          uint16_t& color) {
+    switch (e.kind) {
+        case gingo::NOTE_ON:
+            color = COL_NOTEON;
+            snprintf(buf, cap, "ON  n%-3u v%-5u g%u c%-2u e%lu nt%lu ch%lu",
+                     e.note, e.velocity, e.group, e.channel,
+                     (unsigned long)e.evIdx, (unsigned long)e.noteIdx,
+                     (unsigned long)e.chordIdx);
+            break;
+        case gingo::NOTE_OFF:
+            color = COL_NOTEOFF;
+            snprintf(buf, cap, "OFF n%-3u v%-5u g%u c%-2u e%lu nt%lu d%lums",
+                     e.note, e.velocity, e.group, e.channel,
+                     (unsigned long)e.evIdx, (unsigned long)e.noteIdx,
+                     (unsigned long)e.durationMs);
+            break;
+        case gingo::CC:
+            color = COL_INFO;
+            snprintf(buf, cap, "CC  i%-3u v%-5u g%u c%-2u e%lu",
+                     e.note, e.velocity, e.group, e.channel, (unsigned long)e.evIdx);
+            break;
+        default:
+            color = COL_INFO;
+            snprintf(buf, cap, "k%u  n%-3u g%u c%-2u e%lu", e.kind, e.note,
+                     e.group, e.channel, (unsigned long)e.evIdx);
+            break;
+    }
+}
+
+static void renderLog() {
+    screen.fillScreen(COL_BG);
+    screen.setFont(&fonts::Font0);
+
+    char hdr[40];
+    snprintf(hdr, sizeof hdr, "LOG  %s  events=%u", sourceLabel(),
+             (unsigned)g_flow.logCount());
+    screen.setTextColor(usb.isMIDI2() ? COL_HEADER : COL_INFO, COL_BG);
+    screen.drawString(hdr, 4, 2);
+    screen.drawFastHLine(0, 12, SCREEN_W, 0x2945);
+
+    const int LINE_H = 8;
+    const int Y0     = 14;
+    const int VIS    = (SCREEN_H - Y0) / LINE_H;     // visible log lines
+    const int n      = g_flow.logCount();
+    const int first  = (n > VIS) ? (n - VIS) : 0;    // window over the newest
+
+    int y = Y0;
+    for (int i = first; i < n; i++) {
+        char ln[56];
+        uint16_t col;
+        formatLogLine(g_flow.logAt((uint16_t)i), ln, sizeof ln, col);
+        screen.setTextColor(col, COL_BG);
+        screen.drawString(ln, 4, y);
+        y += LINE_H;
+    }
+}
+
+// ── Render dispatch ────────────────────────────────────────────────────────────
+static void render() {
+    if (g_view == VIEW_LOG) renderLog();
+    else                    renderPiano();
     tft.startWrite();
     screen.pushSprite(0, 0);
     tft.endWrite();
@@ -197,6 +272,9 @@ void setup() {
 
     pinMode(PIN_POWER_ON, OUTPUT);
     digitalWrite(PIN_POWER_ON, HIGH);
+
+    pinMode(PIN_BUTTON_1, INPUT_PULLUP);   // either button toggles piano <-> log
+    pinMode(PIN_BUTTON_2, INPUT_PULLUP);
 
     tft.init();
     tft.setRotation(2);
@@ -227,9 +305,18 @@ static uint32_t lastRenderMs = 0;
 
 void loop() {
     usb.task();                               // drives USB host -> onUMP / onMidi1
-    g_flow.poll();                            // drain the flow -> held / chord / duration
+    g_flow.poll();                            // drain the flow -> held / chord / duration / log
 
     const uint32_t now = millis();
+
+    // Either button toggles the view (debounced).
+    static uint32_t btnLast = 0;
+    if ((digitalRead(PIN_BUTTON_1) == LOW || digitalRead(PIN_BUTTON_2) == LOW)
+        && now - btnLast > 200) {
+        btnLast = now;
+        g_view = (g_view == VIEW_PIANO) ? VIEW_LOG : VIEW_PIANO;
+    }
+
     if (now - lastRenderMs >= 100) {
         lastRenderMs = now;
         render();
