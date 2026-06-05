@@ -11,7 +11,7 @@
 #include "src/GingoNote.cpp"
 #include "src/GingoInterval.cpp"
 #include "src/GingoChord.cpp"
-#include "FlowDisplayState.h"
+#include "../FlowDisplayState.h"
 
 using namespace gingo;
 

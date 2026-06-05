@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <vector>
-#include "Midi1ToUmp.h"
+#include "../Midi1ToUmp.h"
 
 static int fails = 0;
 #define CHECK(c,m) do{ if(!(c)){ printf("FAIL %s\n",m); ++fails;} }while(0)
