@@ -1,36 +1,14 @@
-// T-Display-S3-AMoled-MIDI2-UMP — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / T-Display-S3-AMoled-MIDI2-UMP
+// MIDI 2.0 (UMP) over WiFi UDP between two T-Display-S3 AMOLED boards, with display.
 //
-// Two T-Display-S3 AMOLED boards exchange MIDI 2.0 (Universal MIDI Packet)
-// over WiFi UDP.  The 1.91" RM67162 AMOLED shows (landscape 536×240):
-//
-//   ■ (RX dot)   — pulses cyan on every received packet
-//   WiFi | Peer  — real IPs, green when active
-//   LAST NOTE    — large note name, 16-bit velocity bar, exact value
-//   EVENTS       — scrolling 6-line log with 32-bit MIDI 2.0 values
-//   IN / OUT / VEL% — packet counters + velocity preset
-//
-// Button (GPIO 0 / BOOT only — AMOLED board has no GPIO 14 button):
-//   Short press  — send a test NoteOn immediately
-//   Long press   — cycle demo velocity preset (25 / 50 / 75 / 100 %)
-//
-// Quick-start:
-//   1. Set WIFI_SSID / WIFI_PASS in mapping.h.
-//   2. Flash to BOTH boards.  Read each board's "My IP:" from Serial.
-//   3. Set PEER_IP on each board to the OTHER board's IP.  Re-flash.
-//   4. Short-press BOOT on either board — the other board's display reacts.
-//
-// Note: AMOLED displays can suffer from burn-in with static content.
-//       Avoid leaving the display on at maximum brightness for long periods.
-//
-// Arduino IDE:
-//   Tools > Board            → ESP32S3 Dev Module (or T-Display-S3 AMOLED)
-//   Tools > Partition Scheme → Huge APP (3MB No OTA)
+// Requires: LovyanGFX. Set WIFI_SSID/WIFI_PASS and PEER_IP in mapping.h.
+// Arduino IDE: Board ESP32-S3 (T-Display AMOLED) | Partition: Huge App (3MB) | Serial 115200
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESP32_Host_MIDI.h>
-#include "../../src/MIDI2Support.h"
-#include "../../src/MIDI2UDPConnection.h"
+#include <MIDI2Support.h>
+#include <MIDI2UDPConnection.h>
 #include "mapping.h"
 #include "RM67162_Handler.h"
 
@@ -48,7 +26,7 @@ static unsigned long lastDemoMs     = 0;
 static uint8_t       demoNoteIdx    = 0;
 
 // Demo velocity presets: 25 / 50 / 75 / 100 %  (16-bit: 0x3FFF / 0x7FFF / 0xBFFF / 0xFFFF)
-static const uint8_t VEL_PRESETS[] = { 32, 64, 96, 127 };  // 7-bit → scales to 16-bit
+static const uint8_t VEL_PRESETS[] = { 32, 64, 96, 127 };  // 7-bit to scales to 16-bit
 static uint8_t       velPresetIdx  = 3;  // start at 100%
 
 // Demo notes (C-major)
@@ -64,13 +42,13 @@ static void handleButton() {
     bool cur = digitalRead(0);
     unsigned long now = millis();
 
-    // Falling edge — button just pressed
+    // Falling edge - button just pressed
     if (cur == LOW && btn0Prev == HIGH) {
         btn0PressedAt = now;
         btn0Handled   = false;
     }
 
-    // Button still held — check for long press
+    // Button still held - check for long press
     if (cur == LOW && !btn0Handled &&
         (now - btn0PressedAt >= BTN_LONG_PRESS_MS))
     {
@@ -84,7 +62,7 @@ static void handleButton() {
         display.setCounters(inCount, outCount, pct);
     }
 
-    // Rising edge — button released
+    // Rising edge - button released
     if (cur == HIGH && btn0Prev == LOW) {
         if (!btn0Handled && (now - btn0PressedAt >= BTN_DEBOUNCE_MS)) {
             // ── SHORT PRESS: send test note ──
@@ -107,7 +85,7 @@ static uint32_t eventColor(const MIDIEventData& ev) {
     return M2_COL_WHITE;
 }
 
-// Landscape 536px wide — font-1 chars are 6px, margin 4px → ~88 chars/line
+// Landscape 536px wide - font-1 chars are 6px, margin 4px to ~88 chars/line
 static void formatEvent(const MIDIEventData& ev, const UMPResult& r,
                         char* buf, int len) {
     char noteBuf[8];
@@ -149,7 +127,7 @@ void setup() {
     Serial.begin(115200);
     delay(300);
 
-    // Button — only GPIO 0 (BOOT) available on T-Display-S3 AMOLED
+    // Button - only GPIO 0 (BOOT) available on T-Display-S3 AMOLED
     pinMode(0, INPUT_PULLUP);
 
     // Display init handles power-on (GPIO 9) internally
@@ -172,7 +150,7 @@ void setup() {
         peerIP.toString().toCharArray(peerStr, sizeof(peerStr));
         display.setPeer(false, peerStr);  // orange until first packet received
     } else {
-        Serial.println("Target: (none — set PEER_IP in mapping.h)");
+        Serial.println("Target: (none - set PEER_IP in mapping.h)");
         display.setPeer(false);
     }
 
@@ -242,7 +220,7 @@ void loop() {
                           r.opcode, r.value);
     }
 
-    // ── Peer status — active when receiving packets, independent of PEER_IP ──
+    // ── Peer status - active when receiving packets, independent of PEER_IP ──
     bool peerActive = (lastRxMs > 0) && (millis() - lastRxMs < 8000);
     if (peerActive != peerWasActive) {
         peerWasActive = peerActive;
@@ -253,7 +231,7 @@ void loop() {
         display.setPeer(peerActive, peerStr);
     }
 
-    // ── Counters — update on either IN or OUT change ─────────────────────────
+    // ── Counters - update on either IN or OUT change ─────────────────────────
     static int lastOutCount = -1;
     if (countersChanged || outCount != lastOutCount) {
         lastOutCount = outCount;

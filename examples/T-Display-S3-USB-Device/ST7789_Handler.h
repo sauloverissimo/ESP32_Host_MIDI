@@ -4,21 +4,21 @@
 #include <LovyanGFX.h>
 #include <cstdint>
 
-// Color palette — blue/teal theme for USB
+// Color palette - blue/teal theme for USB
 #define USB_COL_BG        0x0000  // Black background
-#define USB_COL_HEADER    0x19F4  // Dark blue  — header / counter bar
-#define USB_COL_DIVIDER   0x4208  // Dark gray  — divider line / label
+#define USB_COL_HEADER    0x19F4  // Dark blue  - header / counter bar
+#define USB_COL_DIVIDER   0x4208  // Dark gray  - divider line / label
 #define USB_COL_WHITE     0xFFFF  // White text
-#define USB_COL_GREEN     0x07E0  // Green  — connected
-#define USB_COL_ORANGE    0xFD20  // Orange — waiting / scanning
-#define USB_COL_RED       0xF800  // Red    — disconnected
-#define USB_COL_CYAN      0x07FF  // Cyan   — NoteOn
-#define USB_COL_GRAY      0x4208  // Gray   — NoteOff
-#define USB_COL_YELLOW    0xFFE0  // Yellow — ControlChange
-#define USB_COL_MAGENTA   0xF81F  // Magenta — PitchBend
-#define USB_COL_LIME      0x07E0  // Green  — ProgramChange
+#define USB_COL_GREEN     0x07E0  // Green  - connected
+#define USB_COL_ORANGE    0xFD20  // Orange - waiting / scanning
+#define USB_COL_RED       0xF800  // Red    - disconnected
+#define USB_COL_CYAN      0x07FF  // Cyan   - NoteOn
+#define USB_COL_GRAY      0x4208  // Gray   - NoteOff
+#define USB_COL_YELLOW    0xFFE0  // Yellow - ControlChange
+#define USB_COL_MAGENTA   0xF81F  // Magenta - PitchBend
+#define USB_COL_LIME      0x07E0  // Green  - ProgramChange
 
-// Layout — portrait 170 × 320
+// Layout - portrait 170 × 320
 #define USB_Y_HEADER    0
 #define USB_H_HEADER   34
 #define USB_Y_USB      34
@@ -43,13 +43,13 @@ public:
     void init();
 
     // Updates the USB status row.
-    // connected = true  → green dot "USB  Connected"
-    // connected = false → orange dot "USB  Waiting for host..."
+    // connected = true  to green dot "USB  Connected"
+    // connected = false to orange dot "USB  Waiting for host..."
     void setUSB(bool connected);
 
     // Updates the BLE status row.
-    // connected = true  → green dot "BLE  Connected"
-    // connected = false → orange dot "BLE  Scanning..."
+    // connected = true  to green dot "BLE  Connected"
+    // connected = false to orange dot "BLE  Scanning..."
     void setBLE(bool connected);
 
     // Pushes a new event to the top of the scrolling list.

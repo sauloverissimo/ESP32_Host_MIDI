@@ -1,18 +1,8 @@
-// Example: Music Theory Analysis on T-Display S3
-// Demonstrates ESP32_Host_MIDI + Gingoduino integration with ST7789 display.
+// ESP32_Host_MIDI / T-Display-S3-Gingoduino
+// USB Host MIDI with live music-theory analysis (Gingoduino) on the display.
 //
-// What it shows on display + Serial:
-//   - 1 note:   Note name, octave, frequency (e.g., "C4  261.63 Hz")
-//   - 2 notes:  Interval identification (e.g., "C4, E4 -> 3M Major Third")
-//   - 3+ notes: Chord identification (e.g., "C4, E4, G4 -> CM")
-//   - After 3+ identified chords: Harmonic field deduction
-//     (e.g., "Field: C Major (3/3)")
-//
-// Requirements:
-//   - ESP32_Host_MIDI library
-//   - Gingoduino library v0.2.2+ (https://github.com/sauloverissimo/gingoduino)
-//   - LovyanGFX library
-//   - T-Display S3 board
+// Requires: LovyanGFX + Gingoduino.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>

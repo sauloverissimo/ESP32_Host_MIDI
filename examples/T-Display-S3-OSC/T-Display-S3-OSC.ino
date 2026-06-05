@@ -1,32 +1,13 @@
-// T-Display-S3-OSC — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / T-Display-S3-OSC
+// Bidirectional OSC <-> MIDI bridge on the T-Display-S3 (USB host + WiFi/OSC).
 //
-// Bidirectional OSC ↔ MIDI bridge on the T-Display-S3 (LilyGO):
-//   USB keyboard  →  ESP32  →  OSC/UDP  →  Max/MSP, Pure Data, SuperCollider
-//   Max/MSP, PD   →  OSC/UDP  →  ESP32  →  MIDI (displayed + forwarded)
-//
-// The built-in 1.9" display shows:
-//   - WiFi connection status and IP address
-//   - Local / remote OSC ports
-//   - Live scrolling MIDI event log (color-coded by message type)
-//   - IN / OUT event counters
-//
-// Requirements:
-//   1. Install "OSC" library by Adrian Freed / CNMAT via Arduino Library Manager.
-//   2. Fill in WIFI_SSID, WIFI_PASS and OSC_TARGET_IP in mapping.h.
-//   3. In Max/MSP: [udpreceive 8000] → [OSC-route /midi/noteon] → …
-//
-// OSC address map:
-//   /midi/noteon      channel note velocity
-//   /midi/noteoff     channel note velocity
-//   /midi/cc          channel controller value
-//   /midi/pc          channel program
-//   /midi/pitchbend   channel bend  (-8192 … 8191)
-//   /midi/aftertouch  channel pressure
+// Requires: OSC (CNMAT) + LovyanGFX. Set WIFI_SSID/WIFI_PASS/OSC_TARGET_IP in mapping.h.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESP32_Host_MIDI.h>
-#include "../../src/OSCConnection.h"
+#include <OSCConnection.h>
 #include "mapping.h"
 #include "ST7789_Handler.h"
 

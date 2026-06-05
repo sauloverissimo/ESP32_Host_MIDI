@@ -15,7 +15,7 @@ RM67162_Handler::RM67162_Handler()
 // ── private helpers ─────────────────────────────────────────────────────────
 
 void RM67162_Handler::_fillRow(int y, int h, uint32_t bg) {
-    _tft.fillRect(0, y, M2_W, h, bg);   // x=0, w=536 — both even ✓
+    _tft.fillRect(0, y, M2_W, h, bg);   // x=0, w=536 - both even ✓
 }
 
 void RM67162_Handler::_drawText(int x, int y, uint32_t fg, uint32_t bg,
@@ -39,15 +39,15 @@ void RM67162_Handler::_redrawStatusRow() {
     _fillRow(M2_Y_STATUS, M2_H_STATUS, M2_COL_STATUS);
     int cy = M2_Y_STATUS + M2_H_STATUS / 2;
 
-    // WiFi — left half
+    // WiFi - left half
     uint32_t wc = _wifiConn ? M2_COL_GREEN : M2_COL_ORANGE;
     // Use fillRect instead of fillCircle to guarantee even x/w (RM67162)
     int dotY = cy - 4;
-    _tft.fillRect(M2_MARGIN, dotY, 8, 8, wc);     // x=4 w=8 — both even ✓
+    _tft.fillRect(M2_MARGIN, dotY, 8, 8, wc);     // x=4 w=8 - both even ✓
     _drawText(M2_MARGIN + 12, M2_Y_STATUS + (M2_H_STATUS - 8) / 2,
               M2_COL_WHITE, M2_COL_STATUS, 1, _wifiLabel);
 
-    // Peer — right half
+    // Peer - right half
     uint32_t pc = _peerActive ? M2_COL_GREEN : M2_COL_ORANGE;
     int peerDotX = (M2_W / 2 + M2_MARGIN) & ~1;   // ensure even
     _tft.fillRect(peerDotX, dotY, 8, 8, pc);
@@ -58,7 +58,7 @@ void RM67162_Handler::_redrawStatusRow() {
 // ── public API ───────────────────────────────────────────────────────────────
 
 void RM67162_Handler::init() {
-    // Power on AMOLED — GPIO 9 HIGH
+    // Power on AMOLED - GPIO 9 HIGH
     pinMode(PIN_POWER_ON, OUTPUT);
     digitalWrite(PIN_POWER_ON, HIGH);
     delay(50);   // let power stabilize before SPI init
@@ -67,13 +67,13 @@ void RM67162_Handler::init() {
     _tft.setRotation(1);          // landscape 536×240
     _tft.setBrightness(200);      // AMOLED brightness via panel command (0-255)
     _tft.fillScreen(M2_COL_BG);
-    // No backlight pin — AMOLED is self-emitting
+    // No backlight pin - AMOLED is self-emitting
 
     // ── Header ──────────────────────────────────────────────────────────────
     _fillRow(M2_Y_HEADER, M2_H_HEADER, M2_COL_HEADER);
-    // RX dot — starts dim, uses fillRect for RM67162 even-x safety
+    // RX dot - starts dim, uses fillRect for RM67162 even-x safety
     int dotY = M2_Y_HEADER + (M2_H_HEADER - 12) / 2;
-    _tft.fillRect(M2_MARGIN, dotY, 12, 12, M2_COL_DIVIDER);  // x=4 w=12 — even ✓
+    _tft.fillRect(M2_MARGIN, dotY, 12, 12, M2_COL_DIVIDER);  // x=4 w=12 - even ✓
     // Centred title
     const char* title = "MIDI 2.0  UMP";
     int titleW = (int)strlen(title) * 12;
@@ -124,7 +124,7 @@ void RM67162_Handler::setPeer(bool active, const char* ip) {
 void RM67162_Handler::pulseRxDot(bool on) {
     uint32_t col = on ? M2_COL_CYAN : M2_COL_DIVIDER;
     int dotY = M2_Y_HEADER + (M2_H_HEADER - 12) / 2;
-    _tft.fillRect(M2_MARGIN, dotY, 12, 12, col);   // x=4 w=12 — even ✓
+    _tft.fillRect(M2_MARGIN, dotY, 12, 12, col);   // x=4 w=12 - even ✓
 }
 
 void RM67162_Handler::setLastNote(const char* noteOctave, uint16_t vel16) {
@@ -150,8 +150,8 @@ void RM67162_Handler::setLastNote(const char* noteOctave, uint16_t vel16) {
 
     // ── 16-bit velocity bar ─────────────────────────────────────────────────
     _fillRow(M2_Y_BAR, M2_H_BAR, M2_COL_NOTE_BG);
-    int barX = M2_MARGIN;                          // 4 — even ✓
-    int barW = (M2_W - 2 * M2_MARGIN) & ~1;       // 528 — even ✓
+    int barX = M2_MARGIN;                          // 4 - even ✓
+    int barW = (M2_W - 2 * M2_MARGIN) & ~1;       // 528 - even ✓
     int fill = empty ? 0 : (int)((uint32_t)barW * vel16 / 65535);
     fill = fill & ~1;                              // round down to even (RM67162)
     int rest = barW - fill;
@@ -197,16 +197,16 @@ void RM67162_Handler::setCounters(int in, int out, int velPct) {
     _fillRow(M2_Y_COUNTERS, M2_H_COUNTERS, M2_COL_HEADER);
     char buf[24];
 
-    // IN — left
+    // IN - left
     snprintf(buf, sizeof(buf), "IN: %d", in);
     _drawText(M2_MARGIN, M2_Y_COUNTERS + 6, M2_COL_WHITE, M2_COL_HEADER, 1, buf);
 
-    // OUT — center
+    // OUT - center
     snprintf(buf, sizeof(buf), "OUT: %d", out);
     int outX = (M2_W / 3 + M2_MARGIN) & ~1;       // ensure even x
     _drawText(outX, M2_Y_COUNTERS + 6, M2_COL_WHITE, M2_COL_HEADER, 1, buf);
 
-    // VEL preset — right (only if >= 0)
+    // VEL preset - right (only if >= 0)
     if (velPct >= 0) {
         snprintf(buf, sizeof(buf), "VEL: %d%%", velPct);
         int velW = (int)strlen(buf) * 6;

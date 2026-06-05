@@ -7,18 +7,18 @@
 
 // Color palette
 #define OSC_COL_BG        0x0000  // Black background
-#define OSC_COL_HEADER    0x780F  // Purple  — header / counter bar
-#define OSC_COL_DIVIDER   0x4208  // Dark gray — divider line / label
+#define OSC_COL_HEADER    0x780F  // Purple  - header / counter bar
+#define OSC_COL_DIVIDER   0x4208  // Dark gray - divider line / label
 #define OSC_COL_WHITE     0xFFFF  // White text
-#define OSC_COL_GREEN     0x07E0  // Green  — WiFi connected
-#define OSC_COL_RED       0xF800  // Red    — WiFi disconnected
-#define OSC_COL_CYAN      0x07FF  // Cyan   — NoteOn
-#define OSC_COL_GRAY      0x4208  // Gray   — NoteOff
-#define OSC_COL_YELLOW    0xFFE0  // Yellow — ControlChange
-#define OSC_COL_ORANGE    0xFD20  // Orange — PitchBend
-#define OSC_COL_LIME      0x07E0  // Green  — ProgramChange
+#define OSC_COL_GREEN     0x07E0  // Green  - WiFi connected
+#define OSC_COL_RED       0xF800  // Red    - WiFi disconnected
+#define OSC_COL_CYAN      0x07FF  // Cyan   - NoteOn
+#define OSC_COL_GRAY      0x4208  // Gray   - NoteOff
+#define OSC_COL_YELLOW    0xFFE0  // Yellow - ControlChange
+#define OSC_COL_ORANGE    0xFD20  // Orange - PitchBend
+#define OSC_COL_LIME      0x07E0  // Green  - ProgramChange
 
-// Layout — portrait 170 × 320
+// Layout - portrait 170 × 320
 #define OSC_Y_HEADER    0
 #define OSC_H_HEADER   34
 #define OSC_Y_WIFI     34

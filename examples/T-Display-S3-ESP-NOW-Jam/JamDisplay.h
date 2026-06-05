@@ -43,7 +43,7 @@ static const int JD_SCREEN_H = 170;
 #define JD_COL_PEER_ON    0x07E0   // green
 #define JD_COL_PEER_OFF   0xF800   // red
 
-// Piano key colours — 3 states per key
+// Piano key colours - 3 states per key
 #define JD_COL_KEY_WHITE  0xFFFF
 #define JD_COL_KEY_BLACK  0x0841
 #define JD_COL_KEY_BORDER 0x0000
@@ -76,8 +76,8 @@ struct JamInfo {
     uint8_t  currentStatus;     // 0x90 NoteOn, 0x80 NoteOff, 0 = idle
 
     // Piano note arrays
-    const bool* localNotes;     // pointer to bool[128] — this board
-    const bool* remoteNotes;    // pointer to bool[128] — other board
+    const bool* localNotes;     // pointer to bool[128] - this board
+    const bool* remoteNotes;    // pointer to bool[128] - other board
 };
 
 // ── JamDisplay class ────────────────────────────────────────────────────────

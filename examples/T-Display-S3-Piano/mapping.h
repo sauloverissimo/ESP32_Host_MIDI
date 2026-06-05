@@ -24,7 +24,7 @@
 #define PIN_BUTTON_2 14
 #define PIN_BAT_VOLT  4
 
-// I2C (alternate pins — required when USB Host is active on pins 18/19)
+// I2C (alternate pins - required when USB Host is active on pins 18/19)
 #define PIN_IIC_SCL 43
 #define PIN_IIC_SDA 44
 

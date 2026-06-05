@@ -10,14 +10,14 @@ public:
     RM67162_Handler();
     void init();
 
-    // WiFi + Peer status — displayed side-by-side in one row.
+    // WiFi + Peer status - displayed side-by-side in one row.
     void setWiFi(bool connected, const char* ip = "");
     void setPeer(bool active, const char* ip = "");
 
-    // Header RX dot — pulses cyan on every received packet.
+    // Header RX dot - pulses cyan on every received packet.
     void pulseRxDot(bool on);
 
-    // "LAST NOTE" panel — large note name, 16-bit velocity bar, exact value.
+    // "LAST NOTE" panel - large note name, 16-bit velocity bar, exact value.
     // Pass noteOctave="" to show placeholder "──".
     void setLastNote(const char* noteOctave, uint16_t vel16);
 
@@ -54,7 +54,7 @@ private:
               cfg.readable     = true;
               _panel.config(cfg); }
             setPanel(&_panel);
-            // No Light_PWM — AMOLED brightness via setBrightness()
+            // No Light_PWM - AMOLED brightness via setBrightness()
         }
     private:
         lgfx::Bus_SPI       _bus;

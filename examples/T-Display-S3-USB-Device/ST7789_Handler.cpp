@@ -57,7 +57,7 @@ void ST7789_Handler::init() {
     _drawText((USB_DISPLAY_W - lblW) / 2, USB_Y_DIVIDER + 2,
               USB_COL_DIVIDER, USB_COL_BG, 1, lbl);
 
-    // Events area — blank
+    // Events area - blank
     _fillRow(USB_Y_EVENTS, USB_N_EVENTS * USB_H_EVENT, USB_COL_BG);
 
     // Counters bar

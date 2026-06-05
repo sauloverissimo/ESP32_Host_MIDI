@@ -1,19 +1,8 @@
-// Example: BLE MIDI Receiver with Piano Visualizer
+// ESP32_Host_MIDI / T-Display-S3-BLE-Receiver
+// Receive BLE MIDI and show a real-time piano visualizer on the display.
 //
-// Receives MIDI notes wirelessly via Bluetooth Low Energy and displays
-// a real-time piano visualizer on the ST7789 display.
-//
-// Pair with the T-Display-S3-BLE-Sender example on a second board,
-// or use any BLE MIDI app (iOS GarageBand, Android MIDI BLE Connect, etc.)
-//
-// The display shows:
-//   - BLE connection status (Connected / Waiting)
-//   - 25-key piano with active notes highlighted
-//   - Note names and frequency of active notes
-//
-// Audio: plays received notes through PCM5102A DAC via I2S (optional hardware).
-//
-// Dependencies: ESP32_Host_MIDI, LovyanGFX
+// Requires: LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>

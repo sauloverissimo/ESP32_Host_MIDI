@@ -2,7 +2,7 @@
 #define MAPPING_H
 
 // ── T-Display-S3 AMOLED 1.91" hardware ─────────────────────────────────────
-// RM67162 AMOLED — no backlight pin (self-emitting, brightness via panel cmd)
+// RM67162 AMOLED - no backlight pin (self-emitting, brightness via panel cmd)
 // Power enable on GPIO 9 (HIGH = on)
 #define PIN_POWER_ON   9
 
@@ -18,8 +18,8 @@
 // After flashing BOTH boards, open Serial (115200) and note each board's
 // "My IP:" line.  Then set each board's PEER_IP to the OTHER board's address
 // and re-flash.  Example:
-//   Board A  →  PEER_IP = IPAddress(192,168,1,43)  (Board B's IP)
-//   Board B  →  PEER_IP = IPAddress(192,168,1,42)  (Board A's IP)
+//   Board A  to  PEER_IP = IPAddress(192,168,1,43)  (Board B's IP)
+//   Board B  to  PEER_IP = IPAddress(192,168,1,42)  (Board A's IP)
 #define PEER_IP  IPAddress(0, 0, 0, 0)
 
 // ── Demo loop ───────────────────────────────────────────────────────────────
@@ -31,22 +31,22 @@
 #define BTN_DEBOUNCE_MS     50
 #define BTN_LONG_PRESS_MS  600   // hold > 600ms = long press (cycle velocity)
 
-// ── Color palette — deep indigo MIDI 2.0 theme ─────────────────────────────
+// ── Color palette - deep indigo MIDI 2.0 theme ─────────────────────────────
 #define M2_COL_BG       0x0000  // Black
-#define M2_COL_HEADER   0x4814  // Deep indigo   — header
-#define M2_COL_STATUS   0x0821  // Very dark blue — status row bg
-#define M2_COL_DIVIDER  0x2945  // Dark slate     — divider / label
-#define M2_COL_NOTE_BG  0x1082  // Dark navy      — last-note panel bg
+#define M2_COL_HEADER   0x4814  // Deep indigo   - header
+#define M2_COL_STATUS   0x0821  // Very dark blue - status row bg
+#define M2_COL_DIVIDER  0x2945  // Dark slate     - divider / label
+#define M2_COL_NOTE_BG  0x1082  // Dark navy      - last-note panel bg
 #define M2_COL_WHITE    0xFFFF  // White
-#define M2_COL_GREEN    0x07E0  // Green          — connected / active
-#define M2_COL_ORANGE   0xFD20  // Orange         — waiting
-#define M2_COL_CYAN     0x07FF  // Cyan           — NoteOn / bar fill
-#define M2_COL_GRAY     0x4208  // Gray           — bar background / NoteOff
-#define M2_COL_YELLOW   0xFFE0  // Yellow         — ControlChange
-#define M2_COL_MAGENTA  0xF81F  // Magenta        — PitchBend
-#define M2_COL_LIME     0x87E0  // Lime           — ProgramChange
+#define M2_COL_GREEN    0x07E0  // Green          - connected / active
+#define M2_COL_ORANGE   0xFD20  // Orange         - waiting
+#define M2_COL_CYAN     0x07FF  // Cyan           - NoteOn / bar fill
+#define M2_COL_GRAY     0x4208  // Gray           - bar background / NoteOff
+#define M2_COL_YELLOW   0xFFE0  // Yellow         - ControlChange
+#define M2_COL_MAGENTA  0xF81F  // Magenta        - PitchBend
+#define M2_COL_LIME     0x87E0  // Lime           - ProgramChange
 
-// ── Layout — landscape 536 × 240 (setRotation(1) on RM67162 240×536) ───────
+// ── Layout - landscape 536 × 240 (setRotation(1) on RM67162 240×536) ───────
 // CRITICAL: all x and w values used in drawing must be EVEN (RM67162 rule).
 // All Y offsets and H values below are even for fillRect safety.
 #define M2_W          536

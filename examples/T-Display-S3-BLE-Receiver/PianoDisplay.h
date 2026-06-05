@@ -19,7 +19,7 @@ static const int INFO_H    = 48;
 static const int PIANO_Y   = INFO_H;
 static const int PIANO_H   = SCREEN_H - INFO_H;   // 122 px
 
-// ── Piano key geometry — 25 keys (C to C inclusive = 15 white keys) ───────────
+// ── Piano key geometry - 25 keys (C to C inclusive = 15 white keys) ───────────
 static const int KEYS_SPAN    = 25;
 static const int WHITE_KEYS   = 15;
 static const int WHITE_KEY_W  = 21;

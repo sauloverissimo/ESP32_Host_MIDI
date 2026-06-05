@@ -40,7 +40,7 @@ void ST7789_Handler::init() {
     _tft.setRotation(2);
     _tft.fillScreen(OSC_COL_BG);
 
-    // Backlight on — extra guarantee for battery-powered operation
+    // Backlight on - extra guarantee for battery-powered operation
     pinMode(TFT_BL_PIN, OUTPUT);
     digitalWrite(TFT_BL_PIN, HIGH);
 
@@ -56,7 +56,7 @@ void ST7789_Handler::init() {
     // Ports row (blank until setWifi() is called)
     _fillRow(OSC_Y_PORTS, OSC_H_PORTS, OSC_COL_BG);
 
-    // Divider row — horizontal line + label
+    // Divider row - horizontal line + label
     _fillRow(OSC_Y_DIVIDER, OSC_H_DIVIDER, OSC_COL_BG);
     int lineY = OSC_Y_DIVIDER + OSC_H_DIVIDER / 2;
     _tft.drawFastHLine(0, lineY, OSC_DISPLAY_W, OSC_COL_DIVIDER);
@@ -65,7 +65,7 @@ void ST7789_Handler::init() {
     int lblX = (OSC_DISPLAY_W - lblW) / 2;
     _drawText(lblX, OSC_Y_DIVIDER + 2, OSC_COL_DIVIDER, OSC_COL_BG, 1, lbl);
 
-    // Events area — blank
+    // Events area - blank
     _fillRow(OSC_Y_EVENTS, OSC_N_EVENTS * OSC_H_EVENT, OSC_COL_BG);
 
     // Counters bar
@@ -118,7 +118,7 @@ void ST7789_Handler::_redrawEvents() {
         int y = OSC_Y_EVENTS + i * OSC_H_EVENT;
         _fillRow(y, OSC_H_EVENT, OSC_COL_BG);
         if (i < _eventCount) {
-            // Small arrow prefix — newest is brighter, oldest fades (use same color)
+            // Small arrow prefix - newest is brighter, oldest fades (use same color)
             _drawText(OSC_MARGIN, y + 6, _events[i].color, OSC_COL_BG, 1, _events[i].line);
         }
     }

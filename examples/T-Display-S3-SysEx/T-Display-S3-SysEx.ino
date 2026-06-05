@@ -1,10 +1,8 @@
-// Example: SysEx Monitor
-// Displays received SysEx messages and MIDI events on the T-Display-S3.
-// BTN1 (GPIO0)  — send Identity Request (F0 7E 7F 06 01 F7)
-// BTN2 (GPIO14) — clear SysEx queue
+// ESP32_Host_MIDI / T-Display-S3-SysEx
+// SysEx monitor: show received SysEx messages and MIDI events on the display.
 //
-// The SysEx queue is separate from the normal event queue.
-// Existing code using getQueue() is unaffected.
+// Requires: LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
@@ -134,9 +132,11 @@ void loop() {
     int count = 0;
     for (auto it = eventQueue.rbegin(); it != eventQueue.rend() && count < remaining; ++it, ++count) {
       char line[80];
+      char octBuf[8];
       sprintf(line, "%s ch%d %s v%d",
-              it->status.c_str(), it->channel,
-              it->noteOctave.c_str(), it->velocity);
+              MIDIHandler::statusName(it->statusCode), it->channel0,
+              MIDIHandler::noteWithOctave(it->noteNumber, octBuf, sizeof(octBuf)),
+              it->velocity7);
       log += String(line) + "\n";
     }
   }

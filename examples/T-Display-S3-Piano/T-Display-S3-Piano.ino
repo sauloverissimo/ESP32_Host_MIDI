@@ -1,16 +1,8 @@
-// Example: Piano Visualizer + Music Theory + Synthesizer
+// ESP32_Host_MIDI / T-Display-S3-Piano
+// 25-key piano visualizer + music-theory analysis + PCM5102A synth.
 //
-// Designed for MIDI-25 keyboards (e.g. Arturia Minilab 25).
-// Shows all 25 keys (C to C, 2 octaves) on the ST7789 display of the T-Display S3.
-// Highlights pressed keys in real time with music theory analysis (Gingoduino).
-// Plays notes via the onboard PCM5102A DAC.
-//
-// Anti-tearing: full-screen sprite (double-buffered in PSRAM).
-//
-// Dependencies:
-//   - ESP32_Host_MIDI (this library)
-//   - Gingoduino v0.2.2+  (https://github.com/sauloverissimo/gingoduino)
-//   - LovyanGFX
+// Requires: LovyanGFX + Gingoduino.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Partition: Huge App (3MB) | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
@@ -35,7 +27,7 @@ static bool prevActiveNotes[128] = {};
 // ── Persistent music analysis ─────────────────────────────────────────────────
 static PianoInfo info = {};
 
-// ── Chord type → full name ────────────────────────────────────────────────────
+// ── Chord type to full name ────────────────────────────────────────────────────
 static const char* chordTypeName(const char* chordName) {
     if (!chordName || !*chordName) return "";
     const char* t = chordName + 1;

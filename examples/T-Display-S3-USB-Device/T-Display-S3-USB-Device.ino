@@ -1,30 +1,14 @@
-// T-Display-S3-USB-Device — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / T-Display-S3-USB-Device
+// USB MIDI device to the computer while receiving MIDI from BLE, with display.
 //
-// The ESP32-S3 acts as a USB MIDI interface for the connected computer,
-// while simultaneously receiving MIDI from a BLE device (iPhone, iPad,
-// BLE keyboard, etc.).
-//
-// Signal path:
-//   iPhone / iPad  ──BLE──►  ESP32-S3  ──USB──►  Logic / Ableton / Reaper
-//
-// The 1.9" display shows:
-//   - USB connection status (waiting / connected)
-//   - BLE connection status (scanning / connected)
-//   - Scrolling MIDI event log (color-coded by message type)
-//   - IN / OUT event counters
-//
-// Arduino IDE setup (mandatory):
-//   Tools > Board    → T-Display-S3 (or ESP32S3 Dev Module)
-//   Tools > USB Mode → USB-OTG (TinyUSB)   ← required for USB MIDI device
-//
-// The device name shown in the DAW's MIDI port list is configured in
-// mapping.h via USB_MIDI_DEVICE_NAME.
+// Requires: LovyanGFX. Device name via USB_MIDI_DEVICE_NAME in mapping.h.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | USB Mode: USB-OTG (TinyUSB) | Serial 115200
 
 #include <Arduino.h>
 #define ESP32_HOST_MIDI_NO_USB_HOST  // Use USB Device mode, not Host
 #include <ESP32_Host_MIDI.h>
 #include <BLEConnection.h>           // v6.0: transports are no longer auto-included
-#include "../../src/USBDeviceConnection.h"
+#include <USBDeviceConnection.h>
 #include "mapping.h"
 #include "ST7789_Handler.h"
 
@@ -121,7 +105,7 @@ void loop() {
             display.setBLE(ble);
         }
 
-        // USB MIDI device has no per-session state — show "connected" once
+        // USB MIDI device has no per-session state - show "connected" once
         // begin() has been called (the port is always visible to the host).
         display.setUSB(usbMIDI.isConnected());
     }
@@ -141,7 +125,7 @@ void loop() {
         display.pushEvent(eventColor(ev.statusCode), line);
 
         // Forward every event received (from BLE or USB host) to the other side.
-        // BLE → forward to USB; USB → forward to BLE (if connected).
+        // BLE to forward to USB; USB to forward to BLE (if connected).
         // midiHandler forwards automatically to all registered transports.
         outCount++;
     }

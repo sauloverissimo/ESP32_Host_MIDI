@@ -26,10 +26,10 @@ static const int INFO_H    = 48;
 static const int PIANO_Y   = INFO_H;
 static const int PIANO_H   = SCREEN_H - INFO_H;   // 122 px
 
-// ── Piano key geometry — 25 keys (C to C inclusive = 15 white keys) ───────────
+// ── Piano key geometry - 25 keys (C to C inclusive = 15 white keys) ───────────
 static const int KEYS_SPAN    = 25;
 static const int WHITE_KEYS   = 15;
-static const int WHITE_KEY_W  = 21;   // 15 × 21 = 315 px → fits 320 px
+static const int WHITE_KEY_W  = 21;   // 15 × 21 = 315 px to fits 320 px
 static const int WHITE_KEY_H  = PIANO_H;
 static const int BLACK_KEY_W  = 12;
 static const int BLACK_KEY_H  = int(PIANO_H * 0.60f);   // ≈ 73 px
@@ -40,7 +40,7 @@ static const int VIEW_DEFAULT  = 48;   // C3  (typical Minilab 25 range)
 static const int VIEW_MIN      = 0;    // C-1 (allow full range for auto-view)
 static const int VIEW_MAX      = 103;  // G7  (103+24 = 127, last valid MIDI)
 
-// ── Colours — inspired by Gingoduino TDisplayS3Explorer palette ──────────────
+// ── Colours - inspired by Gingoduino TDisplayS3Explorer palette ──────────────
 // Piano keys
 #define COL_WHITE_NORMAL  0xFFFF
 #define COL_WHITE_ACTIVE  0x07FF   // cyan (accent)

@@ -6,7 +6,7 @@
 // Waveform: sine wave via lookup table (fast, no floating-point sin per sample)
 // Polyphony: up to 8 voices
 // Release:   ~150 ms fade-out on NoteOff (prevents clicks)
-// Thread safety: FreeRTOS queue — noteOn/noteOff are safe from any task
+// Thread safety: FreeRTOS queue - noteOn/noteOff are safe from any task
 
 #include <Arduino.h>
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
@@ -75,7 +75,7 @@ public:
         memset(_voices, 0, sizeof(_voices));
         _queue = xQueueCreate(64, sizeof(NoteMsg));
 
-        // Pin audio task to core 1 (same as loop, OK — FreeRTOS time-slices)
+        // Pin audio task to core 1 (same as loop, OK - FreeRTOS time-slices)
         xTaskCreatePinnedToCore(_task, "synth", 4096, this, 10, nullptr, 1);
     }
 

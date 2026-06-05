@@ -1,29 +1,8 @@
-// Example: ESP-NOW MIDI Jam — Bidirectional Wireless MIDI
+// ESP32_Host_MIDI / T-Display-S3-ESP-NOW-Jam
+// Bidirectional wireless MIDI jam over ESP-NOW between two boards (same sketch).
 //
-// Upload the SAME sketch to two T-Display-S3 boards.
-// Each board plays pre-programmed sequences and broadcasts them via ESP-NOW.
-// The other board receives and displays the notes on a shared piano visualizer.
-//
-// The display shows:
-//   - Cyan keys:    notes this board is playing (local)
-//   - Magenta keys: notes the other board is playing (remote)
-//   - Green keys:   both boards playing the same note
-//   - ESP-NOW peer status and local MAC address
-//   - Sequence name, note names, raw MIDI bytes (educational)
-//
-// Controls:
-//   Button 1 (GPIO 0):  Cycle through sequences
-//   Button 2 (GPIO 14): Play / Stop
-//
-// Each board auto-selects a different starting sequence based on its MAC
-// address, so they don't play the same thing by default.
-//
-// Portability:
-//   The ESP-NOW and Sequence Player sections are independent of the display.
-//   To adapt for ESP32 without a display, simply remove the JamDisplay calls.
-//   Works on any ESP32 variant with WiFi (ESP32, S2, S3, C3, C6).
-//
-// Dependencies: LovyanGFX (for display only), ESP32 WiFi/ESP-NOW
+// Requires: LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include "ESP32_Host_MIDI.h"
@@ -36,8 +15,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Section 1: ESP-NOW Transport
 // ═══════════════════════════════════════════════════════════════════════════════
-// Broadcast MIDI — no pairing needed. Ultra-low latency (~1-5ms).
-// Portable to any ESP32 board — no display dependency.
+// Broadcast MIDI - no pairing needed. Ultra-low latency (~1-5ms).
+// Portable to any ESP32 board - no display dependency.
 
 ESPNowConnection espNow;
 
@@ -45,7 +24,7 @@ ESPNowConnection espNow;
 static bool remoteNotes[128] = {};
 static volatile unsigned long lastRemoteMs = 0;
 
-// ESP-NOW receive callback — runs on WiFi task, keep it fast
+// ESP-NOW receive callback - runs on WiFi task, keep it fast
 static void onEspNowData(void* ctx, const uint8_t* data, size_t length) {
     if (length < 2) return;
     uint8_t status = data[0] & 0xF0;
@@ -75,13 +54,13 @@ static uint8_t localMAC[6] = {};
 // Section 2: Sequence Player
 // ═══════════════════════════════════════════════════════════════════════════════
 // State machine that plays pre-programmed sequences using millis() (no delay).
-// Portable to any Arduino-compatible board — no display or network dependency.
+// Portable to any Arduino-compatible board - no display or network dependency.
 
 static int  currentSeq    = 0;
 static int  currentStep   = 0;
 static bool playing       = false;
 
-// Player states: IDLE → NOTE_ON → PAUSE → advance → NOTE_ON ...
+// Player states: IDLE to NOTE_ON to PAUSE to advance to NOTE_ON ...
 enum PlayerPhase { PH_IDLE, PH_NOTE_ON, PH_PAUSE };
 static PlayerPhase playerPhase = PH_IDLE;
 static unsigned long phaseStartMs = 0;
@@ -147,7 +126,7 @@ static void playerTick(unsigned long now) {
         break;
 
     case PH_NOTE_ON:
-        // Holding note — wait for duration to elapse
+        // Holding note - wait for duration to elapse
         if (now - phaseStartMs >= step.durationMs) {
             sendCurrentStepOff();
             playerPhase  = PH_PAUSE;
@@ -156,7 +135,7 @@ static void playerTick(unsigned long now) {
         break;
 
     case PH_PAUSE:
-        // Silence between notes — wait for pause to elapse
+        // Silence between notes - wait for pause to elapse
         if (now - phaseStartMs >= step.pauseMs) {
             currentStep++;
             if (currentStep >= seq.stepCount) {
@@ -176,7 +155,7 @@ static void playerTick(unsigned long now) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Section 3: Display (T-Display-S3 specific — remove for headless boards)
+// Section 3: Display (T-Display-S3 specific - remove for headless boards)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 static JamInfo buildDisplayInfo() {

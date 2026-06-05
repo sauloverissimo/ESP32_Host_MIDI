@@ -1,25 +1,8 @@
-// Example: BLE MIDI Sender with Didactic Display
+// ESP32_Host_MIDI / T-Display-S3-BLE-Sender
+// Send pre-programmed musical sequences over BLE MIDI, with a didactic display.
 //
-// Sends pre-programmed musical sequences via Bluetooth Low Energy to a
-// BLE MIDI receiver (e.g. T-Display-S3-BLE-Receiver or any BLE MIDI app).
-//
-// The display shows didactically:
-//   - BLE connection status
-//   - Sequence name and current step
-//   - Note names being sent (human-readable)
-//   - Raw MIDI bytes in hex (educational)
-//   - Mini piano with active key highlights
-//
-// Controls:
-//   Button 1 (GPIO 0):  Cycle through sequences
-//   Button 2 (GPIO 14): Play / Stop
-//
-// Portability:
-//   The BLE Client and Sequence Player sections are independent of the display.
-//   To adapt for ESP32 without a display, simply remove the SenderDisplay calls.
-//   The MusicSequences.h file has no hardware dependencies.
-//
-// Dependencies: LovyanGFX (for display only), ESP32 BLE library
+// Requires: LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Serial 115200
 
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -35,7 +18,7 @@
 // Section 1: BLE MIDI Client
 // ═══════════════════════════════════════════════════════════════════════════════
 // This section handles BLE scanning, connecting, and sending MIDI packets.
-// Portable to any ESP32 board — no display dependency.
+// Portable to any ESP32 board - no display dependency.
 
 // BLE MIDI standard UUIDs
 #define BLE_MIDI_SERVICE_UUID        "03B80E5A-EDE8-4B33-A751-6CE34EC4C700"
@@ -78,7 +61,7 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
                       name, advertisedDevice.haveServiceUUID());
 
         // Match by name OR by BLE MIDI service UUID.
-        // The advertising packet is only 31 bytes — with a 128-bit service UUID
+        // The advertising packet is only 31 bytes - with a 128-bit service UUID
         // the device name may not fit if scan response is disabled on the server.
         bool matchByName = advertisedDevice.haveName() &&
                            strcmp(name, TARGET_NAME) == 0;
@@ -184,13 +167,13 @@ static bool sendBLEMidi(uint8_t status, uint8_t data1, uint8_t data2) {
 // Section 2: Sequence Player
 // ═══════════════════════════════════════════════════════════════════════════════
 // State machine that plays pre-programmed sequences using millis() (no delay).
-// Portable to any Arduino-compatible board — no display or BLE dependency.
+// Portable to any Arduino-compatible board - no display or BLE dependency.
 
 static int  currentSeq    = 0;
 static int  currentStep   = 0;
 static bool playing       = false;
 
-// Player states: IDLE → NOTE_ON → NOTE_OFF (pause) → advance → NOTE_ON ...
+// Player states: IDLE to NOTE_ON to NOTE_OFF (pause) to advance to NOTE_ON ...
 enum PlayerPhase { PH_IDLE, PH_NOTE_ON, PH_PAUSE };
 static PlayerPhase playerPhase = PH_IDLE;
 static unsigned long phaseStartMs = 0;
@@ -257,7 +240,7 @@ static void playerTick(unsigned long now) {
         break;
 
     case PH_NOTE_ON:
-        // Holding note — wait for duration to elapse
+        // Holding note - wait for duration to elapse
         if (now - phaseStartMs >= step.durationMs) {
             sendCurrentStepOff();
             playerPhase  = PH_PAUSE;
@@ -266,7 +249,7 @@ static void playerTick(unsigned long now) {
         break;
 
     case PH_PAUSE:
-        // Silence between notes — wait for pause to elapse
+        // Silence between notes - wait for pause to elapse
         if (now - phaseStartMs >= step.pauseMs) {
             // Advance to next step
             currentStep++;
@@ -288,7 +271,7 @@ static void playerTick(unsigned long now) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Section 3: Display (T-Display-S3 specific — remove for headless boards)
+// Section 3: Display (T-Display-S3 specific - remove for headless boards)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 static SenderInfo buildDisplayInfo() {
@@ -381,7 +364,7 @@ void loop() {
             playerPhase = PH_IDLE;
             lastStatus  = 0;
             Serial.printf("[SEQ] Playing: %s\n", ALL_SEQUENCES[currentSeq].name);
-            if (!bleConnected) Serial.println("[SEQ] (BLE not connected — display only)");
+            if (!bleConnected) Serial.println("[SEQ] (BLE not connected - display only)");
         }
     }
 

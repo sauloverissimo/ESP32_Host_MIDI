@@ -27,12 +27,12 @@ void PianoDisplay::init() {
 }
 
 void PianoDisplay::render(const bool activeNotes[128], const PianoInfo& info) {
-    // Always redraw full frame — avoids any change-detection bugs.
+    // Always redraw full frame - avoids any change-detection bugs.
     // The sprite approach makes this cheap (all drawing is in RAM).
     _drawPiano(activeNotes);
     _drawInfoBar(activeNotes, info);
 
-    // Single transfer — eliminates diagonal tearing
+    // Single transfer - eliminates diagonal tearing
     _tft.startWrite();
     _screen.pushSprite(0, 0);
     _tft.endWrite();
@@ -60,7 +60,7 @@ void PianoDisplay::setViewStart(int midi) {
 void PianoDisplay::_drawPiano(const bool activeNotes[128]) {
     _screen.fillRect(0, PIANO_Y, SCREEN_W, PIANO_H, COL_KEY_BORDER);
 
-    // White keys first (bottom layer) — inline logic matching debug mini-piano
+    // White keys first (bottom layer) - inline logic matching debug mini-piano
     for (int n = _viewStart; n < _viewStart + KEYS_SPAN; n++) {
         int st = n % 12;
         if (SEMITONE_TO_WHITE[st] < 0) continue;  // skip black keys
@@ -71,7 +71,7 @@ void PianoDisplay::_drawPiano(const bool activeNotes[128]) {
         _screen.fillRect(x, PIANO_Y + 1, WHITE_KEY_W - 1, WHITE_KEY_H - 2, col);
         _screen.drawFastHLine(x, PIANO_Y + WHITE_KEY_H - 2, WHITE_KEY_W - 1, COL_KEY_BORDER);
     }
-    // Black keys on top — inline logic matching debug mini-piano
+    // Black keys on top - inline logic matching debug mini-piano
     for (int n = _viewStart; n < _viewStart + KEYS_SPAN; n++) {
         int st = n % 12;
         if (SEMITONE_TO_WHITE[st] >= 0) continue;  // skip white keys

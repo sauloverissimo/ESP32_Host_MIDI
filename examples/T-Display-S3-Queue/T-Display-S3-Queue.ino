@@ -2,7 +2,7 @@
 // USB Host + BLE MIDI: show the event queue and active notes on the ST7789 display.
 //
 // Requires: LovyanGFX.
-// Arduino IDE: Board T-Display-S3 (ESP32-S3) · Partition Scheme: Huge App (3MB) · Serial 115200
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) | Partition Scheme: Huge App (3MB) | Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
