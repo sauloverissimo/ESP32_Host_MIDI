@@ -1,6 +1,8 @@
-// Example: MIDI Data Queue
-// Displays the MIDI event queue and active notes on the ST7789 display of the T-Display S3.
-// Useful for debugging and detailed visualization of received MIDI events.
+// ESP32_Host_MIDI / T-Display-S3-Queue
+// USB Host + BLE MIDI: show the event queue and active notes on the ST7789 display.
+//
+// Requires: LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) · Partition Scheme: Huge App (3MB) · Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
@@ -60,10 +62,13 @@ void loop() {
     int count = 0;
     for (auto it = queue.rbegin(); it != queue.rend() && count < MAX_DISPLAY_EVENTS; ++it, ++count) {
       char line[200];
+      char octBuf[8];
       sprintf(line, "%d;%d;%lu;%lu;%d;%s;%d;%s;%s;%d;%d",
-              it->index, it->msgIndex, it->timestamp, it->delay, it->channel,
-              it->status.c_str(), it->note, it->noteName.c_str(), it->noteOctave.c_str(),
-              it->velocity, it->chordIndex);
+              it->index, it->msgIndex, it->timestamp, it->delay, it->channel0,
+              MIDIHandler::statusName(it->statusCode), it->noteNumber,
+              MIDIHandler::noteName(it->noteNumber),
+              MIDIHandler::noteWithOctave(it->noteNumber, octBuf, sizeof(octBuf)),
+              it->velocity7, it->chordIndex);
       log += String(line) + "\n";
     }
   }
