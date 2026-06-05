@@ -1,61 +1,51 @@
-// AM-MIDI2-Adapter — integração com AM_MIDI2.0Lib
+// ESP32_Host_MIDI / AM-MIDI2-Adapter
+// Bridge MIDI 1.0 (USB or BLE) into AM_MIDI2.0Lib's umpProcessor as UMP.
 //
-// Demonstra como usar a biblioteca padrão mundial para MIDI 2.0
-// (AM_MIDI2.0Lib, endossada pela MIDI Association) em conjunto com
-// ESP32_Host_MIDI via MIDI2Adapter.
+// Receives MIDI 1.0 over USB or BLE, converts it to UMP (Universal MIDI
+// Packet), and delivers it to umpProcessor with MIDI 2.0 high-resolution
+// values. Prints both the MIDI 1.0 (compatibility) and MIDI 2.0 (high-res)
+// views on Serial.
 //
-// O que este exemplo faz:
-//   - Recebe MIDI 1.0 por USB ou BLE
-//   - Converte automaticamente para UMP (Universal MIDI Packet)
-//   - Entrega ao umpProcessor com valores de alta resolução MIDI 2.0
-//   - Mostra dados MIDI 1.0 (compatibilidade) e MIDI 2.0 (alta res) no Serial
-//
-// Pré-requisito — instale AM_MIDI2.0Lib:
-//   Arduino Library Manager : busque "AM_MIDI2.0Lib"
-//   PlatformIO              : lib_deps = midi2-dev/AM_MIDI2.0Lib
-//
-// Boards suportadas: ESP32-S2, ESP32-S3 (USB), qualquer ESP32 (BLE).
-//
-// Arduino IDE:
-//   Tools > Board  → ESP32S3 Dev Module (USB) ou qualquer ESP32 (BLE)
+// Requires: AM_MIDI2.0Lib (Arduino Library Manager: "AM_MIDI2.0Lib";
+// PlatformIO: midi2-dev/AM_MIDI2.0Lib).
+// Arduino IDE: Board ESP32-S3 (USB) or any ESP32 (BLE) · Serial 115200
 
-// ---- 1. AM_MIDI2.0Lib PRIMEIRO (ordem obrigatória) ----------------------
+// ---- 1. AM_MIDI2.0Lib first (required include order) ---------------------
 #include <umpProcessor.h>
 #include <bytestreamToUMP.h>
 
 // ---- 2. ESP32_Host_MIDI + Adapter ----------------------------------------
 #include <ESP32_Host_MIDI.h>
-#include <USBConnection.h>     // v6.0: transports are no longer auto-included
-#include "../../src/MIDI2Adapter.h"
+#include <USBConnection.h>
+#include <MIDI2Adapter.h>
 
-// ---- Instâncias -----------------------------------------------------------
-USBConnection usbHost;       // v6.0: explicit USB Host transport
-umpProcessor umpp;           // processador AM_MIDI2.0Lib — callbacks aqui
-MIDI2Adapter adapter(umpp);  // ponte entre midiHandler e umpp
+// ---- Instances -----------------------------------------------------------
+USBConnection usbHost;
+umpProcessor umpp;           // AM_MIDI2.0Lib processor; callbacks registered here
+MIDI2Adapter adapter(umpp);  // bridge between midiHandler and umpp
 
-// ---- Callbacks AM_MIDI2.0Lib ---------------------------------------------
+// ---- AM_MIDI2.0Lib callbacks ---------------------------------------------
 //
-// channelVoiceMessage — recebe TODOS os Channel Voice Messages em UMP:
+// channelVoiceMessage receives every Channel Voice Message in UMP form:
 //   Note On/Off, CC, Pitch Bend, Channel Pressure, Poly Pressure,
-//   Program Change, RPN, NRPN, Per-Note Pitch Bend…
+//   Program Change, RPN, NRPN, Per-Note Pitch Bend...
 //
-//   msg.messageType  : MT nibble (0x2 = MIDI1-in-UMP, 0x4 = MIDI2 CVM)
-//   msg.status       : opcode (0x8=NoteOff, 0x9=NoteOn, 0xB=CC, 0xE=PB…)
-//   msg.umpGroup     : grupo (0-15)
-//   msg.channel      : canal (0-15, MIDI 2.0 usa 0-indexed)
-//   msg.note         : nota/controller (0-127)
-//   msg.value        : valor 32-bit ← O DIFERENCIAL MIDI 2.0
-//                      NoteOn/Off  → upper 16-bit = velocity (0-65535)
-//                      CC          → 32-bit value (0-4294967295)
-//                      Pitch Bend  → 32-bit, centro = 0x80000000
+//   msg.messageType : MT nibble (0x2 = MIDI1-in-UMP, 0x4 = MIDI2 CVM)
+//   msg.status      : opcode (0x8=NoteOff, 0x9=NoteOn, 0xB=CC, 0xE=PB...)
+//   msg.umpGroup    : group (0-15)
+//   msg.channel     : channel (0-15, MIDI 2.0 is 0-indexed)
+//   msg.note        : note / controller (0-127)
+//   msg.value       : 32-bit value (the MIDI 2.0 high-resolution field)
+//                     NoteOn/Off  -> upper 16-bit = velocity (0-65535)
+//                     CC          -> 32-bit value
+//                     Pitch Bend  -> 32-bit, center = 0x80000000
 //
 void onChannelVoice(umpCVM msg) {
-    // ---- Identificar mensagem por opcode ----
     switch (msg.status) {
         case 0x9:  // Note On
         {
             uint16_t vel16 = (uint16_t)(msg.value >> 16);  // 16-bit velocity
-            uint8_t  vel7  = (uint8_t)(vel16 >> 9);        // escala para 7-bit
+            uint8_t  vel7  = (uint8_t)(vel16 >> 9);        // scaled to 7-bit
             Serial.printf("[AM-MIDI2] NoteOn  ch=%d  note=%d  vel7=%d  vel16=%u\n",
                           msg.channel + 1, msg.note, vel7, vel16);
             break;
@@ -95,31 +85,30 @@ void onChannelVoice(umpCVM msg) {
     }
 }
 
-// systemMessage — Real-Time e System Common em UMP
+// systemMessage: Real-Time and System Common in UMP form.
 void onSystemMessage(umpGeneric msg) {
     Serial.printf("[AM-MIDI2] System  status=0x%02X\n", msg.status);
 }
 
-// sendOutSysex — SysEx7 encapsulado em UMP (Type 3, 64-bit)
-// Nota: SysEx bruto de MIDI 1.0 NÃO é encaminhado automaticamente
-// pelo adapter (Phase 1). Use midiHandler.setSysExCallback() para
-// acessar SysEx recebido via transports MIDI 1.0.
+// sendOutSysex: SysEx7 wrapped in UMP (Type 3, 64-bit).
+// Note: raw MIDI 1.0 SysEx is NOT auto-forwarded by the adapter (Phase 1).
+// Use midiHandler.setSysExCallback() to access SysEx received over MIDI 1.0
+// transports.
 void onSysex(umpData msg) {
     Serial.printf("[AM-MIDI2] SysEx7  group=%d  len=%d\n",
                   msg.umpGroup, msg.dataLength);
 }
 
-// ---- Callback MIDI 1.0 legado (ESP32_Host_MIDI, acesso à fila) -----------
+// ---- Legacy MIDI 1.0 callback (ESP32_Host_MIDI queue access) --------------
 //
-// Este callback é opcional. A fila midiHandler.getQueue() ainda funciona
-// normalmente — o MIDI2Adapter NÃO quebra a API existente.
-// Use-o quando precisar dos campos já processados (noteName, chordIndex, etc.)
+// Optional. midiHandler.getQueue() still works normally; the MIDI2Adapter
+// does not break the existing API. Use this when you need the already-parsed
+// fields (note name, chord index, etc.).
 //
 void onMIDI1Event(const MIDIEventData& ev) {
-    // Exemplo: acessar dados MIDI 1.0 ao mesmo tempo que o AM-MIDI2 entrega 32-bit
     Serial.printf("[MIDI 1.0] %-12s  ch=%d  note=%d  vel=%d  chord=%d\n",
-                  ev.status.c_str(), ev.channel, ev.note,
-                  ev.velocity, ev.chordIndex);
+                  MIDIHandler::statusName(ev.statusCode), ev.channel0, ev.noteNumber,
+                  ev.velocity7, ev.chordIndex);
 }
 
 // =========================================================================
@@ -128,40 +117,40 @@ void setup() {
     delay(500);
     Serial.println("\n=== ESP32_Host_MIDI + AM_MIDI2.0Lib ===");
 
-    // ---- Registrar callbacks do AM_MIDI2.0Lib ----------------------------
+    // ---- Register AM_MIDI2.0Lib callbacks --------------------------------
     umpp.channelVoiceMessage = onChannelVoice;
     umpp.systemMessage       = onSystemMessage;
     umpp.sendOutSysex        = onSysex;
 
-    // ---- Inicializar midiHandler -----------------------------------------
+    // ---- Initialize midiHandler ------------------------------------------
     MIDIHandlerConfig cfg;
     cfg.maxEvents    = 20;
     cfg.maxSysExSize = 256;
-    midiHandler.addTransport(&usbHost);  // v6.0: explicit
-    usbHost.begin();                      // v6.0: user owns lifecycle
+    midiHandler.addTransport(&usbHost);
+    usbHost.begin();
     midiHandler.begin(cfg);
 
-    // ---- Conectar o adapter ----------------------------------------------
-    // A partir daqui todo MIDI 1.0 recebido pelos transports USB/BLE/UART
-    // será convertido para UMP e entregue ao umpp automaticamente.
+    // ---- Attach the adapter ----------------------------------------------
+    // From here on, all MIDI 1.0 received over the USB/BLE/UART transports is
+    // converted to UMP and delivered to umpp automatically.
     adapter.attachToHandler(midiHandler);
 
-    // Opcional: definir o grupo UMP padrão (0-15).
-    // Grupo 0 representa o primeiro bloco de 16 canais MIDI 2.0.
+    // Optional: set the default UMP group (0-15). Group 0 is the first block
+    // of 16 MIDI 2.0 channels.
     adapter.setDefaultGroup(0);
 
-    Serial.println("Pronto. Conecte um teclado MIDI por USB ou BLE.");
-    Serial.println("Callbacks AM-MIDI2: channelVoiceMessage, systemMessage, sendOutSysex");
-    Serial.println("API legada        : midiHandler.getQueue() continua funcionando");
+    Serial.println("Ready. Connect a MIDI keyboard over USB or BLE.");
+    Serial.println("AM-MIDI2 callbacks: channelVoiceMessage, systemMessage, sendOutSysex");
+    Serial.println("Legacy API        : midiHandler.getQueue() still works");
 }
 
 // =========================================================================
 void loop() {
-    // midiHandler.task() recebe dados dos transports e chama o rawMidiCb
-    // internamente, que por sua vez aciona o adapter → umpProcessor.
+    // midiHandler.task() receives data from the transports and calls the raw
+    // MIDI callback internally, which drives the adapter -> umpProcessor.
     midiHandler.task();
 
-    // ---- API legada ESP32_Host_MIDI (opcional, ainda funciona normalmente) ---
+    // ---- Legacy ESP32_Host_MIDI API (optional, still works normally) -----
     static int lastIdx = -1;
     const auto& queue = midiHandler.getQueue();
     for (const auto& ev : queue) {
