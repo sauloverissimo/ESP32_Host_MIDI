@@ -29,7 +29,7 @@ struct Sequence {
 };
 
 // ── 1. C Major Scale (ascending + descending) ────────────────────────────────
-// The most fundamental scale — visually shows keys "walking" across the piano.
+// The most fundamental scale - visually shows keys "walking" across the piano.
 static const NoteStep scaleSteps[] = {
     {{60,0,0,0,0,0}, 1, 100, 250, 50},   // C4
     {{62,0,0,0,0,0}, 1, 100, 250, 50},   // D4
@@ -49,8 +49,8 @@ static const NoteStep scaleSteps[] = {
 };
 
 // ── 2. Pop Chord Progression I-V-vi-IV ───────────────────────────────────────
-// The most popular chord progression in modern music (C → G → Am → F).
-// Demonstrates chord sending — multiple notes simultaneously.
+// The most popular chord progression in modern music (C to G to Am to F).
+// Demonstrates chord sending - multiple notes simultaneously.
 static const NoteStep chordProgSteps[] = {
     {{60, 64, 67, 0, 0, 0}, 3, 100, 700, 100},  // C  (C4-E4-G4)
     {{55, 59, 62, 0, 0, 0}, 3, 100, 700, 100},  // G  (G3-B3-D4)
@@ -59,7 +59,7 @@ static const NoteStep chordProgSteps[] = {
 };
 
 // ── 3. Arpeggio Cmaj7 ───────────────────────────────────────────────────────
-// Broken chord pattern — notes played one at a time, ascending then descending.
+// Broken chord pattern - notes played one at a time, ascending then descending.
 // Visually fluid on the piano display.
 static const NoteStep arpSteps[] = {
     {{60,0,0,0,0,0}, 1, 90, 150, 20},   // C4
@@ -74,7 +74,7 @@ static const NoteStep arpSteps[] = {
 };
 
 // ── 4. Für Elise (simplified theme) ──────────────────────────────────────────
-// Beethoven's iconic melody — instantly recognizable.
+// Beethoven's iconic melody - instantly recognizable.
 static const NoteStep eliseSteps[] = {
     {{76,0,0,0,0,0}, 1, 90, 200, 30},   // E5
     {{75,0,0,0,0,0}, 1, 90, 200, 30},   // D#5
@@ -96,7 +96,7 @@ static const NoteStep eliseSteps[] = {
 };
 
 // ── 5. Jazz ii-V-I ──────────────────────────────────────────────────────────
-// The most important chord progression in jazz: Dm7 → G7 → Cmaj7.
+// The most important chord progression in jazz: Dm7 to G7 to Cmaj7.
 // Demonstrates 4-note chords.
 static const NoteStep jazzSteps[] = {
     {{62, 65, 69, 72, 0, 0}, 4, 95, 800, 100},  // Dm7  (D4-F4-A4-C5)
@@ -105,7 +105,7 @@ static const NoteStep jazzSteps[] = {
 };
 
 // ── 6. Chromatic Run ─────────────────────────────────────────────────────────
-// All 12 semitones from C4 to C5 — demonstrates both black and white keys.
+// All 12 semitones from C4 to C5 - demonstrates both black and white keys.
 static const NoteStep chromaticSteps[] = {
     {{60,0,0,0,0,0}, 1, 85, 100, 20},  // C4
     {{61,0,0,0,0,0}, 1, 85, 100, 20},  // C#4

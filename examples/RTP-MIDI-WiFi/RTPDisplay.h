@@ -26,7 +26,7 @@
 static const int RD_SCREEN_W = 320;
 static const int RD_SCREEN_H = 170;
 
-// ── Colours — teal/green theme for WiFi (distinct from BLE cyan) ────────────
+// ── Colours - teal/green theme for WiFi (distinct from BLE cyan) ────────────
 #define RD_COL_BG         0x1082   // dark grey-blue
 #define RD_COL_HEADER     0x2945
 #define RD_COL_DIVIDER    0x2945
@@ -73,7 +73,7 @@ struct RTPInfo {
     uint8_t  currentVelocity;
     uint8_t  currentStatus;        // 0x90 NoteOn, 0x80 NoteOff, 0 = idle
 
-    // Active notes (for mini piano) — local player + received
+    // Active notes (for mini piano) - local player + received
     const bool* activeNotes;       // pointer to bool[128]
 };
 

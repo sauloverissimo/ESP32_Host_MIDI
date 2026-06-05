@@ -1,34 +1,18 @@
-// Example: RTP-MIDI WiFi with Didactic Display
+// ESP32_Host_MIDI / RTP-MIDI-WiFi
+// RTP-MIDI (AppleMIDI) over WiFi with a didactic display.
 //
-// Connects the ESP32 to WiFi and exposes it as an RTP-MIDI (AppleMIDI) device.
-// macOS/iOS auto-discovers it in "Audio MIDI Setup → Network" and it appears
-// as a MIDI port in Logic Pro, GarageBand, Ableton and any CoreMIDI app
-// — no driver, no USB cable required.
+// macOS/iOS auto-discover it under Audio MIDI Setup > Network; it appears as a
+// MIDI port in any CoreMIDI app. The display shows the IP, peer count, sequence
+// name/step, note names, raw bytes, and a mini piano. Two buttons cycle the
+// sequence and play/stop. Setup and wiring are in the README.
 //
-// The display shows didactically:
-//   - WiFi IP address and RTP-MIDI peer count
-//   - Sequence name and current step
-//   - Note names being sent (human-readable)
-//   - Raw MIDI bytes in hex (educational)
-//   - Mini piano with active key highlights
-//
-// Controls:
-//   Button 1 (GPIO 0):  Cycle through sequences
-//   Button 2 (GPIO 14): Play / Stop
-//
-// Requirements:
-//   1. Install "AppleMIDI" library by lathoub (v3.x) via Arduino Library Manager.
-//   2. Install "MIDI Library" by Francois Best via Arduino Library Manager.
-//   3. Fill in your WiFi credentials in mapping.h (WIFI_SSID, WIFI_PASS).
-//
-// Dependencies: LovyanGFX (for display), AppleMIDI + MIDI Library
+// Requires: AppleMIDI (lathoub, v3.x), MIDI Library (Francois Best), LovyanGFX.
+// Arduino IDE: Board T-Display-S3 (ESP32-S3) · Partition Scheme: Huge App (3MB) · Serial 115200
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESP32_Host_MIDI.h>
-
-#include "../../src/RTPMIDIConnection.h"  // or "RTPMIDIConnection.h" when library is installed
-                                          // Requires: lathoub/Arduino-AppleMIDI-Library v3.x
+#include <RTPMIDIConnection.h>
 
 #include "RTPDisplay.h"
 #include "MusicSequences.h"
@@ -311,7 +295,7 @@ void loop() {
             playerPhase = PH_IDLE;
             lastStatus  = 0;
             Serial.printf("[SEQ] Playing: %s\n", ALL_SEQUENCES[currentSeq].name);
-            if (!rtpMIDI.isConnected()) Serial.println("[SEQ] (No RTP peer — display only)");
+            if (!rtpMIDI.isConnected()) Serial.println("[SEQ] (No RTP peer - display only)");
         }
     }
 

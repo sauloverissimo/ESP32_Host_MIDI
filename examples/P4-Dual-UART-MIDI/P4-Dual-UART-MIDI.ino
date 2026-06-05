@@ -1,39 +1,27 @@
-// P4-Dual-UART-MIDI — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / P4-Dual-UART-MIDI
+// Two simultaneous MIDI DIN-5 ports on the ESP32-P4 (5 hardware UARTs).
 //
-// Demonstrates two simultaneous MIDI DIN-5 ports on the ESP32-P4,
-// which provides 5 hardware UARTs. Both ports share the same MIDIHandler
-// and produce events in the same queue.
+// Both ports share one MIDIHandler and feed the same event queue. The P4 also
+// has USB 2.0 High-Speed Host and a native Ethernet MAC; no native WiFi/BLE
+// (use an ESP32-C6 module for wireless). Wiring is in the README.
 //
-// ESP32-P4 highlights relevant to this sketch:
-//   - USB 2.0 High-Speed Host (480 Mbps) — add a USB teclado in parallel if needed
-//   - 5× UART → MIDI IN 1 + MIDI IN 2 + MIDI OUT 1 + MIDI OUT 2 (+ Serial debug)
-//   - Native Ethernet MAC (ESP32_HOST_MIDI_HAS_ETH_MAC=1) — ready for RTP-MIDI
-//   - No native WiFi/BLE: use an ESP32-C6 module for wireless if needed
-//
-// Wiring (MIDI IN — requires optocoupler per port, e.g. 6N138 or TLP2361):
-//   Port 1: DIN-5 pin 5 ──── 220Ω ──── optocoupler ──── MIDI1_RX_PIN
-//   Port 2: DIN-5 pin 5 ──── 220Ω ──── optocoupler ──── MIDI2_RX_PIN
-//
-// Wiring (MIDI OUT — two 220Ω resistors per port, no optocoupler on TX):
-//   Port 1: MIDI1_TX_PIN ──── 220Ω ──── DIN-5 pin 5
-//   Port 2: MIDI2_TX_PIN ──── 220Ω ──── DIN-5 pin 5
-//
-// Adjust pin defines below for your PCB.
+// Requires: none beyond the board.
+// Arduino IDE: Board ESP32-P4 · Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
-#include "../../src/UARTConnection.h"  // or "UARTConnection.h" when library is installed
+#include <UARTConnection.h>
 
 #ifndef CONFIG_IDF_TARGET_ESP32P4
   #warning "This example is optimised for ESP32-P4. It will still compile on other targets."
 #endif
 
 // ---- Pin configuration -----------------------------------------------
-// Port 1 — e.g. UART1
+// Port 1 - e.g. UART1
 #define MIDI1_RX_PIN   18
 #define MIDI1_TX_PIN   17
 
-// Port 2 — e.g. UART2
+// Port 2 - e.g. UART2
 #define MIDI2_RX_PIN   16
 #define MIDI2_TX_PIN   15
 // ----------------------------------------------------------------------
@@ -76,7 +64,7 @@ static void printEvent(const MIDIEventData& ev) {
 void setup() {
     Serial.begin(115200);
     delay(300);
-    Serial.println("P4 Dual UART MIDI — starting");
+    Serial.println("P4 Dual UART MIDI - starting");
 
 #ifdef ESP32_HOST_MIDI_HAS_ETH_MAC
     Serial.println("  [P4] Native Ethernet MAC detected (ESP32_HOST_MIDI_HAS_ETH_MAC=1)");
@@ -85,17 +73,17 @@ void setup() {
 
     // ---- MIDI Port 1 (Serial1) ----
     if (midiPort1.begin(Serial1, MIDI1_RX_PIN, MIDI1_TX_PIN)) {
-        Serial.println("  Port 1 open — RX:" + String(MIDI1_RX_PIN) +
+        Serial.println("  Port 1 open - RX:" + String(MIDI1_RX_PIN) +
                        " TX:" + String(MIDI1_TX_PIN));
     }
 
     // ---- MIDI Port 2 (Serial2) ----
     if (midiPort2.begin(Serial2, MIDI2_RX_PIN, MIDI2_TX_PIN)) {
-        Serial.println("  Port 2 open — RX:" + String(MIDI2_RX_PIN) +
+        Serial.println("  Port 2 open - RX:" + String(MIDI2_RX_PIN) +
                        " TX:" + String(MIDI2_TX_PIN));
     }
 
-    // Register both as external transports — same handler, single queue.
+    // Register both as external transports - same handler, single queue.
     midiHandler.addTransport(&midiPort1);
     midiHandler.addTransport(&midiPort2);
 
@@ -119,5 +107,5 @@ void loop() {
 
     // Demo: relay NoteOn events received on port 1 out through port 2.
     // Remove or adapt for your application.
-    // (This runs from the queue, so it's safe — no double-dispatch.)
+    // (This runs from the queue, so it's safe - no double-dispatch.)
 }

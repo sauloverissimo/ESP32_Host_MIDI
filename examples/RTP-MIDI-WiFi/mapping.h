@@ -3,7 +3,7 @@
 
 // ── WiFi credentials ────────────────────────────────────────────────────────
 // Fill in your network details here. This file is per-user and should NOT
-// be committed with real credentials — replace before pushing.
+// be committed with real credentials - replace before pushing.
 #define WIFI_SSID  "YourSSID"
 #define WIFI_PASS  "YourPassword"
 
@@ -30,7 +30,7 @@
 #define PIN_BUTTON_2 14
 #define PIN_BAT_VOLT  4
 
-// I2C (alternate pins — required when USB Host is active on pins 18/19)
+// I2C (alternate pins - required when USB Host is active on pins 18/19)
 #define PIN_IIC_SCL 43
 #define PIN_IIC_SDA 44
 

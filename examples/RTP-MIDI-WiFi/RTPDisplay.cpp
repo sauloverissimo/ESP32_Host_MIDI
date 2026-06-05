@@ -113,7 +113,7 @@ void RTPDisplay::_drawSequenceInfo(const RTPInfo& info) {
 
     y += 22;
 
-    // "Sending: C4  E4  G4" — human-readable note names
+    // "Sending: C4  E4  G4" - human-readable note names
     _screen.setFont(&fonts::Font2);
 
     if (info.currentNoteCount > 0 && info.currentStatus == 0x90) {
