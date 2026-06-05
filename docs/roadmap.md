@@ -117,6 +117,12 @@ Melhorias de confiabilidade no transporte USB Host MIDI 2.0 (UMP). Aditivo, sem 
 
 - Novo `USBMIDITransportCore.h` (header puro, sem dependência de Arduino/USB) com `findBestAlt`, `umpWordCount`, `umpReassemble`, `parseGTB`, `appendStreamText`, builders de descoberta e a máquina de estados de descoberta. Testes nativos validam o código real, não cópias.
 
+**Examples**
+
+- Novo exemplo `USB-Host-MIDI2`: host USB MIDI 2.0 que recebe e decodifica UMP (espelha o exemplo `midi2_host` do TinyUSB).
+- Todos os exemplos uniformizados: header padrão, `README.md` por exemplo, includes `<...>`, inglês, e campos `MIDIEventData` v6 (`statusCode`/`channel0`/`noteNumber`/`velocity7`).
+- CI compila os exemplos sem dependência externa (`P4-Dual-UART-MIDI`, `UART-MIDI-Basic`, `USB-Host-Send`, `USB-Host-Send-Test`, `USB-Host-MIDI2`).
+
 ### v6.0.1
 
 Patch release que corrige duas regressões de BLE introduzidas pelo refactor v6.0.0. Sem breaking changes.
