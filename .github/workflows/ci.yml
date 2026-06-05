@@ -78,3 +78,4 @@ jobs:
             - examples/P4-Dual-UART-MIDI
             - examples/UART-MIDI-Basic
             - examples/USB-Host-Send
+            - examples/USB-Host-Send-Test

@@ -1,21 +1,15 @@
-// USB-Host-Send-Test — ESP32_Host_MIDI integration test
+// ESP32_Host_MIDI / USB-Host-Send-Test
+// USB host integration test: send every standard MIDI message type to a device.
 //
-// Sends every type of standard MIDI message to a connected USB device,
-// reporting pass/fail for each sendMidiMessage() call on Serial.
-// Connect a USB MIDI device (keyboard, synth, interface) and open
-// Serial Monitor at 115200. The test runs once after device detection.
+// Sends each message via sendMidiMessage() and reports pass/fail on Serial.
+// Connect a USB MIDI device and open Serial Monitor at 115200; the test runs
+// once after device detection. Covers Channel Voice (NoteOn/Off, PolyPressure,
+// CC, ProgramChange, ChannelPressure, PitchBend), System Common (MTC, Song
+// Position/Select, Tune Request) and System Real-Time (Clock, Start, Continue,
+// Stop, Active Sensing, System Reset).
 //
-// Tested message types:
-//   Channel Voice: NoteOn, NoteOff, PolyPressure, CC, ProgramChange,
-//                  ChannelPressure, PitchBend
-//   System Common: MTC Quarter Frame, Song Position, Song Select,
-//                  Tune Request
-//   System Real-Time: Clock, Start, Continue, Stop, Active Sensing,
-//                     System Reset
-//
-// Arduino IDE setup:
-//   Tools > Board    -> ESP32-S3 (T-Display-S3 or DevKit)
-//   Tools > USB Mode -> USB-OTG (TinyUSB)
+// Requires: none beyond the board.
+// Arduino IDE: Board ESP32-S3 (USB host) · USB Mode: Hardware CDC and JTAG · Serial 115200
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
