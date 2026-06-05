@@ -1,31 +1,17 @@
-// Ethernet-MIDI — ESP32_Host_MIDI example
+// ESP32_Host_MIDI / Ethernet-MIDI
+// RTP-MIDI (AppleMIDI) over wired Ethernet (W5x00 SPI, or ESP32-P4 native MAC).
 //
-// Exposes the ESP32 as an RTP-MIDI (AppleMIDI) device over wired Ethernet
-// using a W5x00 SPI module (W5500 recommended).
-// macOS and iOS discover it as a standard MIDI port — no driver, no USB cable.
+// macOS/iOS discover it as a standard network MIDI port (enter the device IP
+// manually). On ESP32-S3 it runs USB Host at the same time, forwarding a USB
+// keyboard to the DAW over Ethernet. Wiring and setup are in the README.
 //
-// Compared to WiFi RTP-MIDI:
-//   - Lower and more consistent latency (no WiFi jitter)
-//   - No mDNS auto-discovery: enter the device IP manually in Audio MIDI Setup
-//   - Ideal for studio racks, ESP32-P4 (native Ethernet MAC), or where WiFi
-//     is unreliable
-//
-// Requirements:
-//   1. Install "AppleMIDI" library by lathoub (v3.x) via Arduino Library Manager.
-//   2. Install "Ethernet" library (built-in) or "Ethernet_Generic" for W5500.
-//   3. Connect W5500 module via SPI — see mapping.h for pin assignments.
-//   4. Adjust MAC address and IP settings in mapping.h.
-//   5. On macOS: Audio MIDI Setup → Network → click "+" → enter device IP
-//      and port 5004 → Connect.
-//
-// On ESP32-S3 this also enables USB Host simultaneously: play a USB keyboard
-// and notes are forwarded over Ethernet to your DAW in real time.
+// Requires: AppleMIDI (lathoub, v3.x) + Ethernet libraries.
+// Arduino IDE: Board ESP32-S3 (USB host) or ESP32-P4 · Serial 115200
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <ESP32_Host_MIDI.h>
-#include "../../src/EthernetMIDIConnection.h"  // or "EthernetMIDIConnection.h" when library is installed
-                                                // Requires: AppleMIDI + Ethernet libraries
+#include <EthernetMIDIConnection.h>
 #include "mapping.h"
 
 // ---- RTP-MIDI device name (shown in macOS/iOS Audio MIDI Setup) --------
@@ -42,7 +28,7 @@ static unsigned long lastStatusPrint = 0;
 void setup() {
     Serial.begin(115200);
     delay(300);
-    Serial.println("Ethernet MIDI — starting");
+    Serial.println("Ethernet MIDI - starting");
 
     // Optional: configure non-default SPI pins before begin().
     // SPI.begin(ETH_SCK_PIN, ETH_MISO_PIN, ETH_MOSI_PIN, ETH_CS_PIN);
@@ -56,14 +42,14 @@ void setup() {
 #endif
 
     if (!ok) {
-        Serial.println(" — FAILED. Check W5500 wiring and cable.");
+        Serial.println(" - FAILED. Check W5500 wiring and cable.");
         while (true) delay(1000);
     }
 
     Serial.println();
     Serial.println("  IP  : " + ethMIDI.localIP().toString());
     Serial.println("  Port: " + String(ETH_MIDI_PORT));
-    Serial.println("  → Audio MIDI Setup → Network → Add session → enter this IP.");
+    Serial.println("  Audio MIDI Setup > Network > Add session > enter this IP.");
 
     midiHandler.addTransport(&ethMIDI);
 
