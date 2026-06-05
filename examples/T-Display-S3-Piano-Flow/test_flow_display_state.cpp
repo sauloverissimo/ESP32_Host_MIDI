@@ -1,7 +1,8 @@
 // Host test for FlowDisplayState: feed MIDI 2.0 note-ons via the flow and check
 // the display-facing state (held notes + chord name with inversion).
-// Build (from this dir, point -I at the gingoduino repo root):
-//   g++ -std=c++11 -Wall -Wextra -I <gingoduino> -I . test_flow_display_state.cpp -o /tmp/t_fs && /tmp/t_fs
+// Build (from this dir; -I the gingoduino repo root for the .cpp includes and
+// its src/ so FlowDisplayState.h's <Gingoduino.h> resolves like in Arduino):
+//   g++ -std=c++11 -Wall -Wextra -I <gingoduino> -I <gingoduino>/src -I . test_flow_display_state.cpp -o /tmp/t_fs && /tmp/t_fs
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>   // required for the range-for over { ... } below

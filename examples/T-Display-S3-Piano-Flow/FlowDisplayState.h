@@ -9,7 +9,9 @@
 
 #include <cstdint>
 #include <cstdio>
-#include "src/Gingoduino.h"   // gingo::Midi2Flow, gingo::GingoChord, gingo::Event
+#include <Gingoduino.h>   // gingo::Midi2Flow, gingo::GingoChord, gingo::Event
+                          // (Arduino: lib src/ is on the include path; host tests
+                          //  add -I <gingoduino>/src so this also resolves)
 
 class FlowDisplayState {
 public:
