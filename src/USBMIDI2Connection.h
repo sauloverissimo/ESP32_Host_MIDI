@@ -2,6 +2,7 @@
 #define USB_MIDI2_CONNECTION_H
 
 #include "USBConnection.h"
+#include "USBMIDITransportCore.h"
 
 // USBMIDI2Connection — USB Host with MIDI 2.0/UMP negotiation.
 //
@@ -9,11 +10,12 @@
 // Alt 1 (bcdMSC 2.00) in the device's configuration descriptor.
 // Prefers Alt 1 when available.
 //
-// After selecting Alt 1, performs the mandatory UMP Endpoint Discovery
-// and Protocol Negotiation sequence (UMP Stream Messages, MT 0x0F):
+// After selecting Alt 1, performs read-only UMP discovery (Stream Messages,
+// MT 0x0F):
 //   1. Endpoint Discovery Request → receives Endpoint Info
-//   2. Stream Configuration Request (MIDI 2.0 Protocol)
-//   3. Function Block Discovery Request → receives FB Info
+//   2. Function Block Discovery Request → receives FB Info
+// The host does not send a Stream Configuration Request (which would command a
+// protocol switch); it relies on the descriptor and discovery responses.
 //
 // In MIDI 2.0 mode, bulk IN data is dispatched as raw UMP words via
 // dispatchUMPData(). In MIDI 1.0 mode, behaviour is identical to the
@@ -34,8 +36,10 @@ public:
     // True when the connected device negotiated MIDI 2.0 (Alt 1).
     bool isMIDI2() const { return _midi2Active; }
 
-    // True when Protocol Negotiation completed successfully.
-    bool isNegotiated() const { return _negotiationState == NegDone; }
+    // True when discovery completed (Endpoint Info + all Function Block Info
+    // received). Does not imply a protocol switch was commanded; the host only
+    // reads discovery, it does not request a protocol change.
+    bool isNegotiated() const { return _neg.state == usbmidi::core::NegState::Done; }
 
     // Send raw UMP words to the device via OUT endpoint.
     // Returns true if the transfer was submitted successfully.
@@ -54,7 +58,9 @@ public:
         bool     supportsMIDI1Protocol;
         bool     supportsRxJR;
         bool     supportsTxJR;
-        uint8_t  currentProtocol;  // 0x01=MIDI1, 0x02=MIDI2
+        uint8_t  currentProtocol;  // informational; set only if the device emits
+                                   // an unsolicited Stream Config Notify (0x006).
+                                   // 0x01=MIDI1, 0x02=MIDI2, 0=not reported
     };
 
     struct FunctionBlockInfo {
@@ -68,15 +74,7 @@ public:
         uint8_t  maxSysEx8Streams;
     };
 
-    struct GroupTerminalBlock {
-        uint8_t  id;
-        uint8_t  type;           // 0=bidirectional, 1=input-only, 2=output-only
-        uint8_t  firstGroup;
-        uint8_t  numGroups;
-        uint8_t  protocol;       // 0x01=MIDI1, 0x02=MIDI2, 0x00=unknown
-        uint16_t maxInputBW;
-        uint16_t maxOutputBW;
-    };
+    using GroupTerminalBlock = usbmidi::core::GTBlock;
 
     static const uint8_t MAX_FUNCTION_BLOCKS = 8;
     static const uint8_t MAX_GTB = 8;
@@ -98,21 +96,17 @@ private:
     bool _midi2Active;
     usb_transfer_t* _outTransfer = nullptr;
 
-    // Protocol Negotiation state machine
-    enum NegotiationState : uint8_t {
-        NegIdle,              // Not started or MIDI 1.0 mode
-        NegAwaitEndpointInfo, // Sent Endpoint Discovery, awaiting response
-        NegAwaitStreamConfig, // Sent Stream Config Request, awaiting notification
-        NegAwaitFBInfo,       // Sent Function Block Discovery, awaiting responses
-        NegDone,              // Negotiation complete
-    };
-    NegotiationState _negotiationState = NegIdle;
+    // Protocol Negotiation state machine (pure model in the transport core)
+    usbmidi::core::NegEngine _neg;
     unsigned long _negTimeout = 0;
+
+    // UMP reassembly across bulk transfers (carry-over of split packets)
+    usbmidi::core::UMPCarry _umpCarry = {};
+    uint32_t _umpOut[usbmidi::core::UMP_OUT_WORDS] = {};
 
     EndpointInfo _epInfo = {};
     FunctionBlockInfo _fbInfo[MAX_FUNCTION_BLOCKS] = {};
     uint8_t _fbCount = 0;
-    uint8_t _fbExpected = 0;
 
     GroupTerminalBlock _gtb[MAX_GTB] = {};
     uint8_t _gtbCount = 0;
@@ -123,26 +117,14 @@ private:
     char _prodId[MAX_NAME_LEN] = {};
     uint8_t _prodIdLen = 0;
 
-    struct AltCandidate {
-        uint8_t  ifaceNumber;
-        uint8_t  altSetting;
-        bool     isMIDI2;        // bcdMSC == 0x0200
-        uint8_t  epInAddress;    // IN endpoint (0 = none found)
-        uint16_t epInMaxPacket;
-        uint8_t  epInInterval;
-        uint8_t  epOutAddress;   // OUT endpoint (0 = none found)
-        uint16_t epOutMaxPacket;
-    };
+    using AltCandidate = usbmidi::core::AltCandidate;
 
-    static bool _findBestAlt(const uint8_t* desc, uint16_t totalLen,
-                             AltCandidate& best);
     bool _claimAndSetup(const AltCandidate& cand);
 
     // Protocol Negotiation helpers
     void _startNegotiation();
     void _processStreamMessage(const uint32_t* words);
     void _sendEndpointDiscovery();
-    void _sendStreamConfigRequest(uint8_t protocol);
     void _sendFunctionBlockDiscovery();
 
     // Group Terminal Block reading (USB class-specific GET_DESCRIPTOR)

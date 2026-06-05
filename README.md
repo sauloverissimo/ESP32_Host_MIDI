@@ -410,7 +410,7 @@ void setup() {
 
 Native USB MIDI 2.0/UMP support with automatic protocol negotiation. `USBMIDI2Connection` extends `USBConnection` — scans the device's configuration descriptor for both Alt 0 (MIDI 1.0) and Alt 1 (MIDI 2.0), preferring MIDI 2.0 when available. Falls back to MIDI 1.0 transparently.
 
-After selecting MIDI 2.0, performs the mandatory UMP Endpoint Discovery and Protocol Negotiation sequence. Raw UMP words (32-bit) are delivered via callback — no conversion to MIDI 1.0.
+After selecting MIDI 2.0, performs read-only UMP discovery (Endpoint Info and Function Block Info). Raw UMP words (32-bit) are delivered via callback, reassembled across USB transfers so packets split at a transfer boundary are never lost. Internal discovery messages are consumed by the host and not forwarded to the callback. No conversion to MIDI 1.0.
 
 ```cpp
 #include "src/USBMIDI2Connection.h"

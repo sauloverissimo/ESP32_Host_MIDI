@@ -12,6 +12,10 @@
 #include <cstring>
 #include "stub/Arduino.h"
 #include "../../src/MIDITransport.h"
+#include "../../src/USBMIDITransportCore.h"
+
+using usbmidi::core::AltCandidate;
+using usbmidi::core::findBestAlt;
 
 // ---------------------------------------------------------------------------
 // Minimal test framework (same as test_native.cpp)
@@ -24,89 +28,9 @@ static int g_pass = 0, g_fail = 0;
 #define ASSERT(e)  do { if (!(e)) { printf("FAIL — " #e " (line %d)\n", __LINE__); ++g_fail; return; } } while(0)
 
 // ---------------------------------------------------------------------------
-// AltCandidate + _findBestAlt — extracted from USBMIDI2Connection
+// AltCandidate + findBestAlt are the REAL ones from USBMIDITransportCore.h
+// (included above), so these tests validate the shipping code, not a copy.
 // ---------------------------------------------------------------------------
-
-struct AltCandidate {
-    uint8_t  ifaceNumber;
-    uint8_t  altSetting;
-    bool     isMIDI2;
-    uint8_t  epInAddress;
-    uint16_t epInMaxPacket;
-    uint8_t  epInInterval;
-    uint8_t  epOutAddress;
-    uint16_t epOutMaxPacket;
-};
-
-static bool findBestAlt(const uint8_t* p, uint16_t totalLen, AltCandidate& best) {
-    AltCandidate midi1 = {}, midi2 = {};
-    bool found1 = false, found2 = false;
-
-    uint16_t i = 0;
-    while (i < totalLen) {
-        if (i + 1 >= totalLen) break;
-        uint8_t dlen  = p[i];
-        uint8_t dtype = p[i + 1];
-        if (dlen < 2 || (i + dlen) > totalLen) break;
-
-        if (dtype == 0x04 && dlen >= 9) {
-            uint8_t ifNum    = p[i + 2];
-            uint8_t altSet   = p[i + 3];
-            uint8_t numEP    = p[i + 4];
-            uint8_t ifClass  = p[i + 5];
-            uint8_t ifSubCls = p[i + 6];
-
-            if (ifClass == 0x01 && ifSubCls == 0x03) {
-                AltCandidate cand = {};
-                cand.ifaceNumber = ifNum;
-                cand.altSetting  = altSet;
-
-                uint16_t j = i + dlen;
-                while (j < totalLen) {
-                    if (j + 1 >= totalLen) break;
-                    uint8_t blen  = p[j];
-                    uint8_t btype = p[j + 1];
-                    if (blen < 2 || (j + blen) > totalLen) break;
-                    if (btype == 0x04) break;
-
-                    if (btype == 0x24 && blen >= 5 && p[j + 2] == 0x01) {
-                        uint16_t bcdMSC = p[j + 3] | ((uint16_t)p[j + 4] << 8);
-                        cand.isMIDI2 = (bcdMSC >= 0x0200);
-                    }
-
-                    if (btype == 0x05 && blen >= 7 && numEP > 0) {
-                        uint8_t  epAddr = p[j + 2];
-                        uint16_t maxPkt = p[j + 4] | ((uint16_t)p[j + 5] << 8);
-                        uint8_t  bInt   = p[j + 6];
-                        if (maxPkt == 0)  maxPkt = 64;
-                        if (maxPkt > 512) maxPkt = 512;
-                        if (epAddr & 0x80) {
-                            cand.epInAddress   = epAddr;
-                            cand.epInMaxPacket = maxPkt;
-                            cand.epInInterval  = bInt ? bInt : 1;
-                        } else {
-                            cand.epOutAddress   = epAddr;
-                            cand.epOutMaxPacket = maxPkt;
-                        }
-                    }
-
-                    j += blen;
-                }
-
-                if (cand.epInAddress != 0) {
-                    if (cand.isMIDI2) { midi2 = cand; found2 = true; }
-                    else               { midi1 = cand; found1 = true; }
-                }
-            }
-        }
-
-        i += dlen;
-    }
-
-    if (found2) { best = midi2; return true; }
-    if (found1) { best = midi1; return true; }
-    return false;
-}
 
 // ---------------------------------------------------------------------------
 // UMP Stream Message constants (same as USBMIDI2Connection.cpp)
@@ -492,32 +416,17 @@ void test_ump_dispatch() {
 void test_stream_message_build() {
     printf("\n[UMP Stream Message building]\n");
 
-    // Endpoint Discovery: MT=0xF, status=0x000, ver=1.1, filter in word1
+    // Validate the REAL builders from the transport core.
+    uint32_t msg[4];
+
     TEST("Endpoint Discovery word0 format");
-    uint32_t msg[4] = {};
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x000 << 16)
-           | ((uint32_t)1 << 8)
-           | (uint32_t)1;
-    msg[1] = 0xFF;
+    usbmidi::core::buildEndpointDiscovery(msg, 1, 1);
     ASSERT(msg[0] == 0xF0000101);
     ASSERT(msg[1] == 0x000000FF);
     PASS();
 
-    // Stream Config Request: MT=0xF, status=0x005, protocol=0x02
-    TEST("Stream Config Request word0 format");
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x005 << 16)
-           | ((uint32_t)0x02 << 8);
-    ASSERT(msg[0] == 0xF0050200);
-    PASS();
-
-    // Function Block Discovery: MT=0xF, status=0x010, fbIdx=0xFF, filter=0xFF
     TEST("Function Block Discovery word0 format");
-    msg[0] = ((uint32_t)0x0F << 28)
-           | ((uint32_t)0x010 << 16)
-           | (0xFF << 8)
-           | 0xFF;
+    usbmidi::core::buildFunctionBlockDiscovery(msg);
     ASSERT(msg[0] == 0xF010FFFF);
     PASS();
 }
@@ -636,19 +545,8 @@ void test_parse_fb_info() {
 void test_ump_packet_sizes() {
     printf("\n[UMP packet sizes by message type]\n");
 
-    // Returns word count for a given MT
-    auto pktWords = [](uint8_t mt) -> uint8_t {
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7:
-                return 1;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA:
-                return 2;
-            case 0xB: case 0xC:
-                return 3;
-            default:
-                return 4;
-        }
-    };
+    // Use the REAL word-count function from the transport core.
+    auto pktWords = usbmidi::core::umpWordCount;
 
     TEST("MT 0x0 (Utility) = 1 word");
     ASSERT(pktWords(0x0) == 1);
@@ -683,44 +581,10 @@ void test_ump_packet_sizes() {
 // Tests — GTB descriptor parsing
 // ---------------------------------------------------------------------------
 
-// Extracted parseGTBResponse logic for native testing
-struct GroupTerminalBlock {
-    uint8_t  id;
-    uint8_t  type;
-    uint8_t  firstGroup;
-    uint8_t  numGroups;
-    uint8_t  protocol;
-    uint16_t maxInputBW;
-    uint16_t maxOutputBW;
-};
-
-static const uint8_t MAX_GTB = 8;
-static const uint8_t GTB_HEADER_SUBTYPE = 0x01;
-static const uint8_t GTB_BLOCK_SUBTYPE  = 0x02;
-static const uint8_t GTB_BLOCK_DESC_LEN = 13;
-
-static uint8_t parseGTB(const uint8_t* data, uint16_t len,
-                        GroupTerminalBlock* out, uint8_t maxOut) {
-    if (len < 5) return 0;
-    if (data[2] != GTB_HEADER_SUBTYPE) return 0;
-    uint16_t totalLen = data[3] | ((uint16_t)data[4] << 8);
-    if (totalLen > len) totalLen = len;
-    uint16_t offset = data[0];
-    uint8_t count = 0;
-    while (offset + GTB_BLOCK_DESC_LEN <= totalLen && count < maxOut) {
-        const uint8_t* blk = data + offset;
-        if (blk[0] < GTB_BLOCK_DESC_LEN) break;
-        if (blk[2] != GTB_BLOCK_SUBTYPE) { offset += blk[0]; continue; }
-        GroupTerminalBlock& g = out[count];
-        g.id = blk[3]; g.type = blk[4]; g.firstGroup = blk[5]; g.numGroups = blk[6];
-        g.protocol = blk[8];
-        g.maxInputBW = blk[9] | ((uint16_t)blk[10] << 8);
-        g.maxOutputBW = blk[11] | ((uint16_t)blk[12] << 8);
-        count++;
-        offset += blk[0];
-    }
-    return count;
-}
+// GTB parsing validates the REAL parseGTB/GTBlock from USBMIDITransportCore.h.
+using GroupTerminalBlock = usbmidi::core::GTBlock;
+using usbmidi::core::parseGTB;
+static const uint8_t MAX_GTB = 8;  // local test array size
 
 void test_gtb_parsing() {
     printf("\n[GTB descriptor parsing]\n");
@@ -795,26 +659,8 @@ void test_gtb_parsing() {
 // Tests — Stream text accumulation
 // ---------------------------------------------------------------------------
 
-// Extracted _appendStreamText logic for native testing
-static void appendStreamText(char* dest, uint8_t& destLen, uint8_t maxLen,
-                             const uint32_t* words, uint8_t form) {
-    if (form == 0 || form == 1) destLen = 0;
-    uint8_t text[14];
-    uint8_t n = 0;
-    uint8_t b;
-    b = (words[0] >> 8) & 0xFF; if (b) text[n++] = b;
-    b = words[0] & 0xFF;        if (b) text[n++] = b;
-    for (uint8_t w = 1; w <= 3; w++) {
-        for (int shift = 24; shift >= 0; shift -= 8) {
-            b = (words[w] >> shift) & 0xFF;
-            if (b) text[n++] = b;
-        }
-    }
-    for (uint8_t i = 0; i < n && destLen < maxLen; i++) {
-        dest[destLen++] = (char)text[i];
-    }
-    dest[destLen] = '\0';
-}
+// Stream text accumulation validates the REAL appendStreamText from the core.
+using usbmidi::core::appendStreamText;
 
 void test_stream_text() {
     printf("\n[Stream text accumulation]\n");
@@ -874,100 +720,55 @@ void test_stream_text() {
 // Tests — Full negotiation state machine sequence
 // ---------------------------------------------------------------------------
 
-// Simulates the full negotiation sequence by manually walking through
-// _processStreamMessage parsing at each stage.
+// Drives the REAL negotiation engine (usbmidi::core::NegEngine + negStep) so the
+// tests validate the shipping state machine, not a copy.
 
-// State machine enum (mirrors USBMIDI2Connection)
-enum NegotiationState : uint8_t {
-    NegIdle, NegAwaitEndpointInfo, NegAwaitStreamConfig, NegAwaitFBInfo, NegDone
-};
-
-struct NegSim {
-    NegotiationState state;
-    uint8_t numFunctionBlocks;
-    bool supportsMIDI2;
-    uint8_t currentProtocol;
-    uint8_t fbCount;
-    uint8_t fbExpected;
-
-    void processStream(const uint32_t* words) {
-        uint16_t status = (words[0] >> 16) & 0x3FF;
-        switch (status) {
-        case 0x001: // Endpoint Info
-            numFunctionBlocks = (words[1] >> 24) & 0xFF;
-            supportsMIDI2 = (words[1] >> 9) & 0x01;
-            if (state == NegAwaitEndpointInfo)
-                state = NegAwaitStreamConfig;
-            break;
-        case 0x006: // Stream Config Notify
-            currentProtocol = (words[0] >> 8) & 0xFF;
-            if (state == NegAwaitStreamConfig) {
-                fbCount = 0;
-                fbExpected = numFunctionBlocks;
-                if (fbExpected > 0) {
-                    state = NegAwaitFBInfo;
-                } else {
-                    state = NegDone;
-                }
-            }
-            break;
-        case 0x011: // FB Info
-            fbCount++;
-            if (state == NegAwaitFBInfo && fbCount >= fbExpected)
-                state = NegDone;
-            break;
-        }
-    }
-};
+using usbmidi::core::NegEngine;
+using usbmidi::core::NegState;
+using usbmidi::core::NegAction;
+using usbmidi::core::negStep;
 
 void test_negotiation_full_sequence() {
     printf("\n[Negotiation — full happy-path sequence]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // Step 1: Device sends Endpoint Info (2 FBs, supports MIDI 2.0)
+    // Endpoint Info (2 FBs, MIDI 2.0) -> go straight to FB discovery (no Config)
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)2 << 24) | (1 << 9) | (1 << 8) | 1;
-    neg.processStream(epInfo);
+    NegAction a1 = negStep(neg, epInfo);
 
-    TEST("after EP Info → NegAwaitStreamConfig");
-    ASSERT(neg.state == NegAwaitStreamConfig);
+    TEST("after EP Info → FB discovery, AwaitFBInfo");
+    ASSERT(a1 == NegAction::SendFBDiscovery);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.numFunctionBlocks == 2);
     ASSERT(neg.supportsMIDI2 == true);
-    PASS();
-
-    // Step 2: Device confirms MIDI 2.0 protocol
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
-
-    TEST("after Config Notify → NegAwaitFBInfo");
-    ASSERT(neg.state == NegAwaitFBInfo);
-    ASSERT(neg.currentProtocol == 0x02);
     ASSERT(neg.fbExpected == 2);
     PASS();
 
-    // Step 3: First FB Info
+    // First FB Info
     uint32_t fb1[4] = {};
     fb1[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb1[1] = ((uint32_t)0 << 24) | ((uint32_t)4 << 16);
-    neg.processStream(fb1);
+    NegAction a2 = negStep(neg, fb1);
 
-    TEST("after 1st FB Info → still NegAwaitFBInfo");
-    ASSERT(neg.state == NegAwaitFBInfo);
+    TEST("after 1st FB Info → still AwaitFBInfo");
+    ASSERT(a2 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     ASSERT(neg.fbCount == 1);
     PASS();
 
-    // Step 4: Second FB Info → negotiation done
+    // Second FB Info → complete
     uint32_t fb2[4] = {};
     fb2[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (1 << 8) | 1;
     fb2[1] = ((uint32_t)4 << 24) | ((uint32_t)2 << 16);
-    neg.processStream(fb2);
+    NegAction a3 = negStep(neg, fb2);
 
-    TEST("after 2nd FB Info → NegDone");
-    ASSERT(neg.state == NegDone);
+    TEST("after 2nd FB Info → Done + Complete");
+    ASSERT(a3 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbCount == 2);
     PASS();
 }
@@ -975,76 +776,112 @@ void test_negotiation_full_sequence() {
 void test_negotiation_zero_fbs() {
     printf("\n[Negotiation — device with 0 function blocks]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // EP Info says 0 FBs
+    // EP Info says 0 FBs -> complete immediately, no Config step
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)0 << 24) | (1 << 9) | (1 << 8);
-    neg.processStream(epInfo);
+    NegAction a = negStep(neg, epInfo);
 
-    // Config Notify
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
-
-    TEST("0 FBs → NegDone immediately after Config");
-    ASSERT(neg.state == NegDone);
+    TEST("0 FBs → Complete + Done right after Endpoint Info");
+    ASSERT(a == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     ASSERT(neg.fbExpected == 0);
     PASS();
 }
 
 void test_negotiation_midi1_fallback() {
-    printf("\n[Negotiation — MIDI 1.0 fallback when no MIDI 2.0 support]\n");
+    printf("\n[Negotiation — MIDI 1.0 device still completes via discovery]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // EP Info: supports MIDI 1.0 only (bit9=0, bit8=1)
+    // EP Info: supports MIDI 1.0 only (bit9=0, bit8=1), 1 FB
     uint32_t epInfo[4] = {};
     epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
     epInfo[1] = ((uint32_t)1 << 24) | (0 << 9) | (1 << 8);
-    neg.processStream(epInfo);
+    NegAction a1 = negStep(neg, epInfo);
 
-    TEST("detects no MIDI 2.0 support");
+    TEST("no MIDI 2.0 support still goes to FB discovery (no Config Request)");
     ASSERT(neg.supportsMIDI2 == false);
-    ASSERT(neg.state == NegAwaitStreamConfig);
+    ASSERT(a1 == NegAction::SendFBDiscovery);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
     PASS();
 
-    // Config Notify with MIDI 1.0
-    uint32_t config[4] = {};
-    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x01 << 8);
-    neg.processStream(config);
+    // Single FB Info → done
+    uint32_t fb[4] = {};
+    fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
+    fb[1] = 0;
+    NegAction a2 = negStep(neg, fb);
 
-    TEST("MIDI 1.0 protocol confirmed");
-    ASSERT(neg.currentProtocol == 0x01);
+    TEST("reaches Done after its FB Info");
+    ASSERT(a2 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     PASS();
 }
 
 void test_negotiation_out_of_order() {
     printf("\n[Negotiation — out-of-order messages ignored]\n");
 
-    NegSim neg = {};
-    neg.state = NegAwaitEndpointInfo;
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
 
-    // FB Info arrives before EP Info — should not crash or advance state
+    // FB Info before EP Info -> no advance
     uint32_t fb[4] = {};
     fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
     fb[1] = 0;
-    neg.processStream(fb);
+    NegAction a1 = negStep(neg, fb);
 
-    TEST("FB Info before EP Info — state unchanged");
-    ASSERT(neg.state == NegAwaitEndpointInfo);
+    TEST("FB Info before EP Info → None, state unchanged");
+    ASSERT(a1 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitEndpointInfo);
     PASS();
 
-    // Config Notify before EP Info — should not advance
+    // Unsolicited Config Notify before EP Info -> no advance
     uint32_t config[4] = {};
     config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
-    neg.processStream(config);
+    NegAction a2 = negStep(neg, config);
 
-    TEST("Config Notify before EP Info — state unchanged");
-    ASSERT(neg.state == NegAwaitEndpointInfo);
+    TEST("Config Notify before EP Info → None, state unchanged");
+    ASSERT(a2 == NegAction::None);
+    ASSERT(neg.state == NegState::AwaitEndpointInfo);
+    PASS();
+}
+
+void test_negotiation_unsolicited_config_notify() {
+    printf("\n[Negotiation — unsolicited Config Notify is non-blocking]\n");
+
+    NegEngine neg;
+    neg.state = NegState::AwaitEndpointInfo;
+
+    // EP Info with 1 FB -> AwaitFBInfo
+    uint32_t epInfo[4] = {};
+    epInfo[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x001 << 16) | (1 << 8) | 1;
+    epInfo[1] = ((uint32_t)1 << 24) | (1 << 9) | (1 << 8);
+    negStep(neg, epInfo);
+
+    // Unsolicited Config Notify mid-discovery: records protocol, does not gate
+    uint32_t config[4] = {};
+    config[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x006 << 16) | (0x02 << 8);
+    NegAction a = negStep(neg, config);
+
+    TEST("Config Notify in AwaitFBInfo → None, protocol recorded");
+    ASSERT(a == NegAction::None);
+    ASSERT(neg.currentProtocol == 0x02);
+    ASSERT(neg.state == NegState::AwaitFBInfo);
+    PASS();
+
+    // FB Info still completes
+    uint32_t fb[4] = {};
+    fb[0] = ((uint32_t)0x0F << 28) | ((uint32_t)0x011 << 16) | (1 << 15) | (0 << 8) | 2;
+    fb[1] = 0;
+    NegAction a2 = negStep(neg, fb);
+
+    TEST("FB Info still reaches Done");
+    ASSERT(a2 == NegAction::Complete);
+    ASSERT(neg.state == NegState::Done);
     PASS();
 }
 
@@ -1071,13 +908,7 @@ void test_ump_demux_mixed() {
     uint8_t totalWords = 7;
     while (i < totalWords && pktCount < 8) {
         uint8_t mt = (buf[i] >> 28) & 0x0F;
-        uint8_t pw;
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: pw = 1; break;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: pw = 2; break;
-            case 0xB: case 0xC: pw = 3; break;
-            default: pw = 4; break;
-        }
+        uint8_t pw = usbmidi::core::umpWordCount(mt);
         if (i + pw > totalWords) break;
         packets[pktCount++] = { mt, pw, i };
         i += pw;
@@ -1118,13 +949,7 @@ void test_ump_demux_incomplete() {
     uint8_t i = 0, pktCount = 0;
     while (i < 3) {
         uint8_t mt = (buf[i] >> 28) & 0x0F;
-        uint8_t pw;
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: pw = 1; break;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: pw = 2; break;
-            case 0xB: case 0xC: pw = 3; break;
-            default: pw = 4; break;
-        }
+        uint8_t pw = usbmidi::core::umpWordCount(mt);
         if (i + pw > 3) break;
         pktCount++;
         i += pw;
@@ -1138,14 +963,7 @@ void test_ump_demux_incomplete() {
 void test_ump_demux_all_mts() {
     printf("\n[UMP demux — all 16 message types]\n");
 
-    auto pktWords = [](uint8_t mt) -> uint8_t {
-        switch (mt) {
-            case 0x0: case 0x1: case 0x2: case 0x6: case 0x7: return 1;
-            case 0x3: case 0x4: case 0x8: case 0x9: case 0xA: return 2;
-            case 0xB: case 0xC: return 3;
-            default: return 4;
-        }
-    };
+    auto pktWords = usbmidi::core::umpWordCount;
 
     TEST("MT 0x1 (System) = 1 word");
     ASSERT(pktWords(0x1) == 1);
@@ -1181,6 +999,85 @@ void test_ump_demux_all_mts() {
 
     TEST("MT 0xE (reserved) = 4 words");
     ASSERT(pktWords(0xE) == 4);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Tests — UMP carry-over across transfers
+// ---------------------------------------------------------------------------
+
+void test_ump_carryover() {
+    printf("\n[UMP carry-over across transfers]\n");
+    using usbmidi::core::UMPCarry;
+    using usbmidi::core::umpReassemble;
+
+    UMPCarry carry = {};
+    uint32_t out[8];
+
+    // Transfer A ends mid-packet: a complete 1-word Utility + word0 of a 2-word MT 0x4
+    uint32_t a[2] = { 0x00000000, 0x40903C00 };
+    uint16_t nA = umpReassemble(a, 2, carry, out, 8);
+    TEST("transfer A emits only the complete 1-word packet");
+    ASSERT(nA == 1);
+    ASSERT(out[0] == 0x00000000);
+    ASSERT(carry.count == 1);          // word0 of MT 0x4 held back
+    ASSERT(carry.words[0] == 0x40903C00);
+    PASS();
+
+    // Transfer B starts with the missing word1
+    uint32_t b[1] = { 0xFFFF0000 };
+    uint16_t nB = umpReassemble(b, 1, carry, out, 8);
+    TEST("transfer B completes the held packet");
+    ASSERT(nB == 2);
+    ASSERT(out[0] == 0x40903C00);
+    ASSERT(out[1] == 0xFFFF0000);
+    ASSERT(carry.count == 0);
+    PASS();
+
+    // Full-size transfer (128 words) with a 2-word packet split at the tail:
+    // no word may be lost (guards the buf-sizing blocker).
+    UMPCarry c2 = {};
+    uint32_t big[128]; uint32_t out2[usbmidi::core::UMP_OUT_WORDS];
+    for (int i = 0; i < 127; ++i) big[i] = 0x00000000;      // 127 Utility (1w each)
+    big[127] = 0x40903C00;                                   // word0 of a 2-word MT 0x4 -> tail partial
+    uint16_t nBig = umpReassemble(big, 128, c2, out2, usbmidi::core::UMP_OUT_WORDS);
+    TEST("128-word transfer keeps the split packet, loses nothing");
+    ASSERT(nBig == 127);            // 127 complete Utility words emitted
+    ASSERT(c2.count == 1);          // the trailing word0 held for next transfer
+    ASSERT(c2.words[0] == 0x40903C00);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Tests — internal stream-message filter
+// ---------------------------------------------------------------------------
+
+void test_internal_stream_filter() {
+    printf("\n[Internal stream-message filter]\n");
+    using usbmidi::core::isInternalStreamMessage;
+
+    // Endpoint Info (MT 0x0F, status 0x001) is internal negotiation.
+    uint32_t epInfo[4] = { 0xF0010101, 0x02000601, 0, 0 };
+    TEST("Endpoint Info is internal");
+    ASSERT(isInternalStreamMessage(epInfo) == true);
+    PASS();
+
+    // FB Info (status 0x011) is internal.
+    uint32_t fbInfo[4] = { 0xF0118000, 0x00040000, 0, 0 };
+    TEST("Function Block Info is internal");
+    ASSERT(isInternalStreamMessage(fbInfo) == true);
+    PASS();
+
+    // MIDI 2.0 Channel Voice (MT 0x4) is NOT a stream message.
+    uint32_t cv[2] = { 0x40903C00, 0xFFFF0000 };
+    TEST("MIDI 2.0 CVM is not internal");
+    ASSERT(isInternalStreamMessage(cv) == false);
+    PASS();
+
+    // MIDI 1.0 in UMP (MT 0x2) is NOT internal.
+    uint32_t cv1[1] = { 0x20903C64 };
+    TEST("MIDI 1.0 CVM is not internal");
+    ASSERT(isInternalStreamMessage(cv1) == false);
     PASS();
 }
 
@@ -1239,7 +1136,7 @@ void test_device_gone_reset() {
     // Simulate the reset that _onDeviceGone performs
     struct DeviceState {
         bool midi2Active;
-        NegotiationState negState;
+        NegState negState;
         uint8_t fbCount, fbExpected, gtbCount;
         char epName[64];
         uint8_t epNameLen;
@@ -1249,7 +1146,7 @@ void test_device_gone_reset() {
 
         void reset() {
             midi2Active = false;
-            negState = NegIdle;
+            negState = NegState::Idle;
             fbCount = 0;
             fbExpected = 0;
             gtbCount = 0;
@@ -1262,7 +1159,7 @@ void test_device_gone_reset() {
     // Set up "connected" state
     DeviceState ds;
     ds.midi2Active = true;
-    ds.negState = NegDone;
+    ds.negState = NegState::Done;
     ds.fbCount = 3;
     ds.fbExpected = 3;
     ds.gtbCount = 2;
@@ -1278,8 +1175,8 @@ void test_device_gone_reset() {
     ASSERT(ds.midi2Active == false);
     PASS();
 
-    TEST("negotiation state reset to NegIdle");
-    ASSERT(ds.negState == NegIdle);
+    TEST("negotiation state reset to NegState::Idle");
+    ASSERT(ds.negState == NegState::Idle);
     PASS();
 
     TEST("fbCount reset to 0");
@@ -1713,9 +1610,12 @@ int main() {
     test_negotiation_zero_fbs();
     test_negotiation_midi1_fallback();
     test_negotiation_out_of_order();
+    test_negotiation_unsolicited_config_notify();
     test_ump_demux_mixed();
     test_ump_demux_incomplete();
     test_ump_demux_all_mts();
+    test_ump_carryover();
+    test_internal_stream_filter();
     test_send_ump_edges();
     test_device_gone_reset();
     test_multi_interface();
