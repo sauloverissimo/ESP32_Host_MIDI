@@ -1,35 +1,44 @@
+// ESP32_Host_MIDI / USB-Host-Send
+// USB host MIDI 1.0: detect a connected keyboard, then send notes and CC to it.
+//
+// Requires: none beyond the board.
+// Arduino IDE: Board ESP32-S3 (USB host) · USB Mode: Hardware CDC and JTAG
+//
+// Status LEDs: OUT_PIN5 = piano detected, OUT_PIN6 = activity blink,
+// OUT_PIN7 = host started. A pedal on PEDAL_PIN sends sustain (CC64).
+
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
-#include <USBConnection.h>  // v6.0: transports are no longer auto-included
+#include <USBConnection.h>
 
-USBConnection usbHost;       // v6.0: explicit USB Host transport
+USBConnection usbHost;
 
 #define PEDAL_PIN 4
-#define OUT_PIN5 5 // piano detectado
-#define OUT_PIN6 6 // titila
-#define OUT_PIN7 7 // host iniciado
+#define OUT_PIN5 5 // piano detected
+#define OUT_PIN6 6 // blink
+#define OUT_PIN7 7 // host started
 
-#define FREC_TITILAR 500
-#define FREC_LOOP 10
+#define BLINK_PERIOD_MS 500
+#define LOOP_DELAY_MS 10
 
 #define NOTEON_DELAY_MS 200
 #define NOTEOFF_DELAY_MS 300
 #define RESET_TIMEOUT_MS 10000
 
-bool hostIniciado = false;
-bool pianoDetectado = false;
+bool hostStarted = false;
+bool pianoDetected = false;
 
-int pedalPresionado = HIGH;
-int pedalAnterior = HIGH;
+int pedalPressed = HIGH;
+int pedalPrev = HIGH;
 
-unsigned long momentoInicioHost = 0;
-unsigned long momentoDeteccion = 0;
-bool noteOnPendiente = false;
-bool noteOffPendiente = false;
-unsigned long momentoNoteOn = 0;
+unsigned long hostStartMs = 0;
+unsigned long detectMs = 0;
+bool noteOnPending = false;
+bool noteOffPending = false;
+unsigned long noteOnMs = 0;
 
-int timerTitilar = 0;
-bool estadoTitilar = false;
+int blinkTimer = 0;
+bool blinkState = false;
 
 void setup() {
   pinMode(PEDAL_PIN, INPUT_PULLUP);
@@ -45,69 +54,69 @@ void setup() {
   digitalWrite(OUT_PIN6, LOW);
   digitalWrite(OUT_PIN7, LOW);
 
-  midiHandler.addTransport(&usbHost);  // v6.0: explicit
-  usbHost.begin();                      // v6.0: user owns lifecycle
+  midiHandler.addTransport(&usbHost);
+  usbHost.begin();
   midiHandler.begin();
-  hostIniciado = true;
-  momentoInicioHost = millis();
+  hostStarted = true;
+  hostStartMs = millis();
   digitalWrite(OUT_PIN7, HIGH);
 
-  pedalAnterior = digitalRead(PEDAL_PIN);
+  pedalPrev = digitalRead(PEDAL_PIN);
 }
 
 void loop() {
-  if (timerTitilar >= FREC_TITILAR) {
-    timerTitilar = 0;
-    digitalWrite(OUT_PIN6, estadoTitilar ? LOW : HIGH);
-    estadoTitilar = !estadoTitilar;
+  if (blinkTimer >= BLINK_PERIOD_MS) {
+    blinkTimer = 0;
+    digitalWrite(OUT_PIN6, blinkState ? LOW : HIGH);
+    blinkState = !blinkState;
   }
 
-  if (hostIniciado) {
+  if (hostStarted) {
     midiHandler.task();
 
     const auto &queue = midiHandler.getQueue();
 
     if (!queue.empty()) {
-      if (!pianoDetectado) {
-        pianoDetectado = true;
-        momentoDeteccion = millis();
-        noteOnPendiente = true;
+      if (!pianoDetected) {
+        pianoDetected = true;
+        detectMs = millis();
+        noteOnPending = true;
         digitalWrite(OUT_PIN5, HIGH);
       }
 
       midiHandler.clearQueue();
     }
 
-    // Si en 10 segundos no detectó al piano, reiniciar
-    if (!pianoDetectado && (millis() - momentoInicioHost >= RESET_TIMEOUT_MS)) {
+    // If the piano is not detected within 10 seconds, restart.
+    if (!pianoDetected && (millis() - hostStartMs >= RESET_TIMEOUT_MS)) {
       ESP.restart();
     }
 
-    if (pianoDetectado && noteOnPendiente && (millis() - momentoDeteccion >= NOTEON_DELAY_MS)) {
+    if (pianoDetected && noteOnPending && (millis() - detectMs >= NOTEON_DELAY_MS)) {
       midiHandler.sendNoteOn(1, 60, 100);
-      momentoNoteOn = millis();
-      noteOnPendiente = false;
-      noteOffPendiente = true;
+      noteOnMs = millis();
+      noteOnPending = false;
+      noteOffPending = true;
     }
 
-    if (pianoDetectado && noteOffPendiente && (millis() - momentoNoteOn >= NOTEOFF_DELAY_MS)) {
+    if (pianoDetected && noteOffPending && (millis() - noteOnMs >= NOTEOFF_DELAY_MS)) {
       midiHandler.sendNoteOff(1, 60, 0);
-      noteOffPendiente = false;
+      noteOffPending = false;
     }
 
-    pedalPresionado = digitalRead(PEDAL_PIN);
+    pedalPressed = digitalRead(PEDAL_PIN);
 
-    if (pianoDetectado && pedalPresionado != pedalAnterior) {
-      if (pedalPresionado == LOW) {
+    if (pianoDetected && pedalPressed != pedalPrev) {
+      if (pedalPressed == LOW) {
         midiHandler.sendControlChange(1, 64, 127);
       } else {
         midiHandler.sendControlChange(1, 64, 0);
       }
 
-      pedalAnterior = pedalPresionado;
+      pedalPrev = pedalPressed;
     }
   }
 
-  timerTitilar += FREC_LOOP;
-  delay(FREC_LOOP);
+  blinkTimer += LOOP_DELAY_MS;
+  delay(LOOP_DELAY_MS);
 }
