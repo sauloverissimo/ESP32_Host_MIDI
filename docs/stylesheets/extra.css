@@ -1,9 +1,0 @@
-/* ── Mermaid diagrams ─────────────────────────────────────────────────────
-   Light cosmetic styling only — diagrams use light fills + dark text so
-   they render correctly in both light and dark page themes.
-   ───────────────────────────────────────────────────────────────────────── */
-.mermaid {
-    border-radius: 8px;
-    padding: 0.5em 0;
-    margin: 1em 0;
-}

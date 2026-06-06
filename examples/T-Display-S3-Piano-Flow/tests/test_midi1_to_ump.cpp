@@ -39,6 +39,20 @@ int main() {
     conv.feed(rt, 4);
     CHECK(out.size()==2 && ((out[0]>>8)&0x7F)==67u && (out[0]&0x7F)==90u, "realtime ignored mid-message");
 
+    // MIDI 1.0 convention: Note On with velocity 0 must become Note Off (0x8)
+    out.clear();
+    const uint8_t on0[] = {0x90, 64, 0};   // note on vel 0 == note off
+    conv.feed(on0, 3);
+    CHECK(out.size()==2 && ((out[0]>>20)&0xF)==0x8u && ((out[0]>>8)&0x7F)==64u,
+          "note on vel0 -> note off (0x8)");
+
+    // normalization must not corrupt running status: next non-zero vel is Note On
+    out.clear();
+    const uint8_t rs2[] = {64, 90};        // running status 0x90 -> note on vel 90
+    conv.feed(rs2, 2);
+    CHECK(out.size()==2 && ((out[0]>>20)&0xF)==0x9u && (out[0]&0x7F)==90u,
+          "running status after vel0 still note on");
+
     printf(fails ? "FAILED %d\n" : "ALL TESTS PASSED\n", fails);
     return fails ? 1 : 0;
 }

@@ -309,13 +309,16 @@ void loop() {
 
     const uint32_t now = millis();
 
-    // Either button toggles the view (debounced).
-    static uint32_t btnLast = 0;
-    if ((digitalRead(PIN_BUTTON_1) == LOW || digitalRead(PIN_BUTTON_2) == LOW)
-        && now - btnLast > 200) {
+    // Either button toggles the view, on the press edge only (debounced, and
+    // requires a release before the next toggle so holding it does not strobe).
+    static bool     btnWasDown = false;
+    static uint32_t btnLast    = 0;
+    bool btnDown = (digitalRead(PIN_BUTTON_1) == LOW || digitalRead(PIN_BUTTON_2) == LOW);
+    if (btnDown && !btnWasDown && now - btnLast > 200) {
         btnLast = now;
         g_view = (g_view == VIEW_PIANO) ? VIEW_LOG : VIEW_PIANO;
     }
+    btnWasDown = btnDown;
 
     if (now - lastRenderMs >= 100) {
         lastRenderMs = now;

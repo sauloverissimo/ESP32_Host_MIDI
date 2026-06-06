@@ -47,6 +47,10 @@ private:
     void emit(uint8_t d1, uint8_t d2) {
         uint8_t status = status_ & 0xF0;
         uint8_t ch     = status_ & 0x0F;
+        // MIDI 1.0 convention: Note On with velocity 0 is a Note Off. Normalize
+        // here so downstream always sees an explicit Note Off (0x8); running
+        // status (status_) is left unchanged for the next message.
+        if (status == 0x90 && d2 == 0) status = 0x80;
         uint32_t w0 = ((uint32_t)0x2 << 28) | ((uint32_t)group_ << 24) |
                       ((uint32_t)(status >> 4) << 20) | ((uint32_t)ch << 16) |
                       ((uint32_t)d1 << 8) | (uint32_t)d2;

@@ -57,7 +57,6 @@
 //
 //   #include <USBConnection.h>          // USB Host MIDI 1.0
 //   #include <USBMIDI2Connection.h>     // USB Host MIDI 2.0
-//   #include <USBDeviceConnection.h>    // USB Device MIDI 1.0
 //   #include <BLEConnection.h>
 //   #include <UARTConnection.h>
 //   #include <ESPNowConnection.h>

@@ -6,9 +6,6 @@
 *.swo
 *~
 
-# Claude Code
-CLAUDE.md
-
 # Legacy files (removed in v3.0.0)
 /displayhandler.h
 /displayhandler.cpp
