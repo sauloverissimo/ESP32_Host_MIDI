@@ -1,0 +1,34 @@
+{
+  "name": "ESP32_Host_MIDI",
+  "version": "7.0.0",
+  "description": "MIDI hub for ESP32: USB Host, BLE, Apple MIDI/WiFi, OSC, Ethernet, UART/DIN-5, and ESP-NOW. All transports share a single event queue and a unified send API; read the queue and resend to bridge one transport to another. Chord detection, active note tracking, PSRAM history, and SysEx queue. Supports ESP32-S3, S2, P4, and classic ESP32.",
+  "keywords": "midi, usb-host, ble, rtp-midi, apple-midi, osc, ump, esp32",
+  "authors": [
+    {
+      "name": "Saulo Verissimo",
+      "email": "sauloverissimo@gmail.com",
+      "url": "https://github.com/sauloverissimo",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sauloverissimo/ESP32_Host_MIDI.git"
+  },
+  "headers": "ESP32_Host_MIDI.h",
+  "export": {
+    "exclude": [
+      "build/*",
+      ".github/*",
+      "examples/*/build",
+      "examples/*/build/*",
+      "extras/tests/test_native",
+      "extras/tests/test_handler",
+      "extras/tests/test_midi2_scan",
+      "extras/tests/test_usb_send"
+    ]
+  }
+}
