@@ -1,6 +1,6 @@
 # ESP32\_Host\_MIDI
 
-## The universal MIDI hub for ESP32. One clean event API for USB, BLE, WiFi, Ethernet, ESP-NOW, OSC, and DIN-5.
+## The universal MIDI host hub for ESP32. One clean event API for USB, BLE, WiFi, Ethernet, ESP-NOW, OSC, and DIN-5.
 
 ![ESP32_Host_MIDI](https://raw.githubusercontent.com/sauloverissimo/ESP32_Host_MIDI/main/ESP32_Host_MIDI.png)
 
