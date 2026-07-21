@@ -54,27 +54,122 @@ jobs:
       - name: Run MIDI2 scan tests
         run: ./extras/tests/test_midi2_scan
 
+      - name: Build USB send test binary
+        run: |
+          g++ -std=c++17 \
+              -Iextras/tests/stub \
+              -Isrc \
+              -Wall -Wextra -Wno-unused-parameter -Wno-comment \
+              -o extras/tests/test_usb_send extras/tests/test_usb_send.cpp
+
+      - name: Run USB send tests
+        run: ./extras/tests/test_usb_send
+
   # ---------------------------------------------------------------------------
-  # Job 2 — Arduino compile check (ESP32-S3)
-  # Verifies the library compiles with the real ESP32 Arduino toolchain.
-  # Uses the simplest example (UART-only, no external display libraries).
+  # Job 2 — Transport probe matrix (every transport × every chip)
+  #
+  # The Arduino IDE compiles every .cpp under src/, even for sketches that never
+  # include the matching header. A transport whose .cpp is not guarded by a
+  # feature macro therefore breaks the build on chips lacking that hardware —
+  # e.g. USBConnection.cpp pulling <usb/usb_host.h> on the ESP32-C6, which has
+  # no USB-OTG peripheral (reported in discussion #28, fixed in v7.0.1).
+  #
+  # A single-chip CI cannot see that class of bug: the ESP32-S3 has USB-OTG, so
+  # the build stayed green while non-USB chips were broken. Compiling one probe
+  # per transport across the full chip matrix is what makes it visible.
+  #
+  # Probes cover only transports with no third-party dependencies. RTPMIDI and
+  # EthernetMIDI (AppleMIDI / Ethernet) are header-only, so their code is never
+  # compiled unless a sketch includes them — structurally immune to this bug.
   # ---------------------------------------------------------------------------
-  arduino-compile:
-    name: Arduino compile — ESP32-S3
+  transport-matrix:
+    name: ${{ matrix.chip }} — ${{ matrix.transport }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        chip:
+          - esp32      # classic  — no USB-OTG, native BT
+          - esp32s2    # USB-OTG  — no Bluetooth at all
+          - esp32s3    # USB-OTG  + native BT
+          - esp32p4    # USB-OTG (HS), BLE via ESP-Hosted co-processor (C6)
+          - esp32c3    # no USB-OTG, native BT
+          - esp32c6    # no USB-OTG, native BT — the discussion #28 target
+        transport:
+          - UARTConnection
+          - BLEConnection
+          - BLEClientConnection
+          - ESPNowConnection
+          - OSCConnection
+          - MIDI2UDPConnection
+          - USBConnection
+          - USBMIDI2Connection
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: arduino/compile-sketches@v1
         with:
-          fqbn: 'esp32:esp32:esp32s3'
+          fqbn: 'esp32:esp32:${{ matrix.chip }}'
           platforms: |
             - name: esp32:esp32
               source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           libraries: |
             - source-path: ./
           sketch-paths: |
-            - examples/P4-Dual-UART-MIDI
-            - examples/UART-MIDI-Basic
-            - examples/USB-Host-MIDI2
+            - extras/ci/probes/probe_${{ matrix.transport }}
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — Real examples, on the chips they target
+  #
+  # Listed per chip rather than as a cartesian product: USB-Host-MIDI2 is
+  # meaningless on a chip without USB-OTG, and P4-Dual-UART-MIDI targets the P4.
+  # Examples requiring third-party libraries (Ethernet-MIDI, RTP-MIDI-WiFi,
+  # T-Display-S3-*) are not covered here yet.
+  # ---------------------------------------------------------------------------
+  examples:
+    name: Examples — ${{ matrix.chip }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - chip: esp32s3
+            sketches: |
+              - examples/UART-MIDI-Basic
+              - examples/USB-Host-MIDI2
+              - examples/MIDI-Router
+          - chip: esp32p4
+            sketches: |
+              - examples/UART-MIDI-Basic
+              - examples/USB-Host-MIDI2
+              - examples/MIDI-Router
+              - examples/P4-Dual-UART-MIDI
+          - chip: esp32s2
+            sketches: |
+              - examples/UART-MIDI-Basic
+              - examples/USB-Host-MIDI2
+          - chip: esp32c6
+            sketches: |
+              - examples/UART-MIDI-Basic
+          - chip: esp32c3
+            sketches: |
+              - examples/UART-MIDI-Basic
+          - chip: esp32
+            sketches: |
+              - examples/UART-MIDI-Basic
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/compile-sketches@v1
+        with:
+          fqbn: 'esp32:esp32:${{ matrix.chip }}'
+          platforms: |
+            - name: esp32:esp32
+              source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          libraries: |
+            - source-path: ./
+          sketch-paths: ${{ matrix.sketches }}
