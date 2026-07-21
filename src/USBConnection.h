@@ -2,6 +2,19 @@
 #define USB_CONNECTION_H
 
 #include <Arduino.h>
+
+// USB Host requires USB-OTG hardware (S2 / S3 / P4). On chips without it
+// (ESP32 classic, C3, C6, H2) this header collapses to nothing, so the Arduino
+// IDE can still build the library's non-USB sources for those targets.
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || \
+    defined(CONFIG_IDF_TARGET_ESP32P4)
+#define ESP32_HOST_MIDI_USB_AVAILABLE 1
+#else
+#define ESP32_HOST_MIDI_USB_AVAILABLE 0
+#endif
+
+#if ESP32_HOST_MIDI_USB_AVAILABLE
+
 #include <vector>
 #include <usb/usb_host.h>
 #include <freertos/portmacro.h>
@@ -28,6 +41,7 @@ public:
 
     // Returns whether the USB connection is ready.
     bool isConnected() const override { return isReady; }
+    const char* name() const override { return "USB Host"; }
 
     // Sends a MIDI message to the connected USB device.
     bool sendMidiMessage(const uint8_t* data, size_t length) override;
@@ -85,5 +99,7 @@ protected:
     virtual void _processConfig(const usb_config_desc_t *config_desc);
     virtual void _onDeviceGone() {}  // Override to free extra resources on disconnect.
 };
+
+#endif // ESP32_HOST_MIDI_USB_AVAILABLE
 
 #endif // USB_CONNECTION_H

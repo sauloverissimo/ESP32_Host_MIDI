@@ -1,4 +1,7 @@
 #include "USBMIDI2Connection.h"
+
+#if ESP32_HOST_MIDI_USB_AVAILABLE
+
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -424,3 +427,5 @@ void USBMIDI2Connection::_onGTBResponse(usb_transfer_t* transfer) {
 void USBMIDI2Connection::_parseGTBResponse(const uint8_t* data, uint16_t len) {
     _gtbCount = usbmidi::core::parseGTB(data, len, _gtb, MAX_GTB);
 }
+
+#endif // ESP32_HOST_MIDI_USB_AVAILABLE

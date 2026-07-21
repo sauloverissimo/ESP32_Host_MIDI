@@ -1,4 +1,7 @@
 #include "USBConnection.h"
+
+#if ESP32_HOST_MIDI_USB_AVAILABLE
+
 #include <string.h>
 
 static bool isValidMidiMessage(const uint8_t* midiData, size_t length) {
@@ -393,3 +396,5 @@ void USBConnection::_onSendComplete(usb_transfer_t *transfer) {
         usbCon->_outTransferBusy = false;
     }
 }
+
+#endif // ESP32_HOST_MIDI_USB_AVAILABLE

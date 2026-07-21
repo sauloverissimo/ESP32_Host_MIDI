@@ -1,5 +1,7 @@
 #include "BLEConnection.h"
 
+#if ESP32_HOST_MIDI_BLE_AVAILABLE
+
 // CCCD descriptor handling.
 //
 // The BLE library shipped with arduino-esp32 is Neil Kolban / Dariusz Krempa
@@ -223,3 +225,5 @@ bool BLEConnection::sendMidiMessage(const uint8_t* data, size_t length) {
     xSemaphoreGive(sendMutex);
     return sent;
 }
+
+#endif // ESP32_HOST_MIDI_BLE_AVAILABLE

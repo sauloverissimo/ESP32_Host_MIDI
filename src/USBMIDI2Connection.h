@@ -2,6 +2,9 @@
 #define USB_MIDI2_CONNECTION_H
 
 #include "USBConnection.h"
+
+#if ESP32_HOST_MIDI_USB_AVAILABLE
+
 #include "USBMIDITransportCore.h"
 
 // USBMIDI2Connection — USB Host with MIDI 2.0/UMP negotiation.
@@ -32,6 +35,8 @@
 class USBMIDI2Connection : public USBConnection {
 public:
     USBMIDI2Connection();
+
+    const char* name() const override { return "USB Host MIDI2"; }
 
     // True when the connected device negotiated MIDI 2.0 (Alt 1).
     bool isMIDI2() const { return _midi2Active; }
@@ -140,5 +145,7 @@ private:
     // Bulk IN callback for UMP mode — reads raw uint32_t words, no CIN.
     static void _onReceiveUMP(usb_transfer_t* transfer);
 };
+
+#endif // ESP32_HOST_MIDI_USB_AVAILABLE
 
 #endif // USB_MIDI2_CONNECTION_H
