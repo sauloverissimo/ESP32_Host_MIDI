@@ -14,6 +14,7 @@ MIDIHandlerConfig        KEYWORD1
 RawUsbMessage            KEYWORD1
 RawBleMessage            KEYWORD1
 ESPNowConnection         KEYWORD1
+BLEClientConnection      KEYWORD1
 RawEspNowMessage         KEYWORD1
 GingoAdapter             KEYWORD1
 ST7789_Handler           KEYWORD1
@@ -41,6 +42,11 @@ lastChord                 KEYWORD2
 getChord                  KEYWORD2
 getAnswer                 KEYWORD2
 isConnected               KEYWORD2
+getConnectedAddress       KEYWORD2
+getTransport              KEYWORD2
+getTransportCount         KEYWORD2
+setName                   KEYWORD2
+name                      KEYWORD2
 enqueueMidiMessage        KEYWORD2
 dequeueMidiMessage        KEYWORD2
 getQueueSize              KEYWORD2

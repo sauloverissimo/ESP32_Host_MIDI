@@ -29,6 +29,7 @@ public:
 
     // Returns true after successful begin().
     bool isConnected() const override;
+    const char* name() const override { return "ESP-NOW"; }
 
     // Sends raw MIDI bytes via ESP-NOW (broadcast or unicast).
     bool sendMidiMessage(const uint8_t* data, size_t length) override;

@@ -26,6 +26,9 @@ public:
     virtual void task() = 0;
     virtual bool isConnected() const = 0;
 
+    // Human-readable name for identification (e.g. "USB Host", "BLE Server").
+    virtual const char* name() const { return "Transport"; }
+
     // Optional: send MIDI bytes (not all transports support sending).
     // Returns true if the message was sent successfully.
     virtual bool sendMidiMessage(const uint8_t* data, size_t length) { return false; }
