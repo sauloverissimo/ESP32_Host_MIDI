@@ -147,7 +147,8 @@ public:
       return (index >= 0 && index < transportCount) ? transports[index] : nullptr;
   }
 
-  // MIDI Output — send via specific transport, or broadcast if target is nullptr.
+  // MIDI Output — send via a specific transport, or via the first transport
+  // that accepts the message if target is nullptr. channel: 1-16.
   // channel: 1-16. Returns true if the message was sent.
   bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);
   bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);

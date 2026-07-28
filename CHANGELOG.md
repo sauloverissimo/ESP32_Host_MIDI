@@ -19,11 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Selective routing: `MIDITransport::name()`, `MIDIMessage::source`, an optional
-  `MIDITransport* target` on all `send*()` methods (defaults to broadcast), and
-  `getTransportCount()` / `getTransport(index)`.
+  `MIDITransport* target` on all `send*()` methods (no target sends via the first
+  transport that accepts), and `getTransportCount()` / `getTransport(index)`.
 - `BLEClientConnection`, a BLE central transport that complements the peripheral
-  `BLEConnection`.
-- `MIDI-Router` example.
+  `BLEConnection`. Sending to devices that only accept `WRITE_NO_RESPONSE` comes
+  from @al177 (PR #24).
+- `MIDI-Router` (ESP32-S3, USB Host to DIN-5) and `MIDI-Router-P4` (ESP32-P4,
+  USB Host with BLE) examples.
 - CI matrix: six chips (ESP32, S2, S3, P4, C3, C6) across every dependency-free
   transport plus the examples, 60 compilations per run. Probe sketches live in
   `extras/ci/probes/`, one per transport, so per-chip build coverage is explicit.
