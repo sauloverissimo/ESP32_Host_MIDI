@@ -64,8 +64,9 @@ private:
     std::string targetDevName;
     bool _scanning = false;
     bool _connected = false;
-    bool _shouldConnect = false;
-    BLEAddress* foundAddress = nullptr;
+    volatile bool _shouldConnect = false;
+    BLEAddress foundAddr;              // set by the scan callback, read in task();
+                                       // stored by value (no dynamic allocation)
 
     // Ring buffer for incoming MIDI (same pattern as BLEConnection)
     static const int QUEUE_SIZE = 64;
@@ -105,6 +106,12 @@ private:
     // Static notify callback adapter (BLE stack requirement)
     static void notifyCallbackStatic(BLERemoteCharacteristic* ch,
                                      uint8_t* data, size_t length, bool isNotify);
+
+    // Static scan-complete adapter: the BLEScan singleton invokes this when a
+    // scan window ends. Clears _scanning on every instance so task() can start a
+    // fresh window; without it, a peripheral powered on after the first window
+    // would never be discovered.
+    static void scanCompleteStatic(BLEScanResults results);
 
     // Instance registry for static callback routing (max 3 simultaneous clients)
     static const int MAX_INSTANCES = 3;

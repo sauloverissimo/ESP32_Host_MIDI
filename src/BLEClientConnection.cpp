@@ -21,7 +21,6 @@ BLEClientConnection::~BLEClientConnection() {
     }
     delete clientCallback;
     delete scanCallback;
-    delete foundAddress;
     unregisterInstance();
 }
 
@@ -73,17 +72,39 @@ void BLEClientConnection::startScan() {
     pScan->setActiveScan(true);
     pScan->setInterval(100);
     pScan->setWindow(99);
-    pScan->start(5, false);  // 5 second scan, non-blocking
     _scanning = true;
+    // Non-blocking: the callback overload returns at once and invokes
+    // scanCompleteStatic when the 5 s window ends. The start(5, false) overload
+    // waits on a semaphore and would stall the whole MIDIHandler loop for 5 s.
+    if (!pScan->start(5, scanCompleteStatic, false)) {
+        _scanning = false;  // start failed; let task() retry on the next loop
+    }
+}
+
+void BLEClientConnection::scanCompleteStatic(BLEScanResults) {
+    // A scan window elapsed. Clear _scanning on every instance so task()'s
+    // rescan guard opens a fresh window for any client still looking.
+    for (int i = 0; i < MAX_INSTANCES; i++) {
+        if (instances[i]) {
+            instances[i]->_scanning = false;
+        }
+    }
 }
 
 void BLEClientConnection::task() {
-    // If we found a device during scan, try to connect
-    if (_shouldConnect && foundAddress && !_connected) {
-        BLEAddress addr = *foundAddress;
-        delete foundAddress;
-        foundAddress = nullptr;
+    // If we found a device during scan, try to connect. Take the address under
+    // the lock, then run the slow connectToDevice() outside it (never hold a
+    // spinlock across a BLE connect).
+    BLEAddress addr;
+    bool doConnect = false;
+    portENTER_CRITICAL(&queueMux);
+    if (_shouldConnect && !_connected) {
+        addr = foundAddr;
         _shouldConnect = false;
+        doConnect = true;
+    }
+    portEXIT_CRITICAL(&queueMux);
+    if (doConnect) {
         _scanning = false;
         connectToDevice(addr);
     }
@@ -136,7 +157,15 @@ void BLEClientConnection::disconnect() {
         pClient->disconnect();
     }
     _connected = false;
-    pRemoteChar = nullptr;
+    // Clear pRemoteChar under sendMutex (see sendMidiMessage) to avoid a null
+    // deref if a send is in flight on the main loop.
+    if (sendMutex) {
+        xSemaphoreTake(sendMutex, portMAX_DELAY);
+        pRemoteChar = nullptr;
+        xSemaphoreGive(sendMutex);
+    } else {
+        pRemoteChar = nullptr;
+    }
 }
 
 std::string BLEClientConnection::getConnectedAddress() const {
@@ -166,7 +195,7 @@ void BLEClientConnection::notifyCallbackStatic(BLERemoteCharacteristic* ch,
 // --- BLE MIDI Output ---
 
 bool BLEClientConnection::sendMidiMessage(const uint8_t* data, size_t length) {
-    if (!pRemoteChar || !sendMutex || length == 0 || !_connected) return false;
+    if (!sendMutex || length == 0 || !_connected) return false;
 
     // Build BLE MIDI packet: header + timestamp + MIDI bytes
     uint32_t ts = (uint32_t)millis();
@@ -181,9 +210,12 @@ bool BLEClientConnection::sendMidiMessage(const uint8_t* data, size_t length) {
 
     if (xSemaphoreTake(sendMutex, pdMS_TO_TICKS(100)) != pdTRUE) return false;
 
+    // Read pRemoteChar under the lock. onDisconnect()/disconnect() clear it under
+    // the same mutex, so a teardown mid-send can never leave us dereferencing null.
     bool sent = false;
-    if (_connected && (pRemoteChar->canWrite() || pRemoteChar->canWriteNoResponse())) {
-        pRemoteChar->writeValue(packet, 2 + midiLen, false);
+    BLERemoteCharacteristic* ch = pRemoteChar;
+    if (_connected && ch && (ch->canWrite() || ch->canWriteNoResponse())) {
+        ch->writeValue(packet, 2 + midiLen, false);
         sent = true;
     }
 
@@ -246,12 +278,15 @@ void BLEClientConnection::ScanCB::onResult(BLEAdvertisedDevice advertisedDevice)
             std::string(advertisedDevice.getName().c_str()) != parent->targetDevName) return;
     }
 
-    // Found a match: stop scan, store address for task() to connect on main loop
+    // Found a match: stop scan, store address for task() to connect on main loop.
+    // Runs in the BLE stack task; the short critical section guards the handoff
+    // against task() on the main loop (address stored by value, no allocation).
     BLEDevice::getScan()->stop();
     parent->_scanning = false;
-    delete parent->foundAddress;
-    parent->foundAddress = new BLEAddress(advertisedDevice.getAddress());
+    portENTER_CRITICAL(&parent->queueMux);
+    parent->foundAddr = advertisedDevice.getAddress();
     parent->_shouldConnect = true;
+    portEXIT_CRITICAL(&parent->queueMux);
 }
 
 // --- Client Callbacks ---
@@ -262,7 +297,15 @@ void BLEClientConnection::ClientCB::onConnect(BLEClient*) {
 
 void BLEClientConnection::ClientCB::onDisconnect(BLEClient*) {
     parent->_connected = false;
-    parent->pRemoteChar = nullptr;
+    // Clear pRemoteChar under sendMutex so a concurrent sendMidiMessage() on the
+    // main loop never dereferences it mid-teardown (see sendMidiMessage).
+    if (parent->sendMutex) {
+        xSemaphoreTake(parent->sendMutex, portMAX_DELAY);
+        parent->pRemoteChar = nullptr;
+        xSemaphoreGive(parent->sendMutex);
+    } else {
+        parent->pRemoteChar = nullptr;
+    }
     // Flush ring buffer
     portENTER_CRITICAL(&parent->queueMux);
     parent->queueHead = 0;
