@@ -37,7 +37,9 @@ public:
     // Begin scanning for BLE MIDI peripherals.
     // targetAddress: if non-empty, only connect to this specific device.
     // deviceName: optional filter by advertised name.
-    void begin(const std::string& targetAddress = "", const std::string& deviceName = "");
+    // Returns false if the client registry is full (MAX_INSTANCES already in
+    // use), in which case this client cannot receive notifications.
+    bool begin(const std::string& targetAddress = "", const std::string& deviceName = "");
 
     void task() override;
     bool isConnected() const override;
@@ -116,8 +118,7 @@ private:
     // Instance registry for static callback routing (max 3 simultaneous clients)
     static const int MAX_INSTANCES = 3;
     static BLEClientConnection* instances[MAX_INSTANCES];
-    static int instanceCount;
-    void registerInstance();
+    bool registerInstance();
     void unregisterInstance();
 };
 

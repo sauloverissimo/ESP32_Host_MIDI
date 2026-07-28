@@ -8,7 +8,6 @@ static const char* BLE_MIDI_CHAR = "7772E5DB-3868-4112-A1A9-F2669D106BF3";
 
 // Static instance registry
 BLEClientConnection* BLEClientConnection::instances[MAX_INSTANCES] = { nullptr };
-int BLEClientConnection::instanceCount = 0;
 
 BLEClientConnection::BLEClientConnection() {}
 
@@ -24,27 +23,26 @@ BLEClientConnection::~BLEClientConnection() {
     unregisterInstance();
 }
 
-void BLEClientConnection::registerInstance() {
+bool BLEClientConnection::registerInstance() {
     for (int i = 0; i < MAX_INSTANCES; i++) {
         if (instances[i] == nullptr) {
             instances[i] = this;
-            instanceCount++;
-            return;
+            return true;
         }
     }
+    return false;
 }
 
 void BLEClientConnection::unregisterInstance() {
     for (int i = 0; i < MAX_INSTANCES; i++) {
         if (instances[i] == this) {
             instances[i] = nullptr;
-            instanceCount--;
             return;
         }
     }
 }
 
-void BLEClientConnection::begin(const std::string& targetAddress, const std::string& deviceName) {
+bool BLEClientConnection::begin(const std::string& targetAddress, const std::string& deviceName) {
     targetAddr = targetAddress;
     targetDevName = deviceName;
     sendMutex = xSemaphoreCreateMutex();
@@ -58,8 +56,13 @@ void BLEClientConnection::begin(const std::string& targetAddress, const std::str
     clientCallback = new ClientCB(this);
     pClient->setClientCallbacks(clientCallback);
 
-    registerInstance();
+    // Register in the static callback table before scanning. If the registry is
+    // full, this client would never receive notifications, so report and stop.
+    if (!registerInstance()) {
+        return false;
+    }
     startScan();
+    return true;
 }
 
 void BLEClientConnection::startScan() {
