@@ -6,7 +6,7 @@
 // BLE requires a Bluetooth stack. Present on the ESP32 classic, S3, C3, C6 and
 // H2, and on the P4 through its ESP-Hosted co-processor (an ESP32-C6 over SDIO,
 // which is why CONFIG_BT_ENABLED is the right probe here and
-// CONFIG_SOC_BT_SUPPORTED is not — the P4 has no local radio yet supports BLE).
+// CONFIG_SOC_BT_SUPPORTED is not: the P4 has no local radio yet supports BLE).
 // The ESP32-S2 has no Bluetooth at all, so this header collapses to nothing and
 // the Arduino IDE can still build the library's non-BLE sources for it.
 #if defined(CONFIG_BT_ENABLED)

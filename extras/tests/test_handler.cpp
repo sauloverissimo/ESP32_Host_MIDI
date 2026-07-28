@@ -1114,7 +1114,7 @@ void test_transport_access() {
 }
 
 // ---------------------------------------------------------------------------
-// Test: Routing scenario — al1-24's use case
+// Test: Routing scenario
 // ---------------------------------------------------------------------------
 
 void test_routing_scenario() {
