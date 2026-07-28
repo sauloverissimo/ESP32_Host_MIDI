@@ -70,9 +70,9 @@ jobs:
   #
   # The Arduino IDE compiles every .cpp under src/, even for sketches that never
   # include the matching header. A transport whose .cpp is not guarded by a
-  # feature macro therefore breaks the build on chips lacking that hardware —
-  # e.g. USBConnection.cpp pulling <usb/usb_host.h> on the ESP32-C6, which has
-  # no USB-OTG peripheral (reported in discussion #28, fixed in v7.0.1).
+  # feature macro therefore breaks the build on chips lacking that hardware.
+  # For example, USBConnection.cpp pulls <usb/usb_host.h> on the ESP32-C6, which
+  # has no USB-OTG peripheral (reported in discussion #28, fixed in v7.1.0).
   #
   # A single-chip CI cannot see that class of bug: the ESP32-S3 has USB-OTG, so
   # the build stayed green while non-USB chips were broken. Compiling one probe
@@ -80,7 +80,7 @@ jobs:
   #
   # Probes cover only transports with no third-party dependencies. RTPMIDI and
   # EthernetMIDI (AppleMIDI / Ethernet) are header-only, so their code is never
-  # compiled unless a sketch includes them — structurally immune to this bug.
+  # compiled unless a sketch includes them, keeping them immune to this bug.
   # ---------------------------------------------------------------------------
   transport-matrix:
     name: ${{ matrix.chip }} — ${{ matrix.transport }}
