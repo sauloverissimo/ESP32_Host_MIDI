@@ -1,43 +1,44 @@
 // ESP32_Host_MIDI / MIDI-Router
-// Selective MIDI routing between transports.
+// Selective MIDI routing between transports on the ESP32-S3.
 //
-// - USB Host: reads from a MIDI controller (wind controller, keyboard)
-// - BLE Server: accepts connection from a synth app (iPad, phone)
-// - BLE Client: connects to a foot controller (BLE MIDI peripheral)
+// - USB Host: reads from a USB MIDI controller (keyboard, wind controller)
+// - UART / DIN-5: forwards to classic 5-pin MIDI gear (synth, sound module)
 //
-// All input is processed and forwarded ONLY to the BLE Server (synth).
-// No echo back to input devices.
+// Input from USB is processed and forwarded ONLY to the DIN-5 output, using the
+// per-transport send API (source tracking + targeted send).
 //
-// Requires: ESP32-S3 (or S2/P4) for USB Host, BLE-capable chip for BLE.
-// Arduino IDE: Board ESP32-S3 | USB Mode: default | Serial 115200
+// Why these two transports: USB Host and UART are independent peripherals, so
+// they run together with no contention. On the ESP32-S3, USB Host cannot share
+// the chip with a radio transport (BLE / Wi-Fi / ESP-NOW): the USB PHY is shared
+// with the radio. For USB Host + BLE together, use the ESP32-P4 (see the
+// MIDI-Router-P4 example).
+//
+// Board: ESP32-S3 (USB Host requires S3/S2/P4). Serial 115200.
+// DIN-5: a MIDI output circuit on UART1 (see the UART-MIDI-Basic example wiring).
 
 #include <Arduino.h>
 #include <ESP32_Host_MIDI.h>
 #include <USBConnection.h>
-#include <BLEConnection.h>
-#include <BLEClientConnection.h>
+#include <UARTConnection.h>
 
-USBConnection usbHost;               // MIDI controller plugged into the OTG port
-BLEConnection bleSynth;              // synth app connects to us (BLE Server)
-BLEClientConnection footController;  // we connect to the foot controller (BLE Client)
+USBConnection usbHost;    // controller plugged into the OTG port
+UARTConnection dinOut;    // DIN-5 output on UART1
 
-// Last processed event index, used to detect new events in the queue.
+static const int DIN_RX_PIN = 44;   // adjust to your board
+static const int DIN_TX_PIN = 43;
+
 static int lastEventIndex = -1;
 
 void setup() {
     Serial.begin(115200);
     delay(300);
-    Serial.println("MIDI Router - starting");
+    Serial.println("MIDI Router (S3): USB Host -> DIN-5");
 
     usbHost.begin();
     midiHandler.addTransport(&usbHost);
 
-    bleSynth.begin("ESP32 MIDI Router");
-    midiHandler.addTransport(&bleSynth);
-
-    footController.setName("Foot Controller");
-    footController.begin();  // starts scanning for BLE MIDI peripherals
-    midiHandler.addTransport(&footController);
+    dinOut.begin(Serial1, DIN_RX_PIN, DIN_TX_PIN);
+    midiHandler.addTransport(&dinOut);
 
     MIDIHandlerConfig cfg;
     cfg.maxEvents = 50;
@@ -52,49 +53,32 @@ void setup() {
 void loop() {
     midiHandler.task();
 
-    MIDITransport* synth = &bleSynth;
-
-    // Process new events and route selectively.
+    // Route every new event that came from USB out to the DIN-5 port.
     const auto& queue = midiHandler.getQueue();
     for (const auto& event : queue) {
         if (event.index <= lastEventIndex) continue;
         lastEventIndex = event.index;
 
-        // Skip events with no source or from the synth itself (no echo).
-        if (!event.source || event.source == synth) continue;
+        // Only forward what the USB controller sent; never echo DIN back to USB.
+        if (event.source != &usbHost) continue;
 
+        uint8_t ch = event.channel0 + 1;   // send API is 1-based
         switch (event.statusCode) {
             case MIDI_NOTE_ON:
-                midiHandler.sendNoteOn(event.channel0 + 1, event.noteNumber,
-                                       event.velocity7, synth);
+                midiHandler.sendNoteOn(ch, event.noteNumber, event.velocity7, &dinOut);
                 break;
-
             case MIDI_NOTE_OFF:
-                midiHandler.sendNoteOff(event.channel0 + 1, event.noteNumber,
-                                        event.velocity7, synth);
+                midiHandler.sendNoteOff(ch, event.noteNumber, event.velocity7, &dinOut);
                 break;
-
             case MIDI_CONTROL_CHANGE:
-                // Example: remap foot controller CCs to channel 16.
-                if (event.source == &footController) {
-                    midiHandler.sendControlChange(16, event.noteNumber,
-                                                  event.velocity7, synth);
-                } else {
-                    midiHandler.sendControlChange(event.channel0 + 1, event.noteNumber,
-                                                  event.velocity7, synth);
-                }
+                midiHandler.sendControlChange(ch, event.noteNumber, event.velocity7, &dinOut);
                 break;
-
-            case MIDI_PITCH_BEND:
-                midiHandler.sendPitchBend(event.channel0 + 1,
-                                          (int)event.pitchBend14 - 8192, synth);
-                break;
-
             case MIDI_PROGRAM_CHANGE:
-                midiHandler.sendProgramChange(event.channel0 + 1,
-                                              event.noteNumber, synth);
+                midiHandler.sendProgramChange(ch, event.noteNumber, &dinOut);
                 break;
-
+            case MIDI_PITCH_BEND:
+                midiHandler.sendPitchBend(ch, (int)event.pitchBend14 - 8192, &dinOut);
+                break;
             default:
                 break;
         }

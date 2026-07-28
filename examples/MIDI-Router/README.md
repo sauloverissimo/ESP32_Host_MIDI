@@ -2,19 +2,23 @@
 
 ## MIDI-Router
 
-Selective MIDI routing between transports. A USB MIDI controller and a BLE
-foot controller (BLE Client) feed the handler; everything is forwarded only
-to a synth app connected over BLE (BLE Server), with no echo back to the
-input devices.
+Selective MIDI routing between transports on the ESP32-S3. A USB MIDI controller
+feeds the handler, and every event it sends is forwarded to a classic DIN-5
+output over UART, using the per-transport send API. Nothing is echoed back.
+
+USB Host and UART are independent peripherals, so they run together with no
+contention. On the ESP32-S3, USB Host cannot share the chip with a radio
+transport (BLE / Wi-Fi / ESP-NOW): the USB PHY is shared with the radio. For a
+router that combines USB Host and BLE, use the ESP32-P4, see the MIDI-Router-P4
+example.
 
 Demonstrates the routing API:
 
 - `event.source`: the transport that received each event
-- `name()` / `setName()`: identify transports in routing logic
-- `sendNoteOn(..., target)`: send to one transport instead of broadcasting
+- `name()`: identify transports in routing logic
+- `sendNoteOn(..., target)`: send to one specific transport (no target sends via
+  the first transport that accepts)
 - `getTransportCount()` / `getTransport(i)`: enumerate registered transports
-- `BLEClientConnection`: BLE Central role, scans and connects to a BLE MIDI
-  peripheral (multiple instances supported)
 
 ## Build
 
@@ -28,14 +32,14 @@ arduino-cli compile -b esp32:esp32:esp32s3 --library . examples/MIDI-Router
 
 - ESP32-S3 (or S2/P4) with the OTG port wired for USB Host (VBUS to the device)
 - A USB MIDI controller on the OTG port
-- A BLE MIDI peripheral (foot controller) for the BLE Client to find
-- A synth app (iPad/phone/desktop) connecting to "ESP32 MIDI Router" over BLE
+- A DIN-5 MIDI output circuit on UART1 (see the UART-MIDI-Basic example for the
+  wiring; adjust `DIN_RX_PIN` / `DIN_TX_PIN` to your board)
+- A synth or sound module on the DIN-5 output
 
 ## Validation
 
-1. Plug the USB controller and play: notes appear on the synth app.
-2. Pair the foot controller: its CCs arrive on the synth remapped to channel 16.
-3. Nothing is echoed back to the controller or the foot controller.
+1. Plug the USB controller and play: notes appear at the DIN-5 output.
+2. Only events from the USB controller are forwarded; nothing is echoed back.
 
 ## License
 
