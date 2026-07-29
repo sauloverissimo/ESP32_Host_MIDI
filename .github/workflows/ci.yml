@@ -78,9 +78,10 @@ jobs:
   # the build stayed green while non-USB chips were broken. Compiling one probe
   # per transport across the full chip matrix is what makes it visible.
   #
-  # Probes cover only transports with no third-party dependencies. RTPMIDI and
-  # EthernetMIDI (AppleMIDI / Ethernet) are header-only, so their code is never
-  # compiled unless a sketch includes them, keeping them immune to this bug.
+  # Probes cover only transports with no third-party dependencies. RTPMIDI,
+  # EthernetMIDI (AppleMIDI / Ethernet), and OSC (CNMAT/OSC) are header-only, so
+  # their code is never compiled unless a sketch includes them, keeping them
+  # immune to this bug.
   # ---------------------------------------------------------------------------
   transport-matrix:
     name: ${{ matrix.chip }} — ${{ matrix.transport }}
@@ -101,7 +102,6 @@ jobs:
           - BLEConnection
           - BLEClientConnection
           - ESPNowConnection
-          - OSCConnection
           - MIDI2UDPConnection
           - USBConnection
           - USBMIDI2Connection
