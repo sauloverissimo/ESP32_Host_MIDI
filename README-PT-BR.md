@@ -119,7 +119,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ## Envio e pontes
 
-Envie por qualquer transporte com a API unificada. O `send*` tenta cada transporte registrado em ordem e para no primeiro que aceitar a mensagem (first-wins). O canal vai de 1 a 16.
+Envie por qualquer transporte com a API unificada. Sem destino, o `send*` tenta cada transporte registrado em ordem e para no primeiro que aceitar (first-wins); passe um transporte `target` para enviar a um específico. O canal vai de 1 a 16.
 
 ```cpp
 midiHandler.sendNoteOn(1, 60, 100);
@@ -146,6 +146,22 @@ for (const auto& ev : midiHandler.getQueue()) {
 | Moderno para legado | macOS -> RTP-MIDI -> ESP32 -> DIN-5 -> caixa de ritmo dos anos 80 |
 | Mesh de palco sem fio | Nós ESP-NOW -> hub ESP32 -> RTP-MIDI -> computador da FOH |
 | Software criativo | Max/MSP OSC -> ESP32 -> BLE -> app instrumento no iPad |
+
+### Roteamento seletivo
+
+Cada evento registra o transporte de `source` em que chegou, então o `loop()` pode rotear pela entrada. Combinado com um `target` no `send*`, você encaminha exatamente o que quer:
+
+```cpp
+static int lastIndex = 0;
+for (const auto& ev : midiHandler.getQueue()) {
+    if (ev.index <= lastIndex) continue;
+    lastIndex = ev.index;
+    if (ev.source == &synth) continue;   // não devolve o synth para ele mesmo
+    midiHandler.sendNoteOn(ev.channel0 + 1, ev.noteNumber, ev.velocity7, &dinOut);
+}
+```
+
+`MIDITransport::name()` / `setName()` rotulam um transporte, e `getTransportCount()` / `getTransport(i)` enumeram os registrados. Veja os exemplos `MIDI-Router` (S3) e `MIDI-Router-P4`.
 
 ---
 
@@ -219,6 +235,21 @@ BLEConnection ble;
 void setup() {
     ble.begin("ESP32 MIDI");
     midiHandler.addTransport(&ble);
+    midiHandler.begin();
+}
+```
+
+**BLE central (cliente).** O `BLEClientConnection` escaneia e conecta a um periférico BLE MIDI (uma pedaleira, outro sintetizador), complementando o servidor `BLEConnection`. O scan é não-bloqueante, e notificações em lote são separadas de volta em mensagens individuais.
+
+```cpp
+#include <BLEClientConnection.h>
+
+BLEClientConnection footController;
+
+void setup() {
+    footController.begin();                 // conecta a qualquer periférico BLE MIDI
+    // footController.begin(address, name); // ou mira um device específico
+    midiHandler.addTransport(&footController);
     midiHandler.begin();
 }
 ```
@@ -370,11 +401,13 @@ Rádio ESP32   --[ESPNowConnection]--->  +------+-------+    acorde
 |------|:--------:|:---:|:----:|:-----------------:|:----:|:-------:|
 | ESP32-S3 | sim | sim | sim | W5500 SPI | sim | sim |
 | ESP32-S2 | sim | não | sim | W5500 SPI | sim | não |
-| ESP32-P4 | sim | não | não | sim | sim (x5) | não |
+| ESP32-P4 | sim | C6 | C6 | sim | sim (x5) | não |
 | ESP32 (clássico) | não | sim | sim | W5500 SPI | sim | sim |
 | ESP32-C3 / C6 / H2 | não | sim | sim | não | sim | sim |
 
-> O Ethernet SPI W5500 funciona em qualquer ESP32 através do `EthernetMIDIConnection`. A **LilyGO T-Display-S3** (ESP32-S3 + display de 1,9") é a melhor placa geral para USB Host, BLE, WiFi e um dashboard MIDI ao vivo.
+> **C6** = através de um co-processador ESP32-C6 onboard (ESP-Hosted); o ESP32-P4 não tem rádio nativo. O Ethernet SPI W5500 funciona em qualquer ESP32 através do `EthernetMIDIConnection`.
+>
+> **USB Host e rádio.** No ESP32-S3 e S2, o USB Host e qualquer rádio (BLE, WiFi, ESP-NOW) compartilham um único PHY USB interno e não rodam ao mesmo tempo, então use um por sketch. O **ESP32-P4** aciona o rádio pelo co-processador e é a placa para USB Host junto com BLE ou WiFi. A **LilyGO T-Display-S3** (ESP32-S3 + display de 1,9") segue uma ótima placa geral quando você quer um display embutido para um dashboard MIDI ao vivo.
 
 ---
 
@@ -394,6 +427,8 @@ A pasta [`examples/`](examples) traz sketches prontos, vários com foto e demo e
 | `T-Display-S3-OSC` | OSC + WiFi | Ponte OSC para MIDI com display |
 | `UART-MIDI-Basic` | UART / DIN-5 | DIN-5 entrada e saída |
 | `P4-Dual-UART-MIDI` | UART / DIN-5 | Duas UARTs por hardware no ESP32-P4 |
+| `MIDI-Router` | USB Host + UART | Roteia um controlador USB para uma saída DIN-5 (S3) |
+| `MIDI-Router-P4` | USB Host + BLE | USB, servidor BLE e cliente BLE ao mesmo tempo (P4) |
 
 <p align="center">
   <img src="examples/RTP-MIDI-WiFi/images/RTP.jpeg" width="280" />&nbsp;
@@ -453,8 +488,9 @@ std::vector<std::string> n = midiHandler.getActiveNotesVector(); // ["C4","E4","
 size_t count = midiHandler.getActiveNotesCount();
 // SysEx: midiHandler.getSysExQueue(), setSysExCallback(cb), sendSysEx(data, len)
 
-// Enviar (vence o primeiro transporte que aceitar a mensagem)
-midiHandler.sendNoteOn(ch, note, vel);        // ch: 1-16
+// Enviar: sem destino = primeiro transporte que aceitar; passe um target para rotear
+midiHandler.sendNoteOn(ch, note, vel);             // ch: 1-16
+midiHandler.sendNoteOn(ch, note, vel, &transport); // para um transporte específico
 midiHandler.sendNoteOff(ch, note, vel);
 midiHandler.sendControlChange(ch, ctrl, val);
 midiHandler.sendProgramChange(ch, prog);
