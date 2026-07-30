@@ -66,18 +66,21 @@ void MIDIHandler::task() {
 // --- Transport Abstraction ---
 
 void MIDIHandler::_onTransportMidiData(void* ctx, const uint8_t* data, size_t len) {
-  static_cast<MIDIHandler*>(ctx)->handleMidiMessage(data, len);
+  auto* tc = static_cast<TransportContext*>(ctx);
+  tc->handler->handleMidiMessage(data, len, tc->transport);
 }
 
 void MIDIHandler::_onTransportDisconnected(void* ctx) {
-  static_cast<MIDIHandler*>(ctx)->clearActiveNotesNow();
+  auto* tc = static_cast<TransportContext*>(ctx);
+  tc->handler->clearActiveNotesNow();
 }
 
 void MIDIHandler::registerTransport(MIDITransport* t) {
   if (transportCount >= MAX_TRANSPORTS) return;
-  t->setMidiCallback(_onTransportMidiData, this);
-  t->setSysExCallback(_onTransportSysExData, this);
-  t->setConnectionCallbacks(nullptr, _onTransportDisconnected, this);
+  transportContexts[transportCount] = { this, t };
+  t->setMidiCallback(_onTransportMidiData, &transportContexts[transportCount]);
+  t->setSysExCallback(_onTransportSysExData, &transportContexts[transportCount]);
+  t->setConnectionCallbacks(nullptr, _onTransportDisconnected, &transportContexts[transportCount]);
   transports[transportCount++] = t;
 }
 
@@ -457,6 +460,10 @@ std::vector<std::string> MIDIHandler::getAnswer(const std::vector<std::string>& 
 
 
 void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
+  handleMidiMessage(data, length, nullptr);
+}
+
+void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length, MIDITransport* source) {
   // USB-MIDI: 4+ bytes (CIN + MIDI), skip first byte.
   // BLE/raw MIDI: 2-3 bytes, use directly.
   const uint8_t* midiData;
@@ -497,6 +504,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity = midiData[2];    // CC value
     event.chordIndex = currentChordIndex;
     event.pitchBend = 0;
+    event.source = source;
     addEvent(event);
     return;
   }
@@ -523,6 +531,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity = 0;
     event.chordIndex = currentChordIndex;
     event.pitchBend = 0;
+    event.source = source;
     addEvent(event);
     return;
   }
@@ -549,6 +558,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity = midiData[1];  // Pressure value
     event.chordIndex = currentChordIndex;
     event.pitchBend = 0;
+    event.source = source;
     addEvent(event);
     return;
   }
@@ -576,6 +586,7 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
     event.velocity = 0;
     event.chordIndex = currentChordIndex;
     event.pitchBend = pitchValue;
+    event.source = source;
     addEvent(event);
     return;
   }
@@ -666,62 +677,69 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length) {
   event.velocity = velocity;
   event.chordIndex = chordIdx;
   event.pitchBend = 0;
+  event.source = source;
 
   addEvent(event);
 }
 
-// --- MIDI Output (via any transport that supports sending) ---
+// --- MIDI Output (targeted transport, or broadcast when target is nullptr) ---
 
-bool MIDIHandler::sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
+bool MIDIHandler::sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0x90 | ((channel - 1) & 0x0F)), note, velocity };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
+bool MIDIHandler::sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0x80 | ((channel - 1) & 0x0F)), note, velocity };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendControlChange(uint8_t channel, uint8_t controller, uint8_t value) {
+bool MIDIHandler::sendControlChange(uint8_t channel, uint8_t controller, uint8_t value, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[3] = { (uint8_t)(0xB0 | ((channel - 1) & 0x0F)), controller, value };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendProgramChange(uint8_t channel, uint8_t program) {
+bool MIDIHandler::sendProgramChange(uint8_t channel, uint8_t program, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   uint8_t data[2] = { (uint8_t)(0xC0 | ((channel - 1) & 0x0F)), program };
+  if (target) return target->sendMidiMessage(data, 2);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 2)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendPitchBend(uint8_t channel, int value) {
+bool MIDIHandler::sendPitchBend(uint8_t channel, int value, MIDITransport* target) {
   if (channel == 0 || channel > 16) return false;
   // Normalize -8192..8191 to 0..16383 (center = 8192)
   uint16_t v = (uint16_t)(value + 8192) & 0x3FFF;
   uint8_t data[3] = { (uint8_t)(0xE0 | ((channel - 1) & 0x0F)),
                       (uint8_t)(v & 0x7F),
                       (uint8_t)((v >> 7) & 0x7F) };
+  if (target) return target->sendMidiMessage(data, 3);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, 3)) return true;
   }
   return false;
 }
 
-bool MIDIHandler::sendRaw(const uint8_t* data, size_t length) {
+bool MIDIHandler::sendRaw(const uint8_t* data, size_t length, MIDITransport* target) {
+  if (target) return target->sendMidiMessage(data, length);
   for (int i = 0; i < transportCount; i++) {
     if (transports[i]->sendMidiMessage(data, length)) return true;
   }
@@ -735,10 +753,15 @@ bool MIDIHandler::sendBleRaw(const uint8_t* data, size_t length) {
 // --- SysEx ---
 
 void MIDIHandler::_onTransportSysExData(void* ctx, const uint8_t* data, size_t len) {
-  static_cast<MIDIHandler*>(ctx)->handleSysExMessage(data, len);
+  auto* tc = static_cast<TransportContext*>(ctx);
+  tc->handler->handleSysExMessage(data, len, tc->transport);
 }
 
 void MIDIHandler::handleSysExMessage(const uint8_t* data, size_t length) {
+  handleSysExMessage(data, length, nullptr);
+}
+
+void MIDIHandler::handleSysExMessage(const uint8_t* data, size_t length, MIDITransport* source) {
   if (length < 2) return;
   if (config.maxSysExSize == 0) return;
 
@@ -752,6 +775,7 @@ void MIDIHandler::handleSysExMessage(const uint8_t* data, size_t length) {
   MIDISysExEvent event;
   event.index = ++sysexGlobalIndex;
   event.timestamp = millis();
+  event.source = source;
   event.data.assign(data, data + truncLen);
   sysexQueue.push_back(std::move(event));
 

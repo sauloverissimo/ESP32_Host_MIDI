@@ -2,6 +2,21 @@
 #define BLE_CONNECTION_H
 
 #include <Arduino.h>
+
+// BLE requires a Bluetooth stack. Present on the ESP32 classic, S3, C3, C6 and
+// H2, and on the P4 through its ESP-Hosted co-processor (an ESP32-C6 over SDIO,
+// which is why CONFIG_BT_ENABLED is the right probe here and
+// CONFIG_SOC_BT_SUPPORTED is not: the P4 has no local radio yet supports BLE).
+// The ESP32-S2 has no Bluetooth at all, so this header collapses to nothing and
+// the Arduino IDE can still build the library's non-BLE sources for it.
+#if defined(CONFIG_BT_ENABLED)
+#define ESP32_HOST_MIDI_BLE_AVAILABLE 1
+#else
+#define ESP32_HOST_MIDI_BLE_AVAILABLE 0
+#endif
+
+#if ESP32_HOST_MIDI_BLE_AVAILABLE
+
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <freertos/portmacro.h>
@@ -31,6 +46,7 @@ public:
 
     // Returns whether a BLE central is currently connected.
     bool isConnected() const override;
+    const char* name() const override { return "BLE Server"; }
 
     // Sends a MIDI message via BLE NOTIFY.
     // data: raw MIDI bytes (status + data, no BLE header, no CIN byte).
@@ -56,5 +72,7 @@ protected:
     bool dequeueMidiMessage(RawBleMessage& msg);
     void processQueue();
 };
+
+#endif // ESP32_HOST_MIDI_BLE_AVAILABLE
 
 #endif // BLE_CONNECTION_H

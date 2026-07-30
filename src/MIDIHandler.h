@@ -70,6 +70,7 @@ struct MIDIEventData {
   unsigned long timestamp;  // Timestamp in milliseconds (millis())
   unsigned long delay;      // Delta time (ms) since previous event
   int chordIndex;           // Chord grouping index (simultaneous notes share the same index)
+  MIDITransport* source = nullptr;  // Transport that received this message (nullptr if unknown)
 
   // --- MIDI spec compliant fields (v5.2+) ---
   MIDIStatus statusCode;    // Status as enum (MIDI_NOTE_ON, MIDI_CONTROL_CHANGE, etc.)
@@ -95,6 +96,7 @@ struct MIDIEventData {
 struct MIDISysExEvent {
   int index;                      // Global SysEx counter
   unsigned long timestamp;        // Timestamp in milliseconds (millis())
+  MIDITransport* source = nullptr; // Transport that received this message
   std::vector<uint8_t> data;      // Complete message including 0xF0 and 0xF7
 };
 
@@ -139,14 +141,21 @@ public:
   // MIDIHandler will call task() on it and receive data via callbacks.
   void addTransport(MIDITransport* transport);
 
-  // MIDI Output — send via any transport that supports sending.
-  // channel: 1-16. Returns true if any transport sent the message.
-  bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
-  bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity);
-  bool sendControlChange(uint8_t channel, uint8_t controller, uint8_t value);
-  bool sendProgramChange(uint8_t channel, uint8_t program);
-  bool sendPitchBend(uint8_t channel, int value);  // value: -8192 to 8191
-  bool sendRaw(const uint8_t* data, size_t length);
+  // Transport access for selective routing.
+  int getTransportCount() const { return transportCount; }
+  MIDITransport* getTransport(int index) const {
+      return (index >= 0 && index < transportCount) ? transports[index] : nullptr;
+  }
+
+  // MIDI Output — send via a specific transport, or via the first transport
+  // that accepts the message if target is nullptr. channel: 1-16.
+  // channel: 1-16. Returns true if the message was sent.
+  bool sendNoteOn(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);
+  bool sendNoteOff(uint8_t channel, uint8_t note, uint8_t velocity, MIDITransport* target = nullptr);
+  bool sendControlChange(uint8_t channel, uint8_t controller, uint8_t value, MIDITransport* target = nullptr);
+  bool sendProgramChange(uint8_t channel, uint8_t program, MIDITransport* target = nullptr);
+  bool sendPitchBend(uint8_t channel, int value, MIDITransport* target = nullptr);  // value: -8192 to 8191
+  bool sendRaw(const uint8_t* data, size_t length, MIDITransport* target = nullptr);
   bool sendBleRaw(const uint8_t* data, size_t length);  // backward compat alias
 
   // SysEx API — opt-in, does not affect existing event queue.
@@ -195,20 +204,31 @@ private:
   std::string getNoteWithOctave(int note) const;
 
   // --- Transport abstraction ---
-  static const int MAX_TRANSPORTS = 4;
+  static const int MAX_TRANSPORTS = 8;
   MIDITransport* transports[MAX_TRANSPORTS];
   int transportCount;
+
+  // Per-transport callback context so we know which transport dispatched data
+  struct TransportContext {
+      MIDIHandler* handler;
+      MIDITransport* transport;
+  };
+  TransportContext transportContexts[MAX_TRANSPORTS];
 
   void registerTransport(MIDITransport* t);
   static void _onTransportMidiData(void* ctx, const uint8_t* data, size_t len);
   static void _onTransportDisconnected(void* ctx);
   static void _onTransportSysExData(void* ctx, const uint8_t* data, size_t len);
 
+  // Internal: handleMidiMessage/handleSysExMessage with source tracking
+  void handleMidiMessage(const uint8_t* data, size_t length, MIDITransport* source);
+
   // SysEx
   std::deque<MIDISysExEvent> sysexQueue;
   int sysexGlobalIndex = 0;
   SysExCallback sysExCb = nullptr;
   void handleSysExMessage(const uint8_t* data, size_t length);
+  void handleSysExMessage(const uint8_t* data, size_t length, MIDITransport* source);
 
   // v6.0: no built-in transport members. User instantiates transports and
   // registers them via addTransport(). See docs/migration-v6.md.
