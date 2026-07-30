@@ -2,12 +2,16 @@
 
 #if ESP32_HOST_MIDI_BLE_AVAILABLE
 
+#include "BleMidiPacket.h"
+
 // BLE MIDI Service UUID (same as BLEConnection server)
 static const char* BLE_MIDI_SVC  = "03B80E5A-EDE8-4B33-A751-6CE34EC4C700";
 static const char* BLE_MIDI_CHAR = "7772E5DB-3868-4112-A1A9-F2669D106BF3";
 
 // Static instance registry
 BLEClientConnection* BLEClientConnection::instances[MAX_INSTANCES] = { nullptr };
+bool BLEClientConnection::s_scanning = false;
+BLEClientConnection::ScanCB* BLEClientConnection::s_scanCallback = nullptr;
 
 BLEClientConnection::BLEClientConnection() {}
 
@@ -19,7 +23,6 @@ BLEClientConnection::~BLEClientConnection() {
         vSemaphoreDelete(sendMutex);
     }
     delete clientCallback;
-    delete scanCallback;
     unregisterInstance();
 }
 
@@ -66,32 +69,28 @@ bool BLEClientConnection::begin(const std::string& targetAddress, const std::str
 }
 
 void BLEClientConnection::startScan() {
-    if (_scanning) return;
+    if (s_scanning) return;   // one shared scan already running for all instances
     BLEScan* pScan = BLEDevice::getScan();
-    if (!scanCallback) {
-        scanCallback = new ScanCB(this);
+    if (!s_scanCallback) {
+        s_scanCallback = new ScanCB();
     }
-    pScan->setAdvertisedDeviceCallbacks(scanCallback, false);
+    pScan->setAdvertisedDeviceCallbacks(s_scanCallback, false);
     pScan->setActiveScan(true);
     pScan->setInterval(100);
     pScan->setWindow(99);
-    _scanning = true;
+    s_scanning = true;
     // Non-blocking: the callback overload returns at once and invokes
     // scanCompleteStatic when the 5 s window ends. The start(5, false) overload
     // waits on a semaphore and would stall the whole MIDIHandler loop for 5 s.
     if (!pScan->start(5, scanCompleteStatic, false)) {
-        _scanning = false;  // start failed; let task() retry on the next loop
+        s_scanning = false;  // start failed; let task() retry on the next loop
     }
 }
 
 void BLEClientConnection::scanCompleteStatic(BLEScanResults) {
-    // A scan window elapsed. Clear _scanning on every instance so task()'s
-    // rescan guard opens a fresh window for any client still looking.
-    for (int i = 0; i < MAX_INSTANCES; i++) {
-        if (instances[i]) {
-            instances[i]->_scanning = false;
-        }
-    }
+    // The shared scan window elapsed. Clear the flag so any instance still
+    // looking reopens a window from its task().
+    s_scanning = false;
 }
 
 void BLEClientConnection::task() {
@@ -108,12 +107,12 @@ void BLEClientConnection::task() {
     }
     portEXIT_CRITICAL(&queueMux);
     if (doConnect) {
-        _scanning = false;
+        s_scanning = false;
         connectToDevice(addr);
     }
 
-    // If disconnected and not scanning, restart scan after a brief delay
-    if (!_connected && !_scanning && !_shouldConnect) {
+    // If disconnected and no shared scan is running, reopen one.
+    if (!_connected && !_shouldConnect && !s_scanning) {
         startScan();
     }
 
@@ -188,8 +187,11 @@ void BLEClientConnection::notifyCallbackStatic(BLERemoteCharacteristic* ch,
     // Find which instance owns this characteristic by matching the client's peer address
     for (int i = 0; i < MAX_INSTANCES; i++) {
         if (instances[i] && instances[i]->_connected && instances[i]->pRemoteChar == ch) {
-            // Strip BLE MIDI header (2 bytes), enqueue raw MIDI
-            instances[i]->enqueue(data + 2, length - 2);
+            // Split batched BLE-MIDI events and enqueue each.
+            bleMidiSplitMessages(data, length,
+                [](void* c, const uint8_t* m, size_t n) {
+                    static_cast<BLEClientConnection*>(c)->enqueue(m, n);
+                }, instances[i]);
             return;
         }
     }
@@ -258,38 +260,50 @@ bool BLEClientConnection::dequeue(RawMsg& msg) {
 // --- Scan Callback ---
 
 void BLEClientConnection::ScanCB::onResult(BLEAdvertisedDevice advertisedDevice) {
+    // Dispatch each advertisement to every instance still looking. One shared
+    // callback avoids per-instance callbacks overwriting each other on the
+    // BLEScan singleton.
+    for (int i = 0; i < MAX_INSTANCES; i++) {
+        BLEClientConnection* inst = instances[i];
+        if (inst && !inst->_connected && !inst->_shouldConnect) {
+            inst->onAdvertisement(advertisedDevice);
+        }
+    }
+}
+
+void BLEClientConnection::onAdvertisement(BLEAdvertisedDevice& advertisedDevice) {
     bool hasMidiUUID = advertisedDevice.haveServiceUUID() &&
                        advertisedDevice.isAdvertisingService(BLEUUID(BLE_MIDI_SVC));
-    bool hasTargetFilter = !parent->targetAddr.empty() || !parent->targetDevName.empty();
+    bool hasTargetFilter = !targetAddr.empty() || !targetDevName.empty();
 
     // If no target filter is set, require MIDI UUID in the advertisement.
-    // If a target filter is set, allow name/address match without MIDI UUID --
-    // the MIDI service will be verified after connection in connectToDevice().
+    // If a target filter is set, allow name/address match without MIDI UUID;
+    // the MIDI service is verified after connection in connectToDevice().
     if (!hasMidiUUID && !hasTargetFilter) {
         return;
     }
 
     // Filter by address if specified
-    if (!parent->targetAddr.empty()) {
+    if (!targetAddr.empty()) {
         String addr = advertisedDevice.getAddress().toString();
-        if (std::string(addr.c_str()) != parent->targetAddr) return;
+        if (std::string(addr.c_str()) != targetAddr) return;
     }
 
     // Filter by name if specified
-    if (!parent->targetDevName.empty()) {
+    if (!targetDevName.empty()) {
         if (!advertisedDevice.haveName() ||
-            std::string(advertisedDevice.getName().c_str()) != parent->targetDevName) return;
+            std::string(advertisedDevice.getName().c_str()) != targetDevName) return;
     }
 
-    // Found a match: stop scan, store address for task() to connect on main loop.
-    // Runs in the BLE stack task; the short critical section guards the handoff
-    // against task() on the main loop (address stored by value, no allocation).
+    // Match: stop the shared scan and store the address for task() to connect on
+    // the main loop. Runs in the BLE stack task; the short critical section
+    // guards the handoff against task() (address stored by value, no allocation).
     BLEDevice::getScan()->stop();
-    parent->_scanning = false;
-    portENTER_CRITICAL(&parent->queueMux);
-    parent->foundAddr = advertisedDevice.getAddress();
-    parent->_shouldConnect = true;
-    portEXIT_CRITICAL(&parent->queueMux);
+    s_scanning = false;
+    portENTER_CRITICAL(&queueMux);
+    foundAddr = advertisedDevice.getAddress();
+    _shouldConnect = true;
+    portEXIT_CRITICAL(&queueMux);
 }
 
 // --- Client Callbacks ---

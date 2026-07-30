@@ -2,6 +2,8 @@
 
 #if ESP32_HOST_MIDI_BLE_AVAILABLE
 
+#include "BleMidiPacket.h"
+
 // CCCD descriptor handling.
 //
 // The BLE library shipped with arduino-esp32 is Neil Kolban / Dariusz Krempa
@@ -116,9 +118,12 @@ void BLEConnection::begin(const std::string& deviceName) {
             // Minimum valid BLE MIDI packet: header + timestamp + 1 MIDI byte = 3 bytes
             if (len >= 3) {
                 const uint8_t* data = reinterpret_cast<const uint8_t*>(rxValue.c_str());
-                // Skip header (byte 0) and timestamp (byte 1); enqueue raw MIDI bytes.
-                // Processing happens in task() on the main loop — thread-safe.
-                bleCon->enqueueMidiMessage(data + 2, len - 2);
+                // Split batched BLE-MIDI events; each is enqueued and processed in
+                // task() on the main loop (thread-safe).
+                bleMidiSplitMessages(data, len,
+                    [](void* c, const uint8_t* m, size_t n) {
+                        static_cast<BLEConnection*>(c)->enqueueMidiMessage(m, n);
+                    }, bleCon);
             }
         }
     };

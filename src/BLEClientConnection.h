@@ -64,7 +64,6 @@ private:
 
     std::string targetAddr;
     std::string targetDevName;
-    bool _scanning = false;
     bool _connected = false;
     volatile bool _shouldConnect = false;
     BLEAddress foundAddr;              // set by the scan callback, read in task();
@@ -97,22 +96,27 @@ private:
     };
     ClientCB* clientCallback = nullptr;
 
+    // A single shared scan callback drives all instances: the BLEScan singleton
+    // exposes one advertised-device callback, so per-instance callbacks would
+    // overwrite each other. onResult() dispatches each advertisement to every
+    // registered instance's onAdvertisement().
     class ScanCB : public BLEAdvertisedDeviceCallbacks {
     public:
-        BLEClientConnection* parent;
-        ScanCB(BLEClientConnection* p) : parent(p) {}
         void onResult(BLEAdvertisedDevice advertisedDevice) override;
     };
-    ScanCB* scanCallback = nullptr;
+
+    // Applies this instance's address/name filter to an advertisement and, on a
+    // match, stops the shared scan and hands the address to task() to connect.
+    void onAdvertisement(BLEAdvertisedDevice& advertisedDevice);
 
     // Static notify callback adapter (BLE stack requirement)
     static void notifyCallbackStatic(BLERemoteCharacteristic* ch,
                                      uint8_t* data, size_t length, bool isNotify);
 
-    // Static scan-complete adapter: the BLEScan singleton invokes this when a
-    // scan window ends. Clears _scanning on every instance so task() can start a
-    // fresh window; without it, a peripheral powered on after the first window
-    // would never be discovered.
+    // Scan-complete adapter: the BLEScan singleton invokes this when a scan
+    // window ends. Clears the shared scanning flag so task() can open a fresh
+    // window; without it, a peripheral powered on after the first window would
+    // never be discovered.
     static void scanCompleteStatic(BLEScanResults results);
 
     // Instance registry for static callback routing (max 3 simultaneous clients)
@@ -120,6 +124,10 @@ private:
     static BLEClientConnection* instances[MAX_INSTANCES];
     bool registerInstance();
     void unregisterInstance();
+
+    // One shared scan across all instances (the BLEScan singleton allows one).
+    static bool s_scanning;
+    static ScanCB* s_scanCallback;
 };
 
 #endif // ESP32_HOST_MIDI_BLE_AVAILABLE

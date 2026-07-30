@@ -65,6 +65,17 @@ jobs:
       - name: Run USB send tests
         run: ./extras/tests/test_usb_send
 
+      - name: Build BLE-MIDI splitter test binary
+        run: |
+          g++ -std=c++17 \
+              -Iextras/tests/stub \
+              -Isrc \
+              -Wall -Wextra -Wno-unused-parameter -Wno-comment \
+              -o extras/tests/test_ble_midi_split extras/tests/test_ble_midi_split.cpp
+
+      - name: Run BLE-MIDI splitter tests
+        run: ./extras/tests/test_ble_midi_split
+
   # ---------------------------------------------------------------------------
   # Job 2 — Transport probe matrix (every transport × every chip)
   #

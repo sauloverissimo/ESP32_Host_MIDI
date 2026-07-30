@@ -28,7 +28,8 @@
       "extras/tests/test_native",
       "extras/tests/test_handler",
       "extras/tests/test_midi2_scan",
-      "extras/tests/test_usb_send"
+      "extras/tests/test_usb_send",
+      "extras/tests/test_ble_midi_split"
     ]
   }
 }

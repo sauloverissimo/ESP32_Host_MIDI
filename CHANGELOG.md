@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BLE sources are guarded the same way, compiling only where a Bluetooth stack
   is present. The probe is `CONFIG_BT_ENABLED`, not `CONFIG_SOC_BT_SUPPORTED`,
   so the P4 keeps BLE through its ESP-Hosted co-processor.
+- BLE MIDI input splits batched notifications into individual messages, on both
+  the server (`BLEConnection`) and the client (`BLEClientConnection`).
 
 ### Added
 
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI matrix: six chips (ESP32, S2, S3, P4, C3, C6) across every dependency-free
   transport plus the examples, 60 compilations per run. Probe sketches live in
   `extras/ci/probes/`, one per transport, so per-chip build coverage is explicit.
-- `test_usb_send` added to CI; native suite now 341 assertions.
+- `test_usb_send` and a BLE-MIDI splitter test added to CI; native suite now
+  352 assertions.
 
 [7.1.0]: https://github.com/sauloverissimo/ESP32_Host_MIDI/compare/v7.0.0...v7.1.0
