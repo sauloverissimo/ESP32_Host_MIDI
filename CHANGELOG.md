@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.0] - 2026-07-31
+
+### Fixed
+
+- USB Host enumerates again on arduino-esp32 3.3.11, which turns on
+  `CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK` in its prebuilt libraries. With
+  that feature compiled in, an unset `enum_filter_cb` stops enumeration before
+  the client is notified, so no device is ever mounted. `USBConnection::begin()`
+  now registers a filter that accepts every device. The registration is guarded
+  by the feature macro, so cores that predate it are unaffected. Reported by
+  @markeby in issue #30; same regression as espressif/arduino-esp32#12778 and
+  espressif/arduino-esp32#12783.
+- `BLEClientConnection` builds on cores older than 3.3.0 again, restoring the
+  `>= 3.0.0` board package requirement the README states. It held the scanned
+  peripheral address in a default-constructed `BLEAddress`, a constructor that
+  arrived with the NimBLE support in core 3.3.0. The scan-to-connect handoff
+  now carries the address in textual form, a representation that is stable
+  across cores and BLE stacks, with the address type preserved on cores that
+  expose one. Validated on hardware: ESP32-S3 central connecting to an
+  ESP32-C6 peripheral on core 3.3.11.
+
+[7.2.0]: https://github.com/sauloverissimo/ESP32_Host_MIDI/compare/v7.1.0...v7.2.0
+
 ## [7.1.0] - 2026-07-29
 
 ### Fixed

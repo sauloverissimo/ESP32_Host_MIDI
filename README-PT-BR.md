@@ -457,7 +457,7 @@ lib_deps =
     # CNMAT/OSC                           ; OSC
 ```
 
-**Pacote de placa:** `Tools > Boards Manager`, "esp32" por Espressif, versão >= 3.0.0. USB Host requer arduino-esp32 >= 3.0 (TinyUSB MIDI).
+**Pacote de placa:** `Tools > Boards Manager`, "esp32" por Espressif, versão >= 3.0.0. USB Host requer arduino-esp32 >= 3.0 e um chip com USB-OTG (ESP32-S2, S3, P4); roda sobre o driver USB Host do ESP-IDF.
 
 | Transporte | Biblioteca necessária |
 |-----------|------------------------|
