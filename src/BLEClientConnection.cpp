@@ -97,18 +97,27 @@ void BLEClientConnection::task() {
     // If we found a device during scan, try to connect. Take the address under
     // the lock, then run the slow connectToDevice() outside it (never hold a
     // spinlock across a BLE connect).
-    BLEAddress addr;
+    char addrBuf[ADDR_STR_LEN];
+    uint8_t addrType = 0;
     bool doConnect = false;
     portENTER_CRITICAL(&queueMux);
     if (_shouldConnect && !_connected) {
-        addr = foundAddr;
+        memcpy(addrBuf, foundAddr, ADDR_STR_LEN);
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+        addrType = foundAddrType;
+#endif
         _shouldConnect = false;
         doConnect = true;
     }
     portEXIT_CRITICAL(&queueMux);
     if (doConnect) {
         s_scanning = false;
-        connectToDevice(addr);
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+        connectToDevice(BLEAddress(String(addrBuf), addrType));
+#else
+        (void)addrType;
+        connectToDevice(BLEAddress(String(addrBuf)));
+#endif
     }
 
     // If disconnected and no shared scan is running, reopen one.
@@ -296,12 +305,18 @@ void BLEClientConnection::onAdvertisement(BLEAdvertisedDevice& advertisedDevice)
     }
 
     // Match: stop the shared scan and store the address for task() to connect on
-    // the main loop. Runs in the BLE stack task; the short critical section
-    // guards the handoff against task() (address stored by value, no allocation).
+    // the main loop. Runs in the BLE stack task; toString() allocates outside
+    // the lock, and the short critical section only copies the fixed buffer.
     BLEDevice::getScan()->stop();
     s_scanning = false;
+    BLEAddress found = advertisedDevice.getAddress();
+    String addrStr = found.toString();
     portENTER_CRITICAL(&queueMux);
-    foundAddr = advertisedDevice.getAddress();
+    strncpy(foundAddr, addrStr.c_str(), ADDR_STR_LEN - 1);
+    foundAddr[ADDR_STR_LEN - 1] = '\0';
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+    foundAddrType = found.getType();
+#endif
     _shouldConnect = true;
     portEXIT_CRITICAL(&queueMux);
 }

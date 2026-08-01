@@ -66,8 +66,19 @@ private:
     std::string targetDevName;
     bool _connected = false;
     volatile bool _shouldConnect = false;
-    BLEAddress foundAddr;              // set by the scan callback, read in task();
-                                       // stored by value (no dynamic allocation)
+    // Address of the matched peripheral, handed from the scan callback to
+    // task() in textual form ("aa:bb:cc:dd:ee:ff"). Two constraints meet here:
+    // the default BLEAddress constructor only exists from core 3.3.0 on, and
+    // the byte order behind getNative() differs between cores, so a raw-byte
+    // round-trip through the byte constructor can flip the address. toString()
+    // and the String constructor are a stable pair on every supported core and
+    // stack, and a fixed char buffer keeps the critical-section handoff free
+    // of construction and allocation.
+    static const uint8_t ADDR_STR_LEN = 18;  // "aa:bb:cc:dd:ee:ff" + NUL
+    char foundAddr[ADDR_STR_LEN] = {0};
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+    uint8_t foundAddrType = 0;         // BLEAddress carries an address type from 3.3.0 on
+#endif
 
     // Ring buffer for incoming MIDI (same pattern as BLEConnection)
     static const int QUEUE_SIZE = 64;
