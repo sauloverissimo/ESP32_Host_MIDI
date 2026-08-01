@@ -4,6 +4,26 @@
 
 #include <string.h>
 
+// Enumeration filter, required from arduino-esp32 3.3.11 (ESP-IDF v5.5.5) on.
+//
+// That release enables CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK in the
+// prebuilt libraries. With the feature compiled in, leaving
+// usb_host_config_t::enum_filter_cb at NULL stalls enumeration: the client
+// never receives USB_HOST_CLIENT_EVENT_NEW_DEV, so no device is ever mounted.
+// Accepting every device keeps the behaviour of earlier cores.
+// Ref espressif/arduino-esp32#12778 and espressif/arduino-esp32#12783.
+//
+// Both the callback and its assignment sit behind the feature macro. The field
+// is honoured only when the feature is compiled in, and cores whose ESP-IDF
+// predates the field never define the macro, so older cores keep building.
+#ifdef CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
+static bool acceptAnyDevice(const usb_device_desc_t* devDesc, uint8_t* bConfigurationValue) {
+    (void)devDesc;
+    (void)bConfigurationValue;  // Keep the configuration value picked by the stack.
+    return true;
+}
+#endif
+
 static bool isValidMidiMessage(const uint8_t* midiData, size_t length) {
     if (length < 2) return false;
     if ((midiData[0] & 0x80) == 0) return false;
@@ -36,10 +56,12 @@ USBConnection::USBConnection()
 }
 
 bool USBConnection::begin() {
-    usb_host_config_t config = {
-        .skip_phy_setup = false,
-        .intr_flags = ESP_INTR_FLAG_LEVEL1,
-    };
+    usb_host_config_t config = {};
+    config.skip_phy_setup = false;
+    config.intr_flags = ESP_INTR_FLAG_LEVEL1;
+#ifdef CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
+    config.enum_filter_cb = acceptAnyDevice;
+#endif
     esp_err_t err = usb_host_install(&config);
     if (err != ESP_OK) {
         lastError = "USB host install failed (err=" + String(err) + ")";
