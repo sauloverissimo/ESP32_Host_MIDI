@@ -71,6 +71,57 @@ static bool buildPacket(const uint8_t* data, size_t length, uint8_t* packet) {
 }
 
 // ---------------------------------------------------------------------------
+// Convert a MIDI byte stream into 4-byte USB-MIDI Event Packets (cable 0).
+// Mirror of USBConnection::buildUsbMidiPackets. Returns the number of
+// packets written, or 0 on error / overflow (more than maxPackets needed).
+// USB-MIDI 1.0 spec Table 4-1.
+// ---------------------------------------------------------------------------
+static size_t buildUsbMidiPackets(const uint8_t* data, size_t length,
+                                  uint8_t* packets, size_t maxPackets) {
+    if (!data || length == 0 || !packets) return 0;
+
+    // SysEx: chunk into groups of 3 with continuation / end CINs.
+    if (data[0] == 0xF0) {
+        size_t n = 0;   // packets written
+        size_t i = 0;   // bytes consumed
+        while (i < length) {
+            if (n >= maxPackets) return 0;   // does not fit; caller fails loud
+            size_t remaining = length - i;
+            uint8_t* pk = packets + n * 4;
+            if (remaining > 3) {
+                pk[0] = 0x04;                // SysEx starts or continues
+                pk[1] = data[i];
+                pk[2] = data[i + 1];
+                pk[3] = data[i + 2];
+                i += 3;
+            } else {
+                pk[0] = (remaining == 1) ? 0x05    // ends with 1 byte
+                      : (remaining == 2) ? 0x06    // ends with 2 bytes
+                                         : 0x07;   // ends with 3 bytes
+                pk[1] = data[i];
+                pk[2] = (remaining >= 2) ? data[i + 1] : 0;
+                pk[3] = (remaining >= 3) ? data[i + 2] : 0;
+                i += remaining;
+            }
+            ++n;
+        }
+        return n;
+    }
+
+    // Non-SysEx: single packet, CIN from the status nibble (<= 3 bytes).
+    uint8_t cin = _midiStatusToCIN(data[0]);
+    if (cin == 0 || maxPackets < 1) return 0;
+    packets[0] = cin;
+    packets[1] = 0;
+    packets[2] = 0;
+    packets[3] = 0;
+    for (size_t i = 0; i < length && i < 3; i++) {
+        packets[i + 1] = data[i];
+    }
+    return 1;
+}
+
+// ---------------------------------------------------------------------------
 // CIN tests: Channel Voice Messages (0x8n - 0xEn)
 // ---------------------------------------------------------------------------
 
@@ -402,6 +453,97 @@ void test_packet_system_reset() {
 }
 
 // ---------------------------------------------------------------------------
+// SysEx multi-packet chunking (USB-MIDI 1.0 Table 4-1)
+// A SysEx stream is split into 4-byte packets: CIN 0x04 for full 3-byte
+// groups that continue, and 0x05 / 0x06 / 0x07 for the final group with
+// 1 / 2 / 3 bytes.
+// ---------------------------------------------------------------------------
+
+void test_sysex_2_bytes() {
+    TEST("SysEx F0 F7 (2 bytes) -> 1 packet, CIN 0x06");
+    uint8_t data[] = { 0xF0, 0xF7 };
+    uint8_t pk[16];
+    ASSERT_EQ(buildUsbMidiPackets(data, 2, pk, 4), (size_t)1);
+    ASSERT_EQ(pk[0], 0x06); ASSERT_EQ(pk[1], 0xF0); ASSERT_EQ(pk[2], 0xF7); ASSERT_EQ(pk[3], 0x00);
+    PASS();
+}
+
+void test_sysex_3_bytes() {
+    TEST("SysEx F0 7D F7 (3 bytes) -> 1 packet, CIN 0x07");
+    uint8_t data[] = { 0xF0, 0x7D, 0xF7 };
+    uint8_t pk[16];
+    ASSERT_EQ(buildUsbMidiPackets(data, 3, pk, 4), (size_t)1);
+    ASSERT_EQ(pk[0], 0x07); ASSERT_EQ(pk[1], 0xF0); ASSERT_EQ(pk[2], 0x7D); ASSERT_EQ(pk[3], 0xF7);
+    PASS();
+}
+
+void test_sysex_4_bytes() {
+    TEST("SysEx F0 7D 01 F7 (4 bytes) -> 2 packets, CIN 0x04 + 0x05");
+    uint8_t data[] = { 0xF0, 0x7D, 0x01, 0xF7 };
+    uint8_t pk[16];
+    ASSERT_EQ(buildUsbMidiPackets(data, 4, pk, 4), (size_t)2);
+    ASSERT_EQ(pk[0], 0x04); ASSERT_EQ(pk[1], 0xF0); ASSERT_EQ(pk[2], 0x7D); ASSERT_EQ(pk[3], 0x01);
+    ASSERT_EQ(pk[4], 0x05); ASSERT_EQ(pk[5], 0xF7); ASSERT_EQ(pk[6], 0x00); ASSERT_EQ(pk[7], 0x00);
+    PASS();
+}
+
+void test_sysex_11_bytes() {
+    // The exact failing case from issue #31 (11-byte request).
+    TEST("SysEx 11 bytes -> 4 packets, CIN 04 04 04 06");
+    uint8_t data[] = { 0xF0, 0x00, 0x20, 0x33, 0x02, 0x7F, 0x00, 0x01, 0x00, 0x00, 0xF7 };
+    uint8_t pk[16];
+    ASSERT_EQ(buildUsbMidiPackets(data, 11, pk, 4), (size_t)4);
+    ASSERT_EQ(pk[0],  0x04); ASSERT_EQ(pk[1],  0xF0); ASSERT_EQ(pk[2],  0x00); ASSERT_EQ(pk[3],  0x20);
+    ASSERT_EQ(pk[4],  0x04); ASSERT_EQ(pk[5],  0x33); ASSERT_EQ(pk[6],  0x02); ASSERT_EQ(pk[7],  0x7F);
+    ASSERT_EQ(pk[8],  0x04); ASSERT_EQ(pk[9],  0x00); ASSERT_EQ(pk[10], 0x01); ASSERT_EQ(pk[11], 0x00);
+    ASSERT_EQ(pk[12], 0x06); ASSERT_EQ(pk[13], 0x00); ASSERT_EQ(pk[14], 0xF7); ASSERT_EQ(pk[15], 0x00);
+    PASS();
+}
+
+void test_sysex_14_bytes() {
+    TEST("SysEx 14 bytes -> 5 packets, last CIN 0x06");
+    uint8_t data[] = { 0xF0, 0x00, 0x20, 0x33, 0x02, 0x7F, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x7E, 0xF7 };
+    uint8_t pk[32];
+    ASSERT_EQ(buildUsbMidiPackets(data, 14, pk, 8), (size_t)5);
+    ASSERT_EQ(pk[0],  0x04); ASSERT_EQ(pk[4],  0x04); ASSERT_EQ(pk[8], 0x04); ASSERT_EQ(pk[12], 0x04);
+    ASSERT_EQ(pk[16], 0x06); ASSERT_EQ(pk[17], 0x7E); ASSERT_EQ(pk[18], 0xF7); ASSERT_EQ(pk[19], 0x00);
+    PASS();
+}
+
+void test_sysex_48_bytes_fits() {
+    TEST("SysEx 48 bytes -> 16 packets (fills a 64-byte buffer)");
+    uint8_t data[48];
+    data[0] = 0xF0;
+    for (int i = 1; i < 47; i++) data[i] = (uint8_t)(i & 0x7F);
+    data[47] = 0xF7;
+    uint8_t pk[64];
+    ASSERT_EQ(buildUsbMidiPackets(data, 48, pk, 16), (size_t)16);
+    ASSERT_EQ(pk[60], 0x07); // final group of 3 bytes
+    PASS();
+}
+
+void test_sysex_overflow_returns_zero() {
+    TEST("SysEx too large for maxPackets -> 0 (caller fails loud)");
+    uint8_t data[51];
+    data[0] = 0xF0;
+    for (int i = 1; i < 50; i++) data[i] = (uint8_t)(i & 0x7F);
+    data[50] = 0xF7;
+    uint8_t pk[64];
+    // 51 bytes needs 17 packets; a 16-packet budget must reject.
+    ASSERT_EQ(buildUsbMidiPackets(data, 51, pk, 16), (size_t)0);
+    PASS();
+}
+
+void test_nonsysex_still_single_packet() {
+    TEST("CC through buildUsbMidiPackets -> 1 packet (unchanged path)");
+    uint8_t data[] = { 0xB0, 0x07, 0x64 };
+    uint8_t pk[16];
+    ASSERT_EQ(buildUsbMidiPackets(data, 3, pk, 4), (size_t)1);
+    ASSERT_EQ(pk[0], 0x0B); ASSERT_EQ(pk[1], 0xB0); ASSERT_EQ(pk[2], 0x07); ASSERT_EQ(pk[3], 0x64);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // Edge cases
 // ---------------------------------------------------------------------------
 
@@ -496,6 +638,16 @@ int main() {
     test_packet_realtime_stop();
     test_packet_active_sensing();
     test_packet_system_reset();
+
+    printf("\n[SysEx multi-packet chunking]\n");
+    test_sysex_2_bytes();
+    test_sysex_3_bytes();
+    test_sysex_4_bytes();
+    test_sysex_11_bytes();
+    test_sysex_14_bytes();
+    test_sysex_48_bytes_fits();
+    test_sysex_overflow_returns_zero();
+    test_nonsysex_still_single_packet();
 
     printf("\n[Edge Cases]\n");
     test_packet_rejects_undefined();

@@ -372,7 +372,7 @@ static uint8_t _midiStatusToCIN(uint8_t status) {
         return status >> 4;
     }
     switch (status) {
-        case 0xF0: return 0x04; // SysEx Start (caller must handle continuation/end)
+        case 0xF0: return 0x04; // SysEx Start (see buildUsbMidiPackets for continuation/end)
         case 0xF1: return 0x02; // MTC Quarter Frame (2 bytes)
         case 0xF2: return 0x03; // Song Position Pointer (3 bytes)
         case 0xF3: return 0x02; // Song Select (2 bytes)
@@ -388,21 +388,73 @@ static uint8_t _midiStatusToCIN(uint8_t status) {
     }
 }
 
+// Convert a MIDI byte stream into 4-byte USB-MIDI Event Packets (cable 0).
+// Returns the number of packets written, or 0 on error / overflow (the
+// message needs more than maxPackets). USB-MIDI 1.0 spec Table 4-1.
+//
+// SysEx is chunked into groups of 3 bytes: CIN 0x04 for full groups that
+// continue, and 0x05 / 0x06 / 0x07 for the final group of 1 / 2 / 3 bytes.
+// Non-SysEx Channel Voice / System messages stay a single packet.
+static size_t buildUsbMidiPackets(const uint8_t* data, size_t length,
+                                  uint8_t* packets, size_t maxPackets) {
+    if (!data || length == 0 || !packets) return 0;
+
+    if (data[0] == 0xF0) {
+        size_t n = 0;   // packets written
+        size_t i = 0;   // bytes consumed
+        while (i < length) {
+            if (n >= maxPackets) return 0;   // does not fit; caller fails loud
+            size_t remaining = length - i;
+            uint8_t* pk = packets + n * 4;
+            if (remaining > 3) {
+                pk[0] = 0x04;
+                pk[1] = data[i];
+                pk[2] = data[i + 1];
+                pk[3] = data[i + 2];
+                i += 3;
+            } else {
+                pk[0] = (remaining == 1) ? 0x05
+                      : (remaining == 2) ? 0x06
+                                         : 0x07;
+                pk[1] = data[i];
+                pk[2] = (remaining >= 2) ? data[i + 1] : 0;
+                pk[3] = (remaining >= 3) ? data[i + 2] : 0;
+                i += remaining;
+            }
+            ++n;
+        }
+        return n;
+    }
+
+    uint8_t cin = _midiStatusToCIN(data[0]);
+    if (cin == 0 || maxPackets < 1) return 0;
+    packets[0] = cin;
+    packets[1] = 0;
+    packets[2] = 0;
+    packets[3] = 0;
+    for (size_t i = 0; i < length && i < 3; i++) {
+        packets[i + 1] = data[i];
+    }
+    return 1;
+}
+
 bool USBConnection::sendMidiMessage(const uint8_t* data, size_t length) {
     if (!isReady || !_outTransfer || length == 0) return false;
     if (_outTransferBusy) return false;
 
-    uint8_t cin = _midiStatusToCIN(data[0]);
-    if (cin == 0) return false;
-
-    // Cable number 0 | CIN
-    uint8_t packet[4] = { cin, 0, 0, 0 };
-    for (size_t i = 0; i < length && i < 3; i++) {
-        packet[i + 1] = data[i];
+    // The OUT endpoint buffer holds wMaxPacketSize bytes; each USB-MIDI
+    // Event Packet is 4 bytes, so one transfer carries up to N packets.
+    const size_t maxPackets = (size_t)_outTransfer->data_buffer_size / 4;
+    size_t nPackets = buildUsbMidiPackets(data, length,
+                                          (uint8_t*)_outTransfer->data_buffer,
+                                          maxPackets);
+    if (nPackets == 0) {
+        // Unknown status, or a SysEx too large for a single transfer.
+        lastError = "USB send: message rejected (unknown status or too large)";
+        return false;
     }
 
-    memcpy(_outTransfer->data_buffer, packet, 4);
-    _outTransfer->num_bytes = 4;
+    _outTransfer->num_bytes = nPackets * 4;
 
     _outTransferBusy = true;
     esp_err_t err = usb_host_transfer_submit(_outTransfer);
