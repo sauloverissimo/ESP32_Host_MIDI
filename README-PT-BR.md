@@ -119,7 +119,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ## Envio e pontes
 
-Envie por qualquer transporte com a API unificada. Sem destino, o `send*` tenta cada transporte registrado em ordem e para no primeiro que aceitar (first-wins); passe um transporte `target` para enviar a um específico. O canal vai de 1 a 16.
+Envie por qualquer transporte com a API unificada. Sem destino, o `send*` tenta cada transporte registrado em ordem e para no primeiro que aceitar (first-wins); passe um transporte `target` para enviar a um específico. O canal vai de 1 a 16. `sendSysEx` é a exceção: ele envia a todos os transportes registrados e retorna true quando ao menos um aceitou.
 
 ```cpp
 midiHandler.sendNoteOn(1, 60, 100);

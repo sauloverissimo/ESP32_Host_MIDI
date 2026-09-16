@@ -1268,6 +1268,76 @@ static void test_index_monotonic_across_many_events() {
 
 
 // ---------------------------------------------------------------------------
+// Test: sendSysEx reports the transport result (Ref #31)
+//
+// The return value tells the caller whether some transport accepted the
+// message. A refused send (busy endpoint, too large, device not mounted)
+// must surface as false.
+// ---------------------------------------------------------------------------
+
+static void test_sendsysex_reports_failure() {
+    TEST("sendSysEx returns false when no transport accepts it");
+    MIDIHandler h;
+    h.begin();
+    MockTransport down("Down", false);   // refuses everything
+    h.addTransport(&down);
+
+    const uint8_t sysex[] = { 0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7 };
+    ASSERT(!h.sendSysEx(sysex, sizeof(sysex)));
+    ASSERT_EQ(down.sentMessages.size(), (size_t)0);
+    PASS();
+}
+
+static void test_sendsysex_reports_success() {
+    TEST("sendSysEx returns true when a transport accepts it");
+    MIDIHandler h;
+    h.begin();
+    MockTransport down("Down", false);
+    MockTransport up("Up", true);
+    h.addTransport(&down);
+    h.addTransport(&up);
+
+    const uint8_t sysex[] = { 0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7 };
+    ASSERT(h.sendSysEx(sysex, sizeof(sysex)));
+    ASSERT_EQ(up.sentMessages.size(), (size_t)1);
+    ASSERT_EQ(up.sentMessages[0][0], 0xF0);
+    ASSERT_EQ(up.sentMessages[0].back(), 0xF7);
+    PASS();
+}
+
+static void test_sendsysex_broadcasts() {
+    TEST("sendSysEx reaches every transport that accepts it");
+    MIDIHandler h;
+    h.begin();
+    MockTransport a("A", true), down("Down", false), b("B", true);
+    h.addTransport(&a);
+    h.addTransport(&down);
+    h.addTransport(&b);
+
+    const uint8_t sysex[] = { 0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7 };
+    ASSERT(h.sendSysEx(sysex, sizeof(sysex)));
+    ASSERT_EQ(a.sentMessages.size(), (size_t)1);
+    ASSERT_EQ(down.sentMessages.size(), (size_t)0);
+    ASSERT_EQ(b.sentMessages.size(), (size_t)1);   // not stopped at the first
+    PASS();
+}
+
+static void test_sendsysex_rejects_malformed() {
+    TEST("sendSysEx rejects malformed input without touching transports");
+    MIDIHandler h;
+    h.begin();
+    MockTransport t("T", true);
+    h.addTransport(&t);
+
+    const uint8_t noEox[]   = { 0xF0, 0x7E, 0x01 };        // missing F7
+    const uint8_t noSox[]   = { 0x7E, 0x01, 0xF7 };        // missing F0
+    ASSERT(!h.sendSysEx(noEox, sizeof(noEox)));
+    ASSERT(!h.sendSysEx(noSox, sizeof(noSox)));
+    ASSERT_EQ(t.sentMessages.size(), (size_t)0);
+    PASS();
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -1275,6 +1345,10 @@ int main() {
     printf("ESP32_Host_MIDI — MIDIHandler test suite (v5.2)\n");
     printf("================================================\n");
 
+    test_sendsysex_reports_failure();
+    test_sendsysex_reports_success();
+    test_sendsysex_broadcasts();
+    test_sendsysex_rejects_malformed();
     test_index_is_unsigned_64bit();
     test_chord_api_carries_64bit_index();
     test_index_monotonic_across_many_events();

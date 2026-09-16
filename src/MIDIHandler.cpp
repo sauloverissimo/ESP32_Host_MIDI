@@ -794,10 +794,14 @@ void MIDIHandler::clearSysExQueue() {
 
 bool MIDIHandler::sendSysEx(const uint8_t* data, size_t length) {
   if (length < 2 || data[0] != 0xF0 || data[length - 1] != 0xF7) return false;
+  // Broadcast: every registered transport gets the message. The result is
+  // true when at least one transport accepted it (a busy endpoint, an
+  // oversized message or an unmounted device report false). Ref #31
+  bool accepted = false;
   for (int i = 0; i < transportCount; i++) {
-    transports[i]->sendMidiMessage(data, length);
+    if (transports[i]->sendMidiMessage(data, length)) accepted = true;
   }
-  return true;
+  return accepted;
 }
 
 // v6.0: MIDIHandler::isBleConnected() removed. Query the BLEConnection

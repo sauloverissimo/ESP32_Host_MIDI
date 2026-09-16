@@ -119,7 +119,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 ## Sending and bridging
 
-Send from any transport with the unified API. With no target, `send*` tries each registered transport in order and stops at the first that accepts (first-wins); pass a `target` transport to send to one specifically. Channel is 1 to 16.
+Send from any transport with the unified API. With no target, `send*` tries each registered transport in order and stops at the first that accepts (first-wins); pass a `target` transport to send to one specifically. Channel is 1 to 16. `sendSysEx` is the exception: it broadcasts to every registered transport and returns true when at least one accepted.
 
 ```cpp
 midiHandler.sendNoteOn(1, 60, 100);
