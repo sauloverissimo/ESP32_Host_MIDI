@@ -5,6 +5,35 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.0] - 2026-09-16
+
+### Changed
+
+- Event indexes are 64-bit: `MIDIEventData::index`, `msgIndex` and
+  `chordIndex`, `MIDISysExEvent::index`, and the return and parameter types
+  of `lastChord()` / `getChord()` are now `uint64_t`. The documented consume
+  pattern (`if (ev.index <= lastIndex) continue`) keeps working for the whole
+  uptime of a board; declare `lastIndex` as `uint64_t` starting at 0. README
+  and examples updated. Reported by @RuudMulder in issue #33.
+
+### Fixed
+
+- Outgoing SysEx on the USB Host transport is split into the USB-MIDI packet
+  sequence the device expects (CIN `0x04` for continuation, `0x05`/`0x06`/
+  `0x07` for the final 1, 2 or 3 bytes) and submitted in one transfer, so
+  multi-packet messages arrive with their `F7` terminator. Reported by
+  @isialdi in issue #31.
+- `sendSysEx()` returns `true` only when at least one transport accepted the
+  message. A busy endpoint, a message larger than the endpoint buffer or an
+  unmounted device now report `false`.
+
+### Tests
+
+- The USB send tests compile against the packet builder extracted from
+  `USBConnection.cpp` at build time instead of a hand-kept copy.
+
+[7.3.0]: https://github.com/sauloverissimo/ESP32_Host_MIDI/compare/v7.2.0...v7.3.0
+
 ## [7.2.0] - 2026-07-31
 
 ### Fixed
