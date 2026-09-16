@@ -364,6 +364,7 @@ void USBConnection::_processConfig(const usb_config_desc_t *config_desc) {
 
 // ---------- Send ----------
 
+// BEGIN PACKET_BUILDER (extracted verbatim by extras/tests/test_usb_send.cpp)
 // USB-MIDI 1.0 CIN lookup (Table 4-1).
 // Returns CIN for a given MIDI status byte, or 0 on unknown.
 static uint8_t _midiStatusToCIN(uint8_t status) {
@@ -437,6 +438,7 @@ static size_t buildUsbMidiPackets(const uint8_t* data, size_t length,
     }
     return 1;
 }
+// END PACKET_BUILDER
 
 bool USBConnection::sendMidiMessage(const uint8_t* data, size_t length) {
     if (!isReady || !_outTransfer || length == 0) return false;

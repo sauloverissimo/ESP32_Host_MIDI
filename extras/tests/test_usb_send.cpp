@@ -12,6 +12,14 @@
 // ---------------------------------------------------------------------------
 // Minimal test framework (same as test_native.cpp)
 // ---------------------------------------------------------------------------
+// The packet builder under test is EXTRACTED VERBATIM from src/USBConnection.cpp
+// at build time (see extras/tests/extract_packet_builder.sh), between the
+// PACKET_BUILDER sentinels. Nothing is copied by hand: if the shipped code changes, these
+// tests exercise the change. A mirrored copy would let src/ regress silently.
+// ---------------------------------------------------------------------------
+#include "packet_builder.inc"
+
+// ---------------------------------------------------------------------------
 
 static int g_pass = 0;
 static int g_fail = 0;
@@ -30,30 +38,6 @@ static int g_fail = 0;
         printf("FAIL  expected 0x%02X, got 0x%02X\n", (unsigned)(b), (unsigned)(a)); \
         ++g_fail; return; } } while(0)
 
-// ---------------------------------------------------------------------------
-// Extract _midiStatusToCIN from USBConnection.cpp (copy for testability)
-// ---------------------------------------------------------------------------
-
-static uint8_t _midiStatusToCIN(uint8_t status) {
-    if (status >= 0x80 && status <= 0xEF) {
-        return status >> 4;
-    }
-    switch (status) {
-        case 0xF0: return 0x04; // SysEx Start
-        case 0xF1: return 0x02; // MTC Quarter Frame (2 bytes)
-        case 0xF2: return 0x03; // Song Position Pointer (3 bytes)
-        case 0xF3: return 0x02; // Song Select (2 bytes)
-        case 0xF6: return 0x05; // Tune Request (1 byte)
-        case 0xF7: return 0x05; // SysEx End (single-byte)
-        case 0xF8: return 0x0F; // Timing Clock
-        case 0xFA: return 0x0F; // Start
-        case 0xFB: return 0x0F; // Continue
-        case 0xFC: return 0x0F; // Stop
-        case 0xFE: return 0x0F; // Active Sensing
-        case 0xFF: return 0x0F; // System Reset
-        default:   return 0;    // Undefined
-    }
-}
 
 // Builds a 4-byte USB-MIDI packet (same logic as USBConnection::sendMidiMessage)
 static bool buildPacket(const uint8_t* data, size_t length, uint8_t* packet) {
@@ -70,56 +54,7 @@ static bool buildPacket(const uint8_t* data, size_t length, uint8_t* packet) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// Convert a MIDI byte stream into 4-byte USB-MIDI Event Packets (cable 0).
-// Mirror of USBConnection::buildUsbMidiPackets. Returns the number of
-// packets written, or 0 on error / overflow (more than maxPackets needed).
-// USB-MIDI 1.0 spec Table 4-1.
-// ---------------------------------------------------------------------------
-static size_t buildUsbMidiPackets(const uint8_t* data, size_t length,
-                                  uint8_t* packets, size_t maxPackets) {
-    if (!data || length == 0 || !packets) return 0;
 
-    // SysEx: chunk into groups of 3 with continuation / end CINs.
-    if (data[0] == 0xF0) {
-        size_t n = 0;   // packets written
-        size_t i = 0;   // bytes consumed
-        while (i < length) {
-            if (n >= maxPackets) return 0;   // does not fit; caller fails loud
-            size_t remaining = length - i;
-            uint8_t* pk = packets + n * 4;
-            if (remaining > 3) {
-                pk[0] = 0x04;                // SysEx starts or continues
-                pk[1] = data[i];
-                pk[2] = data[i + 1];
-                pk[3] = data[i + 2];
-                i += 3;
-            } else {
-                pk[0] = (remaining == 1) ? 0x05    // ends with 1 byte
-                      : (remaining == 2) ? 0x06    // ends with 2 bytes
-                                         : 0x07;   // ends with 3 bytes
-                pk[1] = data[i];
-                pk[2] = (remaining >= 2) ? data[i + 1] : 0;
-                pk[3] = (remaining >= 3) ? data[i + 2] : 0;
-                i += remaining;
-            }
-            ++n;
-        }
-        return n;
-    }
-
-    // Non-SysEx: single packet, CIN from the status nibble (<= 3 bytes).
-    uint8_t cin = _midiStatusToCIN(data[0]);
-    if (cin == 0 || maxPackets < 1) return 0;
-    packets[0] = cin;
-    packets[1] = 0;
-    packets[2] = 0;
-    packets[3] = 0;
-    for (size_t i = 0; i < length && i < 3; i++) {
-        packets[i + 1] = data[i];
-    }
-    return 1;
-}
 
 // ---------------------------------------------------------------------------
 // CIN tests: Channel Voice Messages (0x8n - 0xEn)

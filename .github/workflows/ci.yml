@@ -54,11 +54,15 @@ jobs:
       - name: Run MIDI2 scan tests
         run: ./extras/tests/test_midi2_scan
 
+      - name: Extract packet builder from source
+        run: ./extras/tests/extract_packet_builder.sh
+
       - name: Build USB send test binary
         run: |
           g++ -std=c++17 \
               -Iextras/tests/stub \
               -Isrc \
+              -Iextras/tests \
               -Wall -Wextra -Wno-unused-parameter -Wno-comment \
               -o extras/tests/test_usb_send extras/tests/test_usb_send.cpp
 
