@@ -29,7 +29,7 @@
 UARTConnection midiPort1;
 UARTConnection midiPort2;
 
-static int lastEventIndex = -1;
+static uint64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 
 // Prints one MIDI event to the debug serial.
 static void printEvent(const MIDIEventData& ev) {

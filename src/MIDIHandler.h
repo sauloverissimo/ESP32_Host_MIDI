@@ -1,6 +1,7 @@
 #ifndef MIDI_HANDLER_H
 #define MIDI_HANDLER_H
 
+#include <cstdint>
 #include <deque>
 #include <map>
 #include <string>
@@ -65,11 +66,11 @@ enum MIDIStatus : uint8_t {
 
 // Structure representing a parsed MIDI event using MIDI 1.0 terminology.
 struct MIDIEventData {
-  int index;                // Global event counter
-  int msgIndex;             // Index linking NoteOn/NoteOff pairs
+  uint64_t index;           // Global event counter (64-bit: never wraps in practice)
+  uint64_t msgIndex;        // Index linking NoteOn/NoteOff pairs
   unsigned long timestamp;  // Timestamp in milliseconds (millis())
   unsigned long delay;      // Delta time (ms) since previous event
-  int chordIndex;           // Chord grouping index (simultaneous notes share the same index)
+  uint64_t chordIndex;      // Chord grouping index (simultaneous notes share the same index)
   MIDITransport* source = nullptr;  // Transport that received this message (nullptr if unknown)
 
   // --- MIDI spec compliant fields (v5.2+) ---
@@ -94,7 +95,7 @@ struct MIDIEventData {
 // Structure representing a complete SysEx message (0xF0 ... payload ... 0xF7).
 // Stored in a separate queue from MIDIEventData to avoid breaking existing API.
 struct MIDISysExEvent {
-  int index;                      // Global SysEx counter
+  uint64_t index;                 // Global SysEx counter (64-bit: never wraps in practice)
   unsigned long timestamp;        // Timestamp in milliseconds (millis())
   MIDITransport* source = nullptr; // Transport that received this message
   std::vector<uint8_t> data;      // Complete message including 0xF0 and 0xF7
@@ -170,8 +171,8 @@ public:
   // directly via its isConnected() method instead.
 
   // Chord event utility methods:
-  int lastChord(const std::deque<MIDIEventData>& queue) const;
-  std::vector<std::string> getChord(int chord, const std::deque<MIDIEventData>& queue, const std::vector<std::string>& fields = { "all" }, bool includeLabels = false) const;
+  uint64_t lastChord(const std::deque<MIDIEventData>& queue) const;
+  std::vector<std::string> getChord(uint64_t chord, const std::deque<MIDIEventData>& queue, const std::vector<std::string>& fields = { "all" }, bool includeLabels = false) const;
   std::vector<std::string> getAnswer(const std::string& field = "all", bool includeLabels = false) const;
   std::vector<std::string> getAnswer(const std::vector<std::string>& fields, bool includeLabels = false) const;
 
@@ -181,16 +182,16 @@ private:
 
   std::deque<MIDIEventData> eventQueue;
   int maxEvents;
-  int globalIndex;
-  int nextMsgIndex;
+  uint64_t globalIndex;
+  uint64_t nextMsgIndex;
   unsigned long lastTimestamp;
   unsigned long lastNoteOnTimestamp;
 
-  std::unordered_map<int, int> activeNotes;
-  std::unordered_map<int, int> activeMsgIndex;
+  std::unordered_map<int, uint64_t> activeNotes;
+  std::unordered_map<int, uint64_t> activeMsgIndex;
 
-  int nextChordIndex;
-  int currentChordIndex;
+  uint64_t nextChordIndex;
+  uint64_t currentChordIndex;
 
   // History buffer (PSRAM when available, heap otherwise)
   MIDIEventData* historyQueue;

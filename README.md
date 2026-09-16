@@ -131,7 +131,7 @@ MIDI is **not** routed between transports automatically. Each transport delivers
 
 ```cpp
 // Forward note/CC from any input to a target transport.
-static int lastIndex = 0;
+static uint64_t lastIndex = 0;
 for (const auto& ev : midiHandler.getQueue()) {
     if (ev.index <= lastIndex) continue;
     lastIndex = ev.index;
@@ -152,7 +152,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 Each event records the `source` transport it arrived on, so `loop()` can route by input. Combined with a `target` on `send*`, you forward exactly what you want:
 
 ```cpp
-static int lastIndex = 0;
+static uint64_t lastIndex = 0;
 for (const auto& ev : midiHandler.getQueue()) {
     if (ev.index <= lastIndex) continue;
     lastIndex = ev.index;

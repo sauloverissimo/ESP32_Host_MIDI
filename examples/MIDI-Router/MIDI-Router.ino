@@ -27,7 +27,7 @@ UARTConnection dinOut;    // DIN-5 output on UART1
 static const int DIN_RX_PIN = 44;   // adjust to your board
 static const int DIN_TX_PIN = 43;
 
-static int lastEventIndex = -1;
+static uint64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 
 void setup() {
     Serial.begin(115200);

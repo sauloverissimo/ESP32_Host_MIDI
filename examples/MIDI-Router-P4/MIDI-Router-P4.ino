@@ -33,7 +33,7 @@ USBConnection usbHost;               // controller on the USB host port
 BLEConnection bleSynth;              // synth app connects to us (BLE Server)
 BLEClientConnection footController;  // we connect out to the foot controller
 
-static int lastEventIndex = -1;
+static uint64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 
 void setup() {
     Serial.begin(115200);

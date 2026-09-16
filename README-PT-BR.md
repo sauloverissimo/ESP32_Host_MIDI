@@ -131,7 +131,7 @@ O MIDI **não** é roteado automaticamente entre transportes. Cada transporte en
 
 ```cpp
 // Encaminha note/CC de qualquer entrada para um transporte de destino.
-static int lastIndex = 0;
+static uint64_t lastIndex = 0;
 for (const auto& ev : midiHandler.getQueue()) {
     if (ev.index <= lastIndex) continue;
     lastIndex = ev.index;
@@ -152,7 +152,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 Cada evento registra o transporte de `source` em que chegou, então o `loop()` pode rotear pela entrada. Combinado com um `target` no `send*`, você encaminha exatamente o que quer:
 
 ```cpp
-static int lastIndex = 0;
+static uint64_t lastIndex = 0;
 for (const auto& ev : midiHandler.getQueue()) {
     if (ev.index <= lastIndex) continue;
     lastIndex = ev.index;

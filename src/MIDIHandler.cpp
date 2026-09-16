@@ -325,8 +325,8 @@ void MIDIHandler::clearQueue() {
   nextChordIndex = 1;
 }
 
-int MIDIHandler::lastChord(const std::deque<MIDIEventData>& queue) const {
-  int maxChord = 0;
+uint64_t MIDIHandler::lastChord(const std::deque<MIDIEventData>& queue) const {
+  uint64_t maxChord = 0;
   for (const auto& event : queue) {
     if (event.chordIndex > maxChord) {
       maxChord = event.chordIndex;
@@ -335,7 +335,7 @@ int MIDIHandler::lastChord(const std::deque<MIDIEventData>& queue) const {
   return maxChord;
 }
 
-std::vector<std::string> MIDIHandler::getChord(int chord, const std::deque<MIDIEventData>& queue, const std::vector<std::string>& fields, bool includeLabels) const {
+std::vector<std::string> MIDIHandler::getChord(uint64_t chord, const std::deque<MIDIEventData>& queue, const std::vector<std::string>& fields, bool includeLabels) const {
   std::vector<MIDIEventData> chordEvents;
 
   // Filter only NoteOn events from the specified chord
@@ -595,8 +595,8 @@ void MIDIHandler::handleMidiMessage(const uint8_t* data, size_t length, MIDITran
   int note = midiData[1];
   int velocity = midiData[2];
   std::string statusType;
-  int msgIndex = 0;
-  int chordIdx = currentChordIndex;
+  uint64_t msgIndex = 0;
+  uint64_t chordIdx = currentChordIndex;
 
   if (midiStatus == 0x90) {  // NoteOn
     if (velocity > 0) {

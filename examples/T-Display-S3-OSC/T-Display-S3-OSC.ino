@@ -13,7 +13,7 @@
 
 OSCConnection oscMIDI;
 
-static int    lastEventIndex = -1;
+static uint64_t    lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 static int    inCount        = 0;   // events received from OSC or USB
 static int    outCount       = 0;   // events sent as OSC
 static bool   wifiReady      = false;

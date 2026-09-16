@@ -69,7 +69,7 @@ static bool activeNotes[128] = {};
 static uint8_t lastStatus   = 0;
 static uint8_t lastNote     = 0;
 static uint8_t lastVelocity = 0;
-static int     lastEventIndex = -1;
+static uint64_t     lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 
 static void sendCurrentStepOn() {
     const NoteStep& step = ALL_SEQUENCES[currentSeq].steps[currentStep];

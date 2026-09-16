@@ -18,7 +18,7 @@
 UARTConnection uartMIDI;
 
 // Last processed event index, used to detect new events in the queue.
-static int lastEventIndex = -1;
+static uint64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 
 void setup() {
     Serial.begin(115200);

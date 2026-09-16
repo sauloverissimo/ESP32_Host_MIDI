@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdarg>
+#include <type_traits>
 #include <vector>
 
 // Stubs
@@ -1196,6 +1197,76 @@ void test_routing_scenario() {
     PASS();
 }
 
+
+// ---------------------------------------------------------------------------
+// Test: event index survives a long uninterrupted run (Ref #33)
+//
+// The index is what the documented consume pattern compares against:
+//
+//     if (ev.index <= lastIndex) continue;
+//
+// That pattern relies on the index growing monotonically for the whole
+// uptime of the sketch. These tests pin the index to a 64-bit unsigned
+// type (no wrap within any realistic runtime) across every public surface
+// that carries it, so the pattern keeps working on long-running boards.
+// ---------------------------------------------------------------------------
+
+static void test_index_is_unsigned_64bit() {
+    TEST("event index is 64-bit unsigned (cannot wrap negative)");
+    MIDIEventData ev{};
+    ASSERT_EQ(sizeof(ev.index), (size_t)8);
+    ASSERT(!std::is_signed<decltype(ev.index)>::value);
+    ASSERT(!std::is_signed<decltype(ev.msgIndex)>::value);
+    ASSERT(!std::is_signed<decltype(ev.chordIndex)>::value);
+    MIDISysExEvent sx{};
+    ASSERT_EQ(sizeof(sx.index), (size_t)8);
+    ASSERT(!std::is_signed<decltype(sx.index)>::value);
+    PASS();
+}
+
+static void test_chord_api_carries_64bit_index() {
+    TEST("lastChord/getChord carry the 64-bit chord index without narrowing");
+    MIDIHandler h;
+    h.begin();
+    const auto& q = h.getQueue();
+    static_assert(std::is_same<decltype(h.lastChord(q)), uint64_t>::value,
+                  "lastChord must return uint64_t");
+    // getChord must accept the full-width index (no implicit narrowing).
+    const uint64_t wide = 4294967296ULL + 7ULL;
+    auto names = h.getChord(wide, q, {"note"});
+    ASSERT(names.empty());   // no such chord yet; the point is the type
+    ASSERT_EQ(h.lastChord(q), (uint64_t)0);
+    PASS();
+}
+
+static void test_index_monotonic_across_many_events() {
+    TEST("index is strictly monotonic under the documented consume pattern");
+    MIDIHandler h;
+    h.begin();
+
+    uint64_t lastIndex = 0;
+    int delivered = 0;
+    const int total = 500;
+
+    // clearQueue() deliberately resets the counter, so the run stays
+    // uninterrupted here: this mirrors an installation that never restarts.
+    for (int i = 0; i < total; ++i) {
+        feedMidi(h, 0x90, 60 + (i % 12), 100);
+    }
+    for (const auto& ev : h.getQueue()) {
+        if (ev.index <= lastIndex) continue;   // the README pattern
+        lastIndex = ev.index;
+        ++delivered;
+    }
+
+    // Every retained event reached the consumer, in strictly increasing order,
+    // and the counter ends at the total number of events fed in.
+    ASSERT_EQ(delivered, (int)h.getQueue().size());
+    ASSERT_EQ(lastIndex, (uint64_t)total);
+    PASS();
+}
+
+
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
@@ -1204,6 +1275,9 @@ int main() {
     printf("ESP32_Host_MIDI — MIDIHandler test suite (v5.2)\n");
     printf("================================================\n");
 
+    test_index_is_unsigned_64bit();
+    test_chord_api_carries_64bit_index();
+    test_index_monotonic_across_many_events();
     test_noteon_fields();
     test_noteoff_fields();
     test_noteon_vel0_is_noteoff();
