@@ -72,7 +72,7 @@ Desde a v6.0 os transportes são explícitos: inclua o header que você usa, dec
 ```cpp
 #include <ESP32_Host_MIDI.h>
 #include <USBConnection.h>   // inclua apenas os transportes que você usa
-// Arduino IDE: Tools > USB Mode > "USB Host"
+// Arduino IDE: mantenha o USB Mode padrão da placa (ESP32-S3: "Hardware CDC and JTAG")
 
 USBConnection usbHost;
 
@@ -171,7 +171,7 @@ for (const auto& ev : midiHandler.getQueue()) {
 
 Conecta qualquer dispositivo USB MIDI class-compliant (teclados, pads, interfaces, controladores) direto na porta USB-OTG do ESP32. Sem hub, sem driver, sem configuração de sistema.
 
-**Placas:** ESP32-S3, S2, P4 · **Arduino IDE:** `Tools > USB Mode > "USB Host"`
+**Placas:** ESP32-S3, S2, P4 · **Arduino IDE:** padrões da placa (no ESP32-S3, `Tools > USB Mode` fica em "Hardware CDC and JTAG")
 
 ```cpp
 #include <ESP32_Host_MIDI.h>
