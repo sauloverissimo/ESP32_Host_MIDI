@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Event indexes are signed 64-bit (`int64_t`): `MIDIEventData::index`,
+  `msgIndex` and `chordIndex`, `MIDISysExEvent::index`, and `lastChord()` /
+  `getChord()`. A consume loop with an `int` cursor starting at -1, as in the
+  examples up to 7.2.0, compares correctly against the index, and a `uint64_t`
+  cursor starting at 0 keeps working. README and examples declare the cursor
+  as `int64_t` starting at 0. Reported by @RuudMulder in issue #34.
+
 ## [7.3.0] - 2026-09-16
 
 ### Changed

@@ -20,7 +20,7 @@
 
 EthernetMIDIConnection ethMIDI;
 
-static uint64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
+static int64_t lastEventIndex = 0;   // 0 = nothing seen yet (index starts at 1)
 static unsigned long lastStatusPrint = 0;
 
 // -----------------------------------------------------------------------

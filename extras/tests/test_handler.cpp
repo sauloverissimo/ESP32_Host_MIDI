@@ -1206,21 +1206,22 @@ void test_routing_scenario() {
 //     if (ev.index <= lastIndex) continue;
 //
 // That pattern relies on the index growing monotonically for the whole
-// uptime of the sketch. These tests pin the index to a 64-bit unsigned
-// type (no wrap within any realistic runtime) across every public surface
-// that carries it, so the pattern keeps working on long-running boards.
+// uptime of the sketch. These tests pin the index to a 64-bit signed type
+// across every public surface that carries it: no wrap within any realistic
+// runtime, and a cursor declared as int and started at -1 still compares
+// correctly against it.
 // ---------------------------------------------------------------------------
 
-static void test_index_is_unsigned_64bit() {
-    TEST("event index is 64-bit unsigned (cannot wrap negative)");
+static void test_index_is_signed_64bit() {
+    TEST("event index is 64-bit signed");
     MIDIEventData ev{};
     ASSERT_EQ(sizeof(ev.index), (size_t)8);
-    ASSERT(!std::is_signed<decltype(ev.index)>::value);
-    ASSERT(!std::is_signed<decltype(ev.msgIndex)>::value);
-    ASSERT(!std::is_signed<decltype(ev.chordIndex)>::value);
+    ASSERT(std::is_signed<decltype(ev.index)>::value);
+    ASSERT(std::is_signed<decltype(ev.msgIndex)>::value);
+    ASSERT(std::is_signed<decltype(ev.chordIndex)>::value);
     MIDISysExEvent sx{};
     ASSERT_EQ(sizeof(sx.index), (size_t)8);
-    ASSERT(!std::is_signed<decltype(sx.index)>::value);
+    ASSERT(std::is_signed<decltype(sx.index)>::value);
     PASS();
 }
 
@@ -1229,13 +1230,13 @@ static void test_chord_api_carries_64bit_index() {
     MIDIHandler h;
     h.begin();
     const auto& q = h.getQueue();
-    static_assert(std::is_same<decltype(h.lastChord(q)), uint64_t>::value,
-                  "lastChord must return uint64_t");
+    static_assert(std::is_same<decltype(h.lastChord(q)), int64_t>::value,
+                  "lastChord must return int64_t");
     // getChord must accept the full-width index (no implicit narrowing).
-    const uint64_t wide = 4294967296ULL + 7ULL;
+    const int64_t wide = 4294967296LL + 7LL;
     auto names = h.getChord(wide, q, {"note"});
     ASSERT(names.empty());   // no such chord yet; the point is the type
-    ASSERT_EQ(h.lastChord(q), (uint64_t)0);
+    ASSERT_EQ(h.lastChord(q), (int64_t)0);
     PASS();
 }
 
@@ -1244,7 +1245,7 @@ static void test_index_monotonic_across_many_events() {
     MIDIHandler h;
     h.begin();
 
-    uint64_t lastIndex = 0;
+    int64_t lastIndex = 0;
     int delivered = 0;
     const int total = 500;
 
@@ -1262,9 +1263,62 @@ static void test_index_monotonic_across_many_events() {
     // Every retained event reached the consumer, in strictly increasing order,
     // and the counter ends at the total number of events fed in.
     ASSERT_EQ(delivered, (int)h.getQueue().size());
-    ASSERT_EQ(lastIndex, (uint64_t)total);
+    ASSERT_EQ(lastIndex, (int64_t)total);
     PASS();
 }
+
+// Sketches keep the consume pattern they were written with. The examples up to
+// v7.2.0 used an int cursor starting at -1, and v7.3.0 documented a uint64_t
+// cursor starting at 0. Both must keep delivering every event. The comparisons
+// below are user code, so the sign-compare warning they may raise is expected.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+static void test_consume_pattern_int_cursor_from_minus_one() {
+    TEST("consume pattern with int cursor = -1 delivers every event");
+    MIDIHandler h;
+    h.begin();
+    for (int i = 0; i < 10; ++i) {
+        feedMidi(h, 0x90, 60 + i, 100);
+    }
+
+    int lastEventIndex = -1;
+    int delivered = 0;
+    for (const auto& ev : h.getQueue()) {
+        if (ev.index <= lastEventIndex) continue;
+        lastEventIndex = (int)ev.index;
+        ++delivered;
+    }
+    ASSERT_EQ(delivered, (int)h.getQueue().size());
+
+    int last = -1;
+    int newer = 0;
+    for (const auto& ev : h.getQueue()) {
+        if (ev.index > last) ++newer;
+        last = (int)ev.index;
+    }
+    ASSERT_EQ(newer, (int)h.getQueue().size());
+    PASS();
+}
+
+static void test_consume_pattern_uint64_cursor_from_zero() {
+    TEST("consume pattern with uint64_t cursor = 0 delivers every event");
+    MIDIHandler h;
+    h.begin();
+    for (int i = 0; i < 10; ++i) {
+        feedMidi(h, 0x90, 60 + i, 100);
+    }
+
+    uint64_t lastIndex = 0;
+    int delivered = 0;
+    for (const auto& ev : h.getQueue()) {
+        if (ev.index <= lastIndex) continue;
+        lastIndex = ev.index;
+        ++delivered;
+    }
+    ASSERT_EQ(delivered, (int)h.getQueue().size());
+    PASS();
+}
+#pragma GCC diagnostic pop
 
 
 // ---------------------------------------------------------------------------
@@ -1349,9 +1403,11 @@ int main() {
     test_sendsysex_reports_success();
     test_sendsysex_broadcasts();
     test_sendsysex_rejects_malformed();
-    test_index_is_unsigned_64bit();
+    test_index_is_signed_64bit();
     test_chord_api_carries_64bit_index();
     test_index_monotonic_across_many_events();
+    test_consume_pattern_int_cursor_from_minus_one();
+    test_consume_pattern_uint64_cursor_from_zero();
     test_noteon_fields();
     test_noteoff_fields();
     test_noteon_vel0_is_noteoff();

@@ -80,7 +80,7 @@ inline bool identifyLastChord(const MIDIHandler& handler,
     const auto& queue = handler.getQueue();
     if (queue.empty()) return false;
 
-    uint64_t chordIdx = handler.lastChord(queue);
+    int64_t chordIdx = handler.lastChord(queue);
     if (chordIdx == 0) return false;
 
     std::vector<std::string> noteStrs = handler.getChord(
@@ -104,7 +104,7 @@ inline bool identifyLastChord(const MIDIHandler& handler,
 
 // Identifies a chord from a specific chordIndex in the queue.
 // Returns true if a chord was identified, false otherwise.
-inline bool identifyChord(const MIDIHandler& handler, uint64_t chordIndex,
+inline bool identifyChord(const MIDIHandler& handler, int64_t chordIndex,
                           char* output, uint8_t maxLen) {
     if (!output || maxLen < 2) return false;
 
@@ -163,7 +163,7 @@ inline uint8_t deduceFieldFromQueue(const MIDIHandler& handler,
     uint8_t chordCount = 0;
 
     // Find all unique chordIndex values in the queue
-    uint64_t seenChords[MAX_CHORD_HISTORY];
+    int64_t seenChords[MAX_CHORD_HISTORY];
     uint8_t seenCount = 0;
 
     for (const auto& event : queue) {
