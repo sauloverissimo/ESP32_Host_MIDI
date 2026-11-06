@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [7.3.1] - 2026-11-06
 
 ### Changed
 
@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   examples up to 7.2.0, compares correctly against the index, and a `uint64_t`
   cursor starting at 0 keeps working. README and examples declare the cursor
   as `int64_t` starting at 0. Reported by @RuudMulder in issue #34.
+
+### Fixed
+
+- README: the USB host setup refers to the board's default `Tools > USB Mode`
+  ("Hardware CDC and JTAG" on the ESP32-S3).
+
+[7.3.1]: https://github.com/sauloverissimo/ESP32_Host_MIDI/compare/v7.3.0...v7.3.1
 
 ## [7.3.0] - 2026-09-16
 
